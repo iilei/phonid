@@ -8,6 +8,8 @@ import "github.com/iilei/phonid/pkg"
 
 ## Index
 
+- [Constants](<#constants>)
+- [Variables](<#variables>)
 - [type BaseEncoding](<#BaseEncoding>)
 - [type Config](<#Config>)
   - [func NewConfig\(\) \(\*Config, error\)](<#NewConfig>)
@@ -16,6 +18,7 @@ import "github.com/iilei/phonid/pkg"
 - [type ConfigOption](<#ConfigOption>)
   - [func WithBase\(base int\) ConfigOption](<#WithBase>)
   - [func WithBitWidth\(bitWidth int\) ConfigOption](<#WithBitWidth>)
+  - [func WithPhonetic\(phonetic \*PhoneticConfig\) ConfigOption](<#WithPhonetic>)
   - [func WithPrefix\(prefix string\) ConfigOption](<#WithPrefix>)
   - [func WithRounds\(rounds int\) ConfigOption](<#WithRounds>)
   - [func WithSeed\(seed uint64\) ConfigOption](<#WithSeed>)
@@ -26,7 +29,46 @@ import "github.com/iilei/phonid/pkg"
   - [func \(fs \*FeistelShuffler\) Encode\(input uint64\) uint64](<#FeistelShuffler.Encode>)
   - [func \(fs \*FeistelShuffler\) MaxValue\(\) uint64](<#FeistelShuffler.MaxValue>)
   - [func \(fs \*FeistelShuffler\) Rounds\(\) int](<#FeistelShuffler.Rounds>)
+- [type PhoneticConfig](<#PhoneticConfig>)
+  - [func \(pc \*PhoneticConfig\) Validate\(base BaseEncoding\) error](<#PhoneticConfig.Validate>)
 
+
+## Constants
+
+<a name="MinCharsPerPlaceholder"></a>Minimum requirements per placeholder type
+
+```go
+const (
+    MinCharsPerPlaceholder = 2
+)
+```
+
+## Variables
+
+<a name="AllowedPatternLengths"></a>AllowedPatternLengths defines the permitted pattern lengths
+
+```go
+var AllowedPatternLengths = []int{5, 7, 11}
+```
+
+<a name="AllowedVowels"></a>AllowedVowels defines the permitted vowel characters
+
+```go
+var AllowedVowels = map[rune]bool{
+    'a': true, 'e': true, 'i': true, 'o': true, 'u': true, 'y': true,
+    'A': true, 'E': true, 'I': true, 'O': true, 'U': true, 'Y': true,
+}
+```
+
+<a name="DefaultPlaceholders"></a>DefaultPlaceholders provides sensible defaults for common phonetic categories
+
+```go
+var DefaultPlaceholders = map[string][]rune{
+    "C": {'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'p', 'q', 's', 't', 'v', 'w', 'x', 'z'},
+    "L": {'l', 'm', 'n', 'r'},
+    "V": {'a', 'e', 'i', 'o', 'u'},
+}
+```
 
 <a name="BaseEncoding"></a>
 ## type [BaseEncoding](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L9>)
@@ -47,7 +89,7 @@ const (
 ```
 
 <a name="Config"></a>
-## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L17-L26>)
+## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L17-L27>)
 
 Config holds the configuration for phonetic ID generation
 
@@ -59,13 +101,14 @@ type Config struct {
     Seed     uint64 `default:"0"`
 
     // ID format settings
-    Prefix string
-    Base   BaseEncoding `default:"36"`
+    Prefix   string
+    Base     BaseEncoding    `default:"36"`
+    Phonetic *PhoneticConfig // nil = no phonetic encoding
 }
 ```
 
 <a name="NewConfig"></a>
-### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L29>)
+### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L30>)
 
 ```go
 func NewConfig() (*Config, error)
@@ -74,7 +117,7 @@ func NewConfig() (*Config, error)
 NewConfig returns a Config with sensible defaults applied
 
 <a name="NewConfigWithOptions"></a>
-### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L38>)
+### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L39>)
 
 ```go
 func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
@@ -83,7 +126,7 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
 NewConfigWithOptions returns a Config with defaults, then applies the provided options
 
 <a name="Config.Validate"></a>
-### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L94>)
+### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L102>)
 
 ```go
 func (c *Config) Validate() error
@@ -92,7 +135,7 @@ func (c *Config) Validate() error
 Validate checks if the config values are valid
 
 <a name="ConfigOption"></a>
-## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L56>)
+## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L57>)
 
 ConfigOption is a functional option for configuring Config
 
@@ -101,7 +144,7 @@ type ConfigOption func(*Config)
 ```
 
 <a name="WithBase"></a>
-### func [WithBase](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L87>)
+### func [WithBase](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L88>)
 
 ```go
 func WithBase(base int) ConfigOption
@@ -110,7 +153,7 @@ func WithBase(base int) ConfigOption
 WithBase sets the base encoding \(36 or 62\)
 
 <a name="WithBitWidth"></a>
-### func [WithBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L59>)
+### func [WithBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L60>)
 
 ```go
 func WithBitWidth(bitWidth int) ConfigOption
@@ -118,8 +161,17 @@ func WithBitWidth(bitWidth int) ConfigOption
 
 WithBitWidth sets the bit width
 
+<a name="WithPhonetic"></a>
+### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L95>)
+
+```go
+func WithPhonetic(phonetic *PhoneticConfig) ConfigOption
+```
+
+WithPhonetic sets the phonetic configuration
+
 <a name="WithPrefix"></a>
-### func [WithPrefix](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L80>)
+### func [WithPrefix](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L81>)
 
 ```go
 func WithPrefix(prefix string) ConfigOption
@@ -128,7 +180,7 @@ func WithPrefix(prefix string) ConfigOption
 WithPrefix sets the ID prefix
 
 <a name="WithRounds"></a>
-### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L66>)
+### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L67>)
 
 ```go
 func WithRounds(rounds int) ConfigOption
@@ -137,7 +189,7 @@ func WithRounds(rounds int) ConfigOption
 WithRounds sets the number of Feistel rounds
 
 <a name="WithSeed"></a>
-### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L73>)
+### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L74>)
 
 ```go
 func WithSeed(seed uint64) ConfigOption
@@ -209,5 +261,26 @@ func (fs *FeistelShuffler) Rounds() int
 ```
 
 Rounds returns the number of Feistel rounds
+
+<a name="PhoneticConfig"></a>
+## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonetic.go#L33-L36>)
+
+PhoneticConfig holds phonetic pattern configuration
+
+```go
+type PhoneticConfig struct {
+    Pattern      string            `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL"
+    Placeholders map[string][]rune // Maps placeholder to character set, e.g., {"C": [b,d,k], "V": [a,e]}
+}
+```
+
+<a name="PhoneticConfig.Validate"></a>
+### func \(\*PhoneticConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonetic.go#L39>)
+
+```go
+func (pc *PhoneticConfig) Validate(base BaseEncoding) error
+```
+
+Validate checks if the phonetic config is valid
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

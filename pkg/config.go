@@ -21,8 +21,9 @@ type Config struct {
 	Seed     uint64 `default:"0"`
 
 	// ID format settings
-	Prefix string
-	Base   BaseEncoding `default:"36"`
+	Prefix   string
+	Base     BaseEncoding    `default:"36"`
+	Phonetic *PhoneticConfig // nil = no phonetic encoding
 }
 
 // NewConfig returns a Config with sensible defaults applied
@@ -90,10 +91,20 @@ func WithBase(base int) ConfigOption {
 	}
 }
 
+// WithPhonetic sets the phonetic configuration
+func WithPhonetic(phonetic *PhoneticConfig) ConfigOption {
+	return func(c *Config) {
+		c.Phonetic = phonetic
+	}
+}
+
 // Validate checks if the config values are valid
 func (c *Config) Validate() error {
 	if c.BitWidth < 4 || c.BitWidth > 64 {
 		return fmt.Errorf("bit_width must be between 4 and 64, got %d", c.BitWidth)
+
+		// Validate phonetic config if provided
+
 	}
 	if c.Rounds < 3 || c.Rounds > 10 {
 		return fmt.Errorf("rounds must be between 3 and 10, got %d", c.Rounds)
