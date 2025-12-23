@@ -47,9 +47,10 @@ repos:
         types: [go]
         pass_filenames: false
 
+      # pre: go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
       - id: go-doc-generate
         name: generate Go documentation
-        entry: bash -c 'go doc -all ./pkg > docs/API.md 2>/dev/null || (mkdir -p docs && go doc -all ./pkg > docs/API.md)'
+        entry: bash -c 'gomarkdoc ./pkg/... > docs/API.md'
         language: system
         pass_filenames: false
         files: 'pkg/.*\.go$'

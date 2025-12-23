@@ -88,17 +88,16 @@ jobs:
   test:
     name: Matrix Test
     needs: build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
-        # list whatever Terraform versions here you would like to support
-        terraform:
-          - '1.0.5'
-          - '1.11.4'
-          - '1.12.2'
-          - '1.13.5'
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
     steps:
 
     - name: Set up Go
