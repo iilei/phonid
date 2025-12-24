@@ -2,8 +2,27 @@ package phonid
 
 import (
 	"encoding/binary"
+	"fmt"
 	"hash/fnv"
 )
+
+// ShuffleConfig holds Feistel shuffler configuration
+type ShuffleConfig struct {
+	BitWidth int    `default:"32"`
+	Rounds   int    `default:"4"`
+	Seed     uint64 `default:"0"`
+}
+
+// Validate checks if the shuffle config is valid
+func (sc *ShuffleConfig) Validate() error {
+	if sc.BitWidth < 4 || sc.BitWidth > 64 {
+		return fmt.Errorf("bit_width must be between 4 and 64, got %d", sc.BitWidth)
+	}
+	if sc.Rounds < 3 || sc.Rounds > 10 {
+		return fmt.Errorf("rounds must be between 3 and 10, got %d", sc.Rounds)
+	}
+	return nil
+}
 
 // FeistelShuffler provides bijective integer shuffling using Feistel networks
 // Supports configurable number space size and uses standard Go libraries
@@ -19,12 +38,12 @@ type FeistelShuffler struct {
 // bitWidth: total bits (8, 16, 32, 64, etc.)
 // rounds: number of Feistel rounds (3-6 recommended. "0" will preserve linear order)
 // seed: seed value for generating round keys
-func NewFeistelShuffler(bitWidth, rounds int, seed uint64) *FeistelShuffler {
+func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, error) {
 	if bitWidth < 4 || bitWidth > 64 {
-		panic("bitWidth must be between 4 and 64")
+		return nil, fmt.Errorf("bitWidth must be between 4 and 64, got %d", bitWidth)
 	}
-	if rounds > 10 {
-		panic("rounds must be between 0 and 10")
+	if rounds < 0 || rounds > 10 {
+		return nil, fmt.Errorf("rounds must be between 0 and 10, got %d", rounds)
 	}
 
 	halfBits := bitWidth / 2
@@ -35,8 +54,8 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) *FeistelShuffler {
 	h := fnv.New64a()
 	for i := 0; i < rounds; i++ {
 		h.Reset()
-		binary.Write(h, binary.LittleEndian, seed)
-		binary.Write(h, binary.LittleEndian, uint64(i))
+		_ = binary.Write(h, binary.LittleEndian, seed)
+		_ = binary.Write(h, binary.LittleEndian, uint64(i))
 		roundKeys[i] = h.Sum64()
 	}
 
@@ -46,18 +65,18 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) *FeistelShuffler {
 		halfBits:  halfBits,
 		mask:      mask,
 		roundKeys: roundKeys,
-	}
+	}, nil
 }
 
 // Encode performs bijective shuffling of input value
-func (fs *FeistelShuffler) Encode(input uint64) uint64 {
+func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 	// Ensure input fits in our bit width
 	if fs.bitWidth == 64 {
 		// For 64-bit, all uint64 values are valid
 	} else {
 		maxValue := uint64(1) << fs.bitWidth
 		if input >= maxValue {
-			panic("input exceeds bit width")
+			return 0, fmt.Errorf("input %d exceeds bit width %d (max: %d)", input, fs.bitWidth, maxValue-1)
 		}
 	}
 
@@ -77,18 +96,18 @@ func (fs *FeistelShuffler) Encode(input uint64) uint64 {
 	}
 
 	// Combine halves back together
-	return (left << fs.halfBits) | right
+	return (left << fs.halfBits) | right, nil
 }
 
 // Decode performs bijective reverse shuffling (inverse of Encode)
-func (fs *FeistelShuffler) Decode(encoded uint64) uint64 {
+func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 	// Ensure encoded value fits in our bit width
 	if fs.bitWidth == 64 {
 		// For 64-bit, all uint64 values are valid
 	} else {
 		maxValue := uint64(1) << fs.bitWidth
 		if encoded >= maxValue {
-			panic("encoded value exceeds bit width")
+			return 0, fmt.Errorf("encoded value %d exceeds bit width %d (max: %d)", encoded, fs.bitWidth, maxValue-1)
 		}
 	}
 
@@ -108,14 +127,14 @@ func (fs *FeistelShuffler) Decode(encoded uint64) uint64 {
 	}
 
 	// Combine halves back together
-	return (left << fs.halfBits) | right
+	return (left << fs.halfBits) | right, nil
 }
 
 // roundFunction implements the Feistel round function using FNV hash
 func (fs *FeistelShuffler) roundFunction(input, key uint64) uint64 {
 	h := fnv.New64a()
-	binary.Write(h, binary.LittleEndian, input)
-	binary.Write(h, binary.LittleEndian, key)
+	_ = binary.Write(h, binary.LittleEndian, input)
+	_ = binary.Write(h, binary.LittleEndian, key)
 	result := h.Sum64()
 
 	// Mask to half-bit width to ensure proper size

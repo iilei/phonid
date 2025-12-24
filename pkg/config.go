@@ -15,15 +15,12 @@ const (
 
 // Config holds the configuration for phonetic ID generation
 type Config struct {
-	// Feistel shuffler settings
-	BitWidth int    `default:"32"`
-	Rounds   int    `default:"4"`
-	Seed     uint64 `default:"0"`
-
 	// ID format settings
-	Prefix   string
-	Base     BaseEncoding    `default:"36"`
-	Phonetic *PhoneticConfig // nil = no phonetic encoding
+	Base     BaseEncoding  `default:"36"`
+	Phonetic *PhonidConfig // nil = no phonetic encoding
+
+	// Feistel shuffler settings
+	Shuffle *ShuffleConfig `default:"{}"`
 }
 
 // NewConfig returns a Config with sensible defaults applied
@@ -59,28 +56,30 @@ type ConfigOption func(*Config)
 // WithBitWidth sets the bit width
 func WithBitWidth(bitWidth int) ConfigOption {
 	return func(c *Config) {
-		c.BitWidth = bitWidth
+		if c.Shuffle == nil {
+			c.Shuffle = &ShuffleConfig{}
+		}
+		c.Shuffle.BitWidth = bitWidth
 	}
 }
 
 // WithRounds sets the number of Feistel rounds
 func WithRounds(rounds int) ConfigOption {
 	return func(c *Config) {
-		c.Rounds = rounds
+		if c.Shuffle == nil {
+			c.Shuffle = &ShuffleConfig{}
+		}
+		c.Shuffle.Rounds = rounds
 	}
 }
 
 // WithSeed sets the seed value
 func WithSeed(seed uint64) ConfigOption {
 	return func(c *Config) {
-		c.Seed = seed
-	}
-}
-
-// WithPrefix sets the ID prefix
-func WithPrefix(prefix string) ConfigOption {
-	return func(c *Config) {
-		c.Prefix = prefix
+		if c.Shuffle == nil {
+			c.Shuffle = &ShuffleConfig{}
+		}
+		c.Shuffle.Seed = seed
 	}
 }
 
@@ -91,8 +90,15 @@ func WithBase(base int) ConfigOption {
 	}
 }
 
+// WithShuffle sets the shuffle configuration
+func WithShuffle(shuffle *ShuffleConfig) ConfigOption {
+	return func(c *Config) {
+		c.Shuffle = shuffle
+	}
+}
+
 // WithPhonetic sets the phonetic configuration
-func WithPhonetic(phonetic *PhoneticConfig) ConfigOption {
+func WithPhonetic(phonetic *PhonidConfig) ConfigOption {
 	return func(c *Config) {
 		c.Phonetic = phonetic
 	}
@@ -100,17 +106,24 @@ func WithPhonetic(phonetic *PhoneticConfig) ConfigOption {
 
 // Validate checks if the config values are valid
 func (c *Config) Validate() error {
-	if c.BitWidth < 4 || c.BitWidth > 64 {
-		return fmt.Errorf("bit_width must be between 4 and 64, got %d", c.BitWidth)
-
-		// Validate phonetic config if provided
-
+	// Validate shuffle config
+	if c.Shuffle != nil {
+		if err := c.Shuffle.Validate(); err != nil {
+			return fmt.Errorf("shuffle config invalid: %w", err)
+		}
 	}
-	if c.Rounds < 3 || c.Rounds > 10 {
-		return fmt.Errorf("rounds must be between 3 and 10, got %d", c.Rounds)
-	}
+
+	// Validate base encoding
 	if c.Base != Base36 && c.Base != Base62 {
 		return fmt.Errorf("base must be Base36 (36) or Base62 (62), got %d", c.Base)
 	}
+
+	// Validate phonetic config if provided
+	if c.Phonetic != nil {
+		if err := c.Phonetic.Validate(c.Base); err != nil {
+			return fmt.Errorf("phonetic config invalid: %w", err)
+		}
+	}
+
 	return nil
 }
