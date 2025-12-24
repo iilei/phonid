@@ -5,7 +5,7 @@ import (
 )
 
 func TestPhoneticConfigValidate_Defaults(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CLVCV",
 	}
 
@@ -16,7 +16,7 @@ func TestPhoneticConfigValidate_Defaults(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_EmptyPattern(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "",
 	}
 
@@ -42,7 +42,7 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pc := &PhoneticConfig{
+			pc := &PhonidConfig{
 				Pattern: tt.pattern,
 			}
 			err := pc.Validate(Base36)
@@ -54,11 +54,11 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_UndefinedPlaceholder(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "XVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e', 'i'},
-			"C": {'b', 'd', 'k'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e', 'i'},
+			Consonant: {'b', 'd', 'k'},
 		},
 	}
 
@@ -69,11 +69,11 @@ func TestPhoneticConfigValidate_UndefinedPlaceholder(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a'},      // Only 1 vowel, need at least 2
-			"C": {'b', 'd'}, // 2 consonants is OK
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a'},      // Only 1 vowel, need at least 2
+			Consonant: {'b', 'd'}, // 2 consonants is OK
 		},
 	}
 
@@ -84,11 +84,11 @@ func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_DuplicateCharacters(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e', 'a'}, // Duplicate 'a'
-			"C": {'b', 'd', 'k'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e', 'a'}, // Duplicate 'a'
+			Consonant: {'b', 'd', 'k'},
 		},
 	}
 
@@ -99,12 +99,12 @@ func TestPhoneticConfigValidate_DuplicateCharacters(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_OverlappingPlaceholders(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CLVCV",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e', 'i'},
-			"C": {'b', 'd', 'k', 'l'}, // 'l' overlaps with L
-			"L": {'l', 'm', 'n'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e', 'i'},
+			Consonant: {'b', 'd', 'k', 'l'}, // 'l' overlaps with L
+			Liquid:    {'l', 'm', 'n'},
 		},
 	}
 
@@ -115,11 +115,11 @@ func TestPhoneticConfigValidate_OverlappingPlaceholders(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_NoVowelPlaceholder(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CLCCC",
-		Placeholders: map[string][]rune{
-			"C": {'b', 'd', 'k', 't'},
-			"L": {'l', 'm', 'n'},
+		Placeholders: map[PlaceholderType][]rune{
+			Consonant: {'b', 'd', 'k', 't'},
+			Liquid:    {'l', 'm', 'n'},
 		},
 	}
 
@@ -132,11 +132,11 @@ func TestPhoneticConfigValidate_NoVowelPlaceholder(t *testing.T) {
 func TestPhoneticConfigValidate_InsufficientCombinations(t *testing.T) {
 	// With only 2 consonants and 2 vowels in CVCVC pattern:
 	// 2^3 * 2^2 = 8 * 4 = 32 combinations (less than 36 needed for Base36)
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e'},
-			"C": {'b', 'd'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e'},
+			Consonant: {'b', 'd'},
 		},
 	}
 
@@ -149,11 +149,11 @@ func TestPhoneticConfigValidate_InsufficientCombinations(t *testing.T) {
 func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
 	// With 3 consonants and 2 vowels in CVCVC pattern:
 	// 3^3 * 2^2 = 27 * 4 = 108 combinations (more than 36 needed)
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e'},
-			"C": {'b', 'd', 'k'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e'},
+			Consonant: {'b', 'd', 'k'},
 		},
 	}
 
@@ -163,29 +163,14 @@ func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
 	}
 }
 
-func TestPhoneticConfigValidate_CustomPlaceholders(t *testing.T) {
-	pc := &PhoneticConfig{
-		Pattern: "XVXVX",
-		Placeholders: map[string][]rune{
-			"X": {'k', 'g', 'x', 'q'},
-			"V": {'a', 'i', 'u'},
-		},
-	}
-
-	err := pc.Validate(Base36)
-	if err != nil {
-		t.Errorf("expected custom placeholders to work, got error: %v", err)
-	}
-}
-
 func TestPhoneticConfigValidate_UnusedPlaceholders(t *testing.T) {
 	// Should not validate unused placeholders
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e', 'i'},
-			"C": {'b', 'd', 'k'},
-			"X": {'z'}, // Only 1 char but not used in pattern - should be OK
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e', 'i'},
+			Consonant: {'b', 'd', 'k'},
+			Liquid:    {'z'}, // Only 1 char but not used in pattern - should be OK
 		},
 	}
 
@@ -196,12 +181,12 @@ func TestPhoneticConfigValidate_UnusedPlaceholders(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_LiquidsPattern(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CLVCLVC",
-		Placeholders: map[string][]rune{
-			"C": {'b', 'd', 'k', 't'},
-			"L": {'l', 'r'},
-			"V": {'a', 'e', 'i'},
+		Placeholders: map[PlaceholderType][]rune{
+			Consonant: {'b', 'd', 'k', 't'},
+			Liquid:    {'l', 'r'},
+			Vowel:     {'a', 'e', 'i'},
 		},
 	}
 
@@ -334,11 +319,11 @@ func TestIsVowelBase(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_VowelsWithDiacritics(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'\u00E4', '\u00F6', '\u00FC'}, // German umlauts (a-umlaut, o-umlaut, u-umlaut)
-			"C": {'b', 'd', 'k'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'\u00E4', '\u00F6', '\u00FC'}, // German umlauts (a-umlaut, o-umlaut, u-umlaut)
+			Consonant: {'b', 'd', 'k'},
 		},
 	}
 
@@ -349,11 +334,11 @@ func TestPhoneticConfigValidate_VowelsWithDiacritics(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_MixedVowels(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', '\u00E9', '\u00F6'}, // Mix of plain and diacritics (a, e-acute, o-umlaut)
-			"C": {'b', 'd', 'k'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', '\u00E9', '\u00F6'}, // Mix of plain and diacritics (a, e-acute, o-umlaut)
+			Consonant: {'b', 'd', 'k'},
 		},
 	}
 
@@ -364,11 +349,11 @@ func TestPhoneticConfigValidate_MixedVowels(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_InvalidVowelWithDiacritic(t *testing.T) {
-	pc := &PhoneticConfig{
+	pc := &PhonidConfig{
 		Pattern: "CVCVC",
-		Placeholders: map[string][]rune{
-			"V": {'a', 'e', '\u00F1'}, // n-tilde is not a vowel
-			"C": {'b', 'd', 'k'},
+		Placeholders: map[PlaceholderType][]rune{
+			Vowel:     {'a', 'e', '\u00F1'}, // n-tilde is not a vowel
+			Consonant: {'b', 'd', 'k'},
 		},
 	}
 
