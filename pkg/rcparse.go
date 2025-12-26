@@ -10,8 +10,8 @@ import (
 
 // TOMLPhonidConfig represents the TOML file structure with strict validation
 type TOMLPhonidConfig struct {
-	Pattern      string              `toml:"pattern"`
-	Placeholders map[string][]string `toml:"placeholders,omitempty"`
+	Pattern      string            `toml:"pattern"`
+	Placeholders map[string]string `toml:"placeholders,omitempty"` // Now accepts simple strings like "aeiou"
 }
 
 // LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file
@@ -44,7 +44,7 @@ func ParsePhonidRC(content string) (*PhonidConfig, error) {
 
 	// Convert string-based placeholders to PlaceholderType-based
 	if tomlConfig.Placeholders != nil {
-		config.Placeholders = make(map[PlaceholderType][]rune)
+		config.Placeholders = make(map[PlaceholderType]RuneSet)
 
 		for keyStr, stringChars := range tomlConfig.Placeholders {
 			// Validate placeholder key - convert to runes first for proper UTF-8 handling
@@ -61,18 +61,8 @@ func ParsePhonidRC(content string) (*PhonidConfig, error) {
 					placeholderType, getValidPlaceholderKeys())
 			}
 
-			// Convert string characters to runes
-			runeChars := make([]rune, 0, len(stringChars))
-			for _, s := range stringChars {
-				// Convert each character string to rune
-				runes := []rune(s)
-				if len(runes) != 1 {
-					return nil, fmt.Errorf("character '%s' in placeholder '%c' must be single character", s, placeholderType)
-				}
-				runeChars = append(runeChars, runes[0])
-			}
-
-			config.Placeholders[placeholderType] = runeChars
+			// Convert string to RuneSet (simple conversion)
+			config.Placeholders[placeholderType] = RuneSet(stringChars)
 		}
 	} else {
 		// Use defaults if no placeholders specified

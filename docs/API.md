@@ -42,6 +42,8 @@ import "github.com/iilei/phonid/pkg"
   - [func \(pc \*PhonidConfig\) Validate\(base BaseEncoding\) error](<#PhonidConfig.Validate>)
 - [type PlaceholderType](<#PlaceholderType>)
 - [type Position](<#Position>)
+- [type RuneSet](<#RuneSet>)
+  - [func \(rs \*RuneSet\) UnmarshalText\(text \[\]byte\) error](<#RuneSet.UnmarshalText>)
 - [type ShuffleConfig](<#ShuffleConfig>)
   - [func \(sc \*ShuffleConfig\) Validate\(\) error](<#ShuffleConfig.Validate>)
 - [type TOMLPhonidConfig](<#TOMLPhonidConfig>)
@@ -90,15 +92,15 @@ var AllowedVowels = map[rune]bool{
 <a name="DefaultPlaceholders"></a>DefaultPlaceholders provides sensible defaults for common phonetic categories
 
 ```go
-var DefaultPlaceholders = map[PlaceholderType][]rune{
-    Consonant: {'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'p', 'q', 's', 't', 'v', 'w', 'x', 'z'},
-    Liquid:    {'l', 'm', 'n', 'r'},
-    Vowel:     {'a', 'e', 'i', 'o', 'u'},
+var DefaultPlaceholders = map[PlaceholderType]RuneSet{
+    Consonant: RuneSet("bcdfghjkpqstvwxz"),
+    Liquid:    RuneSet("lmnr"),
+    Vowel:     RuneSet("aeiou"),
 }
 ```
 
 <a name="ValidatePhonidRC"></a>
-## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L85>)
+## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L75>)
 
 ```go
 func ValidatePhonidRC(config *PhonidConfig, base BaseEncoding) error
@@ -343,19 +345,19 @@ func (e *PhoneticEncoder) MaxValue() uint64
 MaxValue returns the maximum number that can be encoded
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L58-L61>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L68-L71>)
 
 PhonidConfig holds phonetic pattern configuration
 
 ```go
 type PhonidConfig struct {
-    Pattern      string                     `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
-    Placeholders map[PlaceholderType][]rune // Maps placeholder to character set, e.g., {"C": [b,d,k], "V": [a,e]}
+    Pattern      string                      `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
+    Placeholders map[PlaceholderType]RuneSet // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
 }
 ```
 
 <a name="LoadAndValidatePhonidRC"></a>
-### func [LoadAndValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L94>)
+### func [LoadAndValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L84>)
 
 ```go
 func LoadAndValidatePhonidRC(filepath string, base BaseEncoding) (*PhonidConfig, error)
@@ -382,7 +384,7 @@ func ParsePhonidRC(content string) (*PhonidConfig, error)
 ParsePhonidRC parses TOML content into a validated PhonidConfig using strict mode
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L64>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L74>)
 
 ```go
 func (pc *PhonidConfig) Validate(base BaseEncoding) error
@@ -423,6 +425,24 @@ type Position struct {
 }
 ```
 
+<a name="RuneSet"></a>
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L50>)
+
+RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
+
+```go
+type RuneSet []rune
+```
+
+<a name="RuneSet.UnmarshalText"></a>
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L53>)
+
+```go
+func (rs *RuneSet) UnmarshalText(text []byte) error
+```
+
+UnmarshalText implements encoding.TextUnmarshaler for TOML/JSON unmarshaling.
+
 <a name="ShuffleConfig"></a>
 ## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L10-L14>)
 
@@ -452,8 +472,8 @@ TOMLPhonidConfig represents the TOML file structure with strict validation
 
 ```go
 type TOMLPhonidConfig struct {
-    Pattern      string              `toml:"pattern"`
-    Placeholders map[string][]string `toml:"placeholders,omitempty"`
+    Pattern      string            `toml:"pattern"`
+    Placeholders map[string]string `toml:"placeholders,omitempty"` // Now accepts simple strings like "aeiou"
 }
 ```
 

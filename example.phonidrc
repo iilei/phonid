@@ -1,0 +1,24 @@
+# Phonid Configuration Example
+# Now with simple string-based placeholders for better usability!
+
+pattern = "CLVCV"
+
+[placeholders]
+# Simple strings instead of arrays - much more readable!
+C = "bcdfghjkpqstvwxz"  # Consonants
+L = "lmnr"              # Liquids
+V = "aeiou"             # Vowels
+
+# Example with diacritics (German)
+# V = "aeiouäöü"
+
+# Example with Unicode escape sequences for IPA symbols
+# These are especially useful for special phonetic symbols:
+# S = "\u0283\u0292"   # ʃʒ - Sibilants (sh, zh sounds)
+# F = "\u03B8\u00F0"   # θð - Fricatives (voiceless th, voiced th)
+# N = "\u014B"         # ŋ - Nasals (ng sound)
+
+# You can also type them directly if your editor supports it:
+# S = "ʃʒ"
+# F = "θð"
+# N = "ŋ"
