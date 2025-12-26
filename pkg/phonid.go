@@ -45,19 +45,29 @@ var AllowedPlaceholders = map[PlaceholderType]string{
 	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
 }
 
+// RuneSet is a slice of runes that can be unmarshaled from a string.
+// This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
+type RuneSet []rune
+
+// UnmarshalText implements encoding.TextUnmarshaler for TOML/JSON unmarshaling.
+func (rs *RuneSet) UnmarshalText(text []byte) error {
+	*rs = []rune(string(text))
+	return nil
+}
+
 // DefaultPlaceholders provides sensible defaults for common phonetic categories
-var DefaultPlaceholders = map[PlaceholderType][]rune{
-	Consonant: {'b', 'c', 'd', 'f', 'g', 'h', 'j', 'k', 'p', 'q', 's', 't', 'v', 'w', 'x', 'z'},
-	Liquid:    {'l', 'm', 'n', 'r'},
-	Vowel:     {'a', 'e', 'i', 'o', 'u'},
+var DefaultPlaceholders = map[PlaceholderType]RuneSet{
+	Consonant: RuneSet("bcdfghjkpqstvwxz"),
+	Liquid:    RuneSet("lmnr"),
+	Vowel:     RuneSet("aeiou"),
 	// Note: Sibilant, Fricative, and Nasal can be customized by users
 	// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
 }
 
 // PhonidConfig holds phonetic pattern configuration
 type PhonidConfig struct {
-	Pattern      string                     `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
-	Placeholders map[PlaceholderType][]rune // Maps placeholder to character set, e.g., {"C": [b,d,k], "V": [a,e]}
+	Pattern      string                      `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
+	Placeholders map[PlaceholderType]RuneSet // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
 }
 
 // Validate checks if the phonetic config is valid
