@@ -10,8 +10,9 @@ import (
 
 // TOMLPhonidConfig represents the TOML file structure with strict validation
 type TOMLPhonidConfig struct {
-	Patterns     []string          `toml:"patterns"`
-	Placeholders map[string]string `toml:"placeholders,omitempty"`
+	Patterns     []string            `toml:"patterns,omitempty"`
+	Placeholders map[string]string   `toml:"placeholders,omitempty"`
+	Preflight    []map[string]string `toml:"preflight"`
 }
 
 // LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file

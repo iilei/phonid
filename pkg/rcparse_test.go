@@ -4,30 +4,29 @@ import (
 	"testing"
 )
 
-// Note: Sibilant, Fricative, and Nasal can be customized by users
-// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
-func TestParsePhonidRCEscapeChars(t *testing.T) {
-	config := `
+var config = `
+base = 36
 
-patterns = [
-"CVC",
-"CVCVC",
-"CVCVCVC",
-"CVCVCVCVCVC"
-]
+[shuffle]
+bit_width = 32
+rounds    = 0
+seed      = 0
 
-[placeholders]
+[phonetic]
+patterns = ["CVC", "CVCVC", "CVCVCVC", "CVCVCVCVCVC"]
+
+[phonetic.placeholders]
 C = "bcdfghjkpqstvwxz"
 L = "lmnr"
 V = "aeiou"
-# TOML supports Unicode escape sequences - useful for IPA symbols!
-S = "\u0283\u0292"  # ʃʒ (sh, zh sounds)
-F = "\u03B8\u00F0"  # θð (th sounds: voiceless, voiced)
+# # TOML supports Unicode escape sequences - useful for IPA symbols!
+S = "\u0283\u0292" # ʃʒ (sh, zh sounds)
+F = "\u03B8\u00F0" # θð (th sounds: voiceless, voiced)
 
-# Output of 'phonid preflight --suggest'
-# Capacity per word: 62,500 combinations (0-62,499)
-#
-# Suggested preflight checks:
+# # Output of 'phonid preflight --suggest'
+# # Capacity per word: 62,500 combinations (0-62,499)
+# #
+# # Suggested preflight checks:
 #
 # [[preflight]]
 # input = 0           # Lower boundary
@@ -50,6 +49,9 @@ F = "\u03B8\u00F0"  # θð (th sounds: voiceless, voiced)
 # expect = "bavab babab"
 `
 
+// Note: Sibilant, Fricative, and Nasal can be customized by users
+// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
+func TestParsePhonidRCEscapeChars(t *testing.T) {
 	got, err := ParsePhonidRC(config)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
