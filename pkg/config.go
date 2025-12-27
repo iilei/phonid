@@ -6,17 +6,9 @@ import (
 	"github.com/creasty/defaults"
 )
 
-type BaseEncoding int
-
-const (
-	Base36 BaseEncoding = 36 // case-insensitive (0-9, a-z)
-	Base62 BaseEncoding = 62 // case-sensitive (0-9, a-z, A-Z)
-)
-
 // Config holds the configuration for phonetic ID generation
 type Config struct {
 	// ID format settings
-	Base     BaseEncoding  `default:"36"`
 	Phonetic *PhonidConfig // nil = no phonetic encoding
 
 	// Feistel shuffler settings
@@ -83,13 +75,6 @@ func WithSeed(seed uint64) ConfigOption {
 	}
 }
 
-// WithBase sets the base encoding (36 or 62)
-func WithBase(base int) ConfigOption {
-	return func(c *Config) {
-		c.Base = BaseEncoding(base)
-	}
-}
-
 // WithShuffle sets the shuffle configuration
 func WithShuffle(shuffle *ShuffleConfig) ConfigOption {
 	return func(c *Config) {
@@ -113,14 +98,9 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// Validate base encoding
-	if c.Base != Base36 && c.Base != Base62 {
-		return fmt.Errorf("base must be Base36 (36) or Base62 (62), got %d", c.Base)
-	}
-
 	// Validate phonetic config if provided
 	if c.Phonetic != nil {
-		if err := c.Phonetic.Validate(c.Base); err != nil {
+		if err := c.Phonetic.Validate(); err != nil {
 			return fmt.Errorf("phonetic config invalid: %w", err)
 		}
 	}

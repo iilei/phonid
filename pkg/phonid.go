@@ -3,6 +3,7 @@ package phonid
 import (
 	"fmt"
 	"math"
+	"strings"
 	"unicode"
 
 	"golang.org/x/text/unicode/norm"
@@ -10,7 +11,8 @@ import (
 
 // Minimum requirements per placeholder type
 const (
-	MinCharsPerPlaceholder = 2
+	MinCharsForVowel      = 2
+	MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
 )
 
 // AllowedVowels defines the permitted vowel characters
@@ -20,29 +22,37 @@ var AllowedVowels = map[rune]bool{
 }
 
 // AllowedPatternLengths defines the permitted pattern lengths
-var AllowedPatternLengths = []int{5, 7, 11}
+var AllowedPatternLengths = []int{3, 5, 7, 11}
 
 // PlaceholderType represents a valid phonetic placeholder identifier
 type PlaceholderType rune
+type PlaceholderMap map[PlaceholderType]RuneSet
 
 // Valid placeholder types
+// Custom* ~> User-defined category to allow more freedom of expression
 const (
 	Consonant PlaceholderType = 'C'
-	Liquid    PlaceholderType = 'L'
 	Vowel     PlaceholderType = 'V'
+	Liquid    PlaceholderType = 'L'
+	Nasal     PlaceholderType = 'N'
 	Sibilant  PlaceholderType = 'S'
 	Fricative PlaceholderType = 'F'
-	Nasal     PlaceholderType = 'N'
+	Custom7   PlaceholderType = '7'
+	Custom8   PlaceholderType = '8'
+	Custom9   PlaceholderType = '9'
 )
 
 // AllowedPlaceholders defines the valid placeholder identifiers
 var AllowedPlaceholders = map[PlaceholderType]string{
 	Consonant: "Consonant", // Hard consonants: b,c,d,f,g,h,j,k,p,q,s,t,v,w,x,z
-	Liquid:    "Liquid",    // Liquid consonants: l,m,n,r
 	Vowel:     "Vowel",     // Pure vowels: a,e,i,o,u
+	Liquid:    "Liquid",    // Liquid consonants: l,m,n,r
+	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
 	Sibilant:  "Sibilant",  // Hissing sounds: s,z (or use IPA: ʃ,ʒ for sh,zh)
 	Fricative: "Fricative", // Friction sounds: f,v (or use IPA: θ,ð for th,dh)
-	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
+	Custom7:   "Custom 1",  // Example PlaceholderMap {... "1":"t", "2":"z" } ~> "12" ~> "tz"
+	Custom8:   "Custom 2",
+	Custom9:   "Custom 3",
 }
 
 // RuneSet is a slice of runes that can be unmarshaled from a string.
@@ -64,32 +74,33 @@ var DefaultPlaceholders = map[PlaceholderType]RuneSet{
 	// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
 }
 
-// PhonidConfig holds phonetic pattern configuration
-type PhonidConfig struct {
-	Pattern      string                      `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
-	Placeholders map[PlaceholderType]RuneSet // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
+var DefaultPatterns = []string{
+	"CVC",
+	"VCCVC",
+	"CVCVCVC",
+	"CVCVCVCVCVC",
 }
 
-// Validate checks if the phonetic config is valid
-func (pc *PhonidConfig) Validate(base BaseEncoding) error {
-	pattern := pc.Pattern
-	if pattern == "" {
-		return fmt.Errorf("pattern cannot be empty")
-	}
+// ComplementPlaceholders lists all non-vowel phonetic categories
+var ComplementPlaceholders = []PlaceholderType{
+	Consonant,
+	Liquid,
+	Nasal,
+	Sibilant,
+	Fricative,
+}
 
-	// Validate pattern format
-	if !isAllowedLength(len(pattern)) {
-		return fmt.Errorf("pattern length %d is not allowed (must be one of %v)", len(pattern), AllowedPatternLengths)
-	}
+// PhonidConfig holds phonetic pattern configuration
+type PhonidConfig struct {
+	Patterns     []string       // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
+	Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
+}
 
-	// Use defaults if placeholders not provided
-	placeholders := pc.Placeholders
-	if placeholders == nil {
-		placeholders = DefaultPlaceholders
-	}
-
+func validatePattern(pattern string, placeholders PlaceholderMap) error {
 	// Count occurrences of each placeholder in pattern
 	placeholderCounts := make(map[PlaceholderType]int) // Change key type
+	hasMinimalComplement := false
+
 	for _, r := range pattern {
 		placeholder := PlaceholderType(r) // Convert rune to PlaceholderType
 		if _, exists := placeholders[placeholder]; !exists {
@@ -105,9 +116,15 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 			continue
 		}
 
-		if len(chars) < MinCharsPerPlaceholder {
-			return fmt.Errorf("placeholder '%c' needs at least %d characters, got %d",
-				placeholder, MinCharsPerPlaceholder, len(chars))
+		// Check if this is a complement (non-vowel) phonetic category
+		if isComplementPlaceholder(placeholder) && len(chars) >= MinCharsForComplement {
+			hasMinimalComplement = true
+		}
+
+		// Vowel must always meet minimum pronouncability and information density requirements
+		if placeholder == Vowel && len(chars) < MinCharsForVowel {
+			return fmt.Errorf("vowel placeholder needs at least %d characters, got %d",
+				MinCharsForVowel, len(chars))
 		}
 
 		if hasDuplicates(chars) {
@@ -116,6 +133,7 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 
 		// Special validation for vowel placeholder
 		if placeholder == Vowel {
+
 			if len(chars) == 0 {
 				return fmt.Errorf("vowel placeholder '%c' must have at least one character", placeholder)
 			}
@@ -123,21 +141,6 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 				if !isVowelBase(char) {
 					return fmt.Errorf("vowel placeholder '%c' contains invalid vowel '%c' (allowed: a,e,i,o,u,y and their diacritical variants)", placeholder, char)
 				}
-			}
-		}
-	}
-
-	// Check for overlaps between all placeholder character sets
-	allPlaceholders := make([]PlaceholderType, 0, len(placeholderCounts))
-	for p := range placeholderCounts {
-		allPlaceholders = append(allPlaceholders, p)
-	}
-
-	for i := 0; i < len(allPlaceholders); i++ {
-		for j := i + 1; j < len(allPlaceholders); j++ {
-			p1, p2 := allPlaceholders[i], allPlaceholders[j]
-			if hasOverlap(placeholders[p1], placeholders[p2]) {
-				return fmt.Errorf("placeholders '%c' and '%c' have overlapping characters", p1, p2)
 			}
 		}
 	}
@@ -154,6 +157,32 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 		return fmt.Errorf("pattern must contain at least one vowel placeholder ('%c': %s)", Vowel, AllowedPlaceholders[Vowel])
 	}
 
+	// Require at least one complement category with sufficient variety
+	if !hasMinimalComplement {
+		complementNames := make([]string, len(ComplementPlaceholders))
+		for i, complement := range ComplementPlaceholders {
+			complementNames[i] = string(complement)
+		}
+		return fmt.Errorf("pattern must use at least one complement placeholder (%s) with at least %d characters",
+			strings.Join(complementNames, ", "), MinCharsForComplement)
+	}
+
+	// Check for overlaps between all placeholder character sets
+	allPlaceholders := make([]PlaceholderType, 0, len(placeholderCounts))
+	for p := range placeholderCounts {
+		allPlaceholders = append(allPlaceholders, p)
+	}
+
+	// Compare each unique pair (triangular matrix pattern: inner loop starts one step ahead)
+	for i := 0; i < len(allPlaceholders); i++ {
+		for j := i + 1; j < len(allPlaceholders); j++ {
+			p1, p2 := allPlaceholders[i], allPlaceholders[j]
+			if hasOverlap(placeholders[p1], placeholders[p2]) {
+				return fmt.Errorf("placeholders '%c' and '%c' have overlapping characters", p1, p2)
+			}
+		}
+	}
+
 	// Calculate total combinations
 	combinations := 1
 	for placeholder, count := range placeholderCounts {
@@ -161,12 +190,50 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 		combinations *= int(math.Pow(float64(len(chars)), float64(count)))
 	}
 
-	if combinations < int(base) {
-		return fmt.Errorf("pattern '%s' produces only %d combinations (need at least %d for base %d)",
-			pattern, combinations, base, base)
+	return nil
+}
+
+// Validate checks if the phonetic config is valid
+func (pc *PhonidConfig) Validate() error {
+	// Apply defaults if not provided
+	if len(pc.Patterns) == 0 {
+		pc.Patterns = DefaultPatterns
+	}
+	if len(pc.Placeholders) == 0 {
+		pc.Placeholders = DefaultPlaceholders
+	}
+
+	patterns := pc.Patterns
+	patternLengths := make(map[int]struct{})
+
+	// ensure lengths allow 1:1 mapping with patterns
+	for _, p := range patterns {
+		patternLen := len(p)
+		if _, exists := patternLengths[patternLen]; exists {
+			return fmt.Errorf("duplicate pattern length %d found", patternLen)
+		}
+		if !isAllowedLength(patternLen) {
+			return fmt.Errorf("pattern length %d is not allowed (must be one of %v)", patternLen, AllowedPatternLengths)
+		}
+
+		// Validate individual pattern
+		if err := validatePattern(p, pc.Placeholders); err != nil {
+			return fmt.Errorf("pattern '%s': %w", p, err)
+		}
+		patternLengths[patternLen] = struct{}{}
 	}
 
 	return nil
+}
+
+// isComplementPlaceholder checks if a placeholder is a non-vowel phonetic category
+func isComplementPlaceholder(p PlaceholderType) bool {
+	for _, complement := range ComplementPlaceholders {
+		if p == complement {
+			return true
+		}
+	}
+	return false
 }
 
 // hasDuplicates checks if a rune slice contains duplicates

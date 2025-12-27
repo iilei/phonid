@@ -1,32 +1,69 @@
 package phonid
 
 import (
+	"slices"
 	"testing"
 )
+
+var config = `
+base = 36
+
+[shuffle]
+bit_width = 32
+rounds    = 0
+seed      = 0
+
+[phonetic]
+patterns = ["CVC", "CVCVC", "CVCVCVC", "CVCVCVCVCVC"]
+
+[phonetic.placeholders]
+C = "bcdfghjkpqstvwxz"
+L = "lmnr"
+V = "aeiou"
+# # TOML supports Unicode escape sequences - useful for IPA symbols!
+S = "\u0283\u0292" # ʃʒ (sh, zh sounds)
+F = "\u03B8\u00F0" # θð (th sounds: voiceless, voiced)
+
+# # Output of 'phonid preflight --suggest'
+# # Capacity per word: 62_500 combinations (0-62_499)
+# #
+# # Suggested preflight checks:
+#
+# [[preflight]]
+# input = 0            # Lower boundary
+# expect = "babab"
+#
+# [[preflight]]
+# input = 31_249       # Mid-range (single word)
+# expect = "kuduk"
+#
+# [[preflight]]
+# input = 62_499       # Upper boundary (single word)
+# expect = "zuzuz"
+#
+# [[preflight]]
+# input = 62_500       # Multi-word encoding begins
+# expect = "babab cabab"
+#
+# [[preflight]]
+# input = 624_999      # Larger multi-word example
+# expect = "bavab babab"
+`
 
 // Note: Sibilant, Fricative, and Nasal can be customized by users
 // to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
 func TestParsePhonidRCEscapeChars(t *testing.T) {
-	config := `
-pattern = "CLVCV"
-
-[placeholders]
-C = "bcdfghjkpqstvwxz"
-L = "lmnr"
-V = "aeiou"
-# TOML supports Unicode escape sequences - useful for IPA symbols!
-S = "\u0283\u0292"  # ʃʒ (sh, zh sounds)
-F = "\u03B8\u00F0"  # θð (th sounds: voiceless, voiced)
-`
-
-	got, err := ParsePhonidRC(config)
+	got, _, err := ParsePhonidRCLenient(config)
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 		return
 	}
 
-	if got.Pattern != "CLVCV" {
-		t.Errorf("Pattern = %v, want CLVCV", got.Pattern)
+	// ...existing code...
+	want := []string{"CVC", "CVCVC", "CVCVCVC", "CVCVCVCVCVC"}
+
+	if !slices.Equal(got.Patterns, want) {
+		t.Errorf("Pattern = %v, want %v", got.Patterns, want)
 	}
 
 	// Check placeholders were parsed correctly
@@ -40,10 +77,10 @@ F = "\u03B8\u00F0"  # θð (th sounds: voiceless, voiced)
 		t.Errorf("Vowel = %v, want aeiou", string(got.Placeholders[Vowel]))
 	}
 	// Check Unicode escapes were properly decoded
-	if string(got.Placeholders[Sibilant]) != "ʃʒ" {
-		t.Errorf("Sibilant = %v, want ʃʒ", string(got.Placeholders[Sibilant]))
+	if string(got.Placeholders[Sibilant]) != "\u0283\u0292" {
+		t.Errorf("Sibilant = %v, want \u0283\u0292", string(got.Placeholders[Sibilant]))
 	}
-	if string(got.Placeholders[Fricative]) != "θð" {
-		t.Errorf("Fricative = %v, want θð", string(got.Placeholders[Fricative]))
+	if string(got.Placeholders[Fricative]) != "\u03B8\u00F0" {
+		t.Errorf("Fricative = %v, want \u03B8\u00F0", string(got.Placeholders[Fricative]))
 	}
 }

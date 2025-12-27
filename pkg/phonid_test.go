@@ -6,10 +6,10 @@ import (
 
 func TestPhoneticConfigValidate_Defaults(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CLVCV",
+		Patterns: []string{"CLVCV"},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err != nil {
 		t.Errorf("expected default config to be valid, got error: %v", err)
 	}
@@ -17,10 +17,10 @@ func TestPhoneticConfigValidate_Defaults(t *testing.T) {
 
 func TestPhoneticConfigValidate_EmptyPattern(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "",
+		Patterns: []string{""},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for empty pattern")
 	}
@@ -32,10 +32,8 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 		pattern string
 		wantErr bool
 	}{
-		{"length 3", "CVC", true},
 		{"length 5", "CVCVC", false},
 		{"length 6", "CVVCVC", true},
-		{"length 7", "CVCLVCV", false},
 		{"length 11", "CVCVCVCVCVC", false},
 		{"length 12", "CVCVCVCVCVCV", true},
 	}
@@ -43,9 +41,9 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := &PhonidConfig{
-				Pattern: tt.pattern,
+				Patterns: []string{tt.pattern},
 			}
-			err := pc.Validate(Base36)
+			err := pc.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("pattern %s: wantErr=%v, got error=%v", tt.pattern, tt.wantErr, err)
 			}
@@ -55,14 +53,14 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 
 func TestPhoneticConfigValidate_UndefinedPlaceholder(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "XVCVC",
+		Patterns: []string{"XVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdk"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for undefined placeholder 'X'")
 	}
@@ -70,14 +68,14 @@ func TestPhoneticConfigValidate_UndefinedPlaceholder(t *testing.T) {
 
 func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("a"),  // Only 1 vowel, need at least 2
 			Consonant: RuneSet("bd"), // 2 consonants is OK
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for insufficient vowels")
 	}
@@ -85,14 +83,14 @@ func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
 
 func TestPhoneticConfigValidate_DuplicateCharacters(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aea"), // Duplicate 'a'
 			Consonant: RuneSet("bdk"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for duplicate characters in placeholder")
 	}
@@ -100,7 +98,7 @@ func TestPhoneticConfigValidate_DuplicateCharacters(t *testing.T) {
 
 func TestPhoneticConfigValidate_OverlappingPlaceholders(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CLVCV",
+		Patterns: []string{"CLVCV"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdkl"), // 'l' overlaps with L
@@ -108,7 +106,7 @@ func TestPhoneticConfigValidate_OverlappingPlaceholders(t *testing.T) {
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for overlapping placeholders")
 	}
@@ -116,31 +114,29 @@ func TestPhoneticConfigValidate_OverlappingPlaceholders(t *testing.T) {
 
 func TestPhoneticConfigValidate_NoVowelPlaceholder(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CLCCC",
+		Patterns: []string{"CLCCC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Consonant: RuneSet("bdkt"),
 			Liquid:    RuneSet("lmn"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for pattern with no vowel placeholder")
 	}
 }
 
 func TestPhoneticConfigValidate_InsufficientCombinations(t *testing.T) {
-	// With only 2 consonants and 2 vowels in CVCVC pattern:
-	// 2^3 * 2^2 = 8 * 4 = 32 combinations (less than 36 needed for Base36)
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("ae"),
 			Consonant: RuneSet("bd"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for insufficient combinations")
 	}
@@ -150,14 +146,14 @@ func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
 	// With 3 consonants and 2 vowels in CVCVC pattern:
 	// 3^3 * 2^2 = 27 * 4 = 108 combinations (more than 36 needed)
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("ae"),
 			Consonant: RuneSet("bdk"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err != nil {
 		t.Errorf("expected valid config, got error: %v", err)
 	}
@@ -166,7 +162,7 @@ func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
 func TestPhoneticConfigValidate_UnusedPlaceholders(t *testing.T) {
 	// Should not validate unused placeholders
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdk"),
@@ -174,15 +170,32 @@ func TestPhoneticConfigValidate_UnusedPlaceholders(t *testing.T) {
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err != nil {
 		t.Errorf("expected unused placeholders to be ignored, got error: %v", err)
 	}
 }
 
+func TestPhoneticConfigValidate_MisconfiguredComplement(t *testing.T) {
+	// Should not validate unused placeholders
+	pc := &PhonidConfig{
+		Patterns: []string{"VCVCV"},
+		Placeholders: map[PlaceholderType]RuneSet{
+			Vowel:     RuneSet("aei"),
+			Consonant: RuneSet("b"),
+			Fricative: RuneSet("fgt"), // minimum length but no pattern hit
+		},
+	}
+
+	err := pc.Validate()
+	if err == nil {
+		t.Error("expected error for misconfigured complement")
+	}
+}
+
 func TestPhoneticConfigValidate_LiquidsPattern(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CLVCLVC",
+		Patterns: []string{"CLVCLVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Consonant: RuneSet("bdkt"),
 			Liquid:    RuneSet("lr"),
@@ -190,7 +203,7 @@ func TestPhoneticConfigValidate_LiquidsPattern(t *testing.T) {
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err != nil {
 		t.Errorf("expected liquids pattern to work, got error: %v", err)
 	}
@@ -237,29 +250,6 @@ func TestHasOverlap(t *testing.T) {
 			got := hasOverlap(tt.a, tt.b)
 			if got != tt.want {
 				t.Errorf("hasOverlap(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestIsAllowedLength(t *testing.T) {
-	tests := []struct {
-		length int
-		want   bool
-	}{
-		{3, false},
-		{5, true},
-		{6, false},
-		{7, true},
-		{11, true},
-		{12, false},
-	}
-
-	for _, tt := range tests {
-		t.Run("", func(t *testing.T) {
-			got := isAllowedLength(tt.length)
-			if got != tt.want {
-				t.Errorf("isAllowedLength(%d) = %v, want %v", tt.length, got, tt.want)
 			}
 		})
 	}
@@ -320,14 +310,14 @@ func TestIsVowelBase(t *testing.T) {
 
 func TestPhoneticConfigValidate_VowelsWithDiacritics(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("äöü"), // German umlauts (a-umlaut, o-umlaut, u-umlaut)
 			Consonant: RuneSet("bdk"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err != nil {
 		t.Errorf("expected vowels with diacritics to be valid, got error: %v", err)
 	}
@@ -335,14 +325,14 @@ func TestPhoneticConfigValidate_VowelsWithDiacritics(t *testing.T) {
 
 func TestPhoneticConfigValidate_MixedVowels(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aéö"), // Mix of plain and diacritics (a, e-acute, o-umlaut)
 			Consonant: RuneSet("bdk"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err != nil {
 		t.Errorf("expected mixed vowels to be valid, got error: %v", err)
 	}
@@ -350,14 +340,14 @@ func TestPhoneticConfigValidate_MixedVowels(t *testing.T) {
 
 func TestPhoneticConfigValidate_InvalidVowelWithDiacritic(t *testing.T) {
 	pc := &PhonidConfig{
-		Pattern: "CVCVC",
+		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aeñ"), // n-tilde is not a vowel
 			Consonant: RuneSet("bdk"),
 		},
 	}
 
-	err := pc.Validate(Base36)
+	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for invalid vowel 'n-tilde'")
 	}

@@ -7,11 +7,16 @@ import (
 
 // PhoneticEncoder handles encoding/decoding between numbers and phonetic words
 type PhoneticEncoder struct {
-	config *PhonidConfig
+	config   *PhonidConfig
+	patterns []*PatternEncoder // ordered by totalCombinations ascending
+}
 
-	// Derived from config for fast encoding/decoding
+// PatternEncoder represents a single pattern configuration
+type PatternEncoder struct {
+	pattern           string
 	positions         []Position
-	totalCombinations uint64
+	totalCombinations PositiveInt
+	length            int // Number of positions/characters in the pattern
 }
 
 // Position represents one character position in the pattern
@@ -21,56 +26,130 @@ type Position struct {
 	base        int
 }
 
-// NewPhoneticEncoder creates an encoder for the given config
+// NewPhoneticEncoder creates an encoder with a validated config
 func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
-	if config == nil {
-		return nil, fmt.Errorf("config cannot be nil")
+	// Validate first
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
 	}
 
-	// Config should already be validated with proper defaults
-	placeholders := config.Placeholders
+	return newPhoneticEncoder(config)
+}
 
-	// Build position array
-	positions := make([]Position, len(config.Pattern))
-	totalCombinations := uint64(1)
+// buildPatternEncoder creates a PatternEncoder from a pattern string and placeholders
+func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternEncoder, error) {
+	if pattern == "" {
+		return nil, fmt.Errorf("pattern cannot be empty")
+	}
 
-	for i, r := range config.Pattern {
-		placeholder := PlaceholderType(r) // Convert rune to PlaceholderType
-		chars, exists := placeholders[placeholder]
+	positions := make([]Position, 0, len(pattern))
+	totalCombinations := 1
+
+	// Parse each character in the pattern
+	for i, char := range pattern {
+		placeholderType := PlaceholderType(char)
+
+		// Look up the character set for this placeholder
+		chars, exists := placeholders[placeholderType]
 		if !exists {
-			return nil, fmt.Errorf("no character set for placeholder '%c'", r)
+			return nil, fmt.Errorf("placeholder '%c' at position %d not found in placeholders", char, i)
 		}
 
-		positions[i] = Position{
-			placeholder: string(r), // Keep as string for display
-			chars:       chars,
+		if len(chars) == 0 {
+			return nil, fmt.Errorf("placeholder '%c' has empty character set", char)
+		}
+
+		// Create position
+		position := Position{
+			placeholder: string(char),
+			chars:       []rune(chars),
 			base:        len(chars),
 		}
 
-		totalCombinations *= uint64(len(chars))
+		positions = append(positions, position)
+		totalCombinations *= position.base
 	}
 
-	return &PhoneticEncoder{
-		config:            config,
+	return &PatternEncoder{
+		pattern:           pattern,
 		positions:         positions,
-		totalCombinations: totalCombinations,
+		totalCombinations: PositiveInt(totalCombinations),
+		length:            len(positions),
 	}, nil
 }
 
+// newPhoneticEncoder is the internal constructor (assumes valid config)
+func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
+	patterns := make([]*PatternEncoder, 0, len(config.Patterns))
+
+	for _, pattern := range config.Patterns {
+		encoder, err := buildPatternEncoder(pattern, config.Placeholders)
+		if err != nil {
+			return nil, err
+		}
+		patterns = append(patterns, encoder)
+	}
+
+	// Sort by totalCombinations
+	for i := 0; i < len(patterns); i++ {
+		for j := i + 1; j < len(patterns); j++ {
+			if patterns[i].totalCombinations > patterns[j].totalCombinations {
+				patterns[i], patterns[j] = patterns[j], patterns[i]
+			}
+		}
+	}
+
+	return &PhoneticEncoder{
+		config:   config,
+		patterns: patterns,
+	}, nil
+}
+
+// Encode converts a number to a phonetic word, automatically selecting the best pattern
+func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
+	if number < 0 {
+		return "", fmt.Errorf("number must be non-negative, got %d", number)
+	}
+
+	// Find the smallest pattern that can encode this number
+	for _, pattern := range e.patterns {
+		if number < pattern.totalCombinations {
+			return pattern.Encode(number)
+		}
+	}
+
+	// Number too large for any pattern
+	return "", fmt.Errorf("number %d exceeds capacity of largest pattern (max: %d)",
+		number, e.patterns[len(e.patterns)-1].totalCombinations-1)
+}
+
+func (e *PhoneticEncoder) Decode(word string) (int, error) {
+	wordRunes := []rune(word)
+
+	// Try to match pattern by length
+	for _, pattern := range e.patterns {
+		if len(wordRunes) == pattern.length {
+			return pattern.Decode(word)
+		}
+	}
+
+	return 0, fmt.Errorf("word length %d doesn't match any pattern", len(wordRunes))
+}
+
 // Encode converts a number to a phonetic word
-func (e *PhoneticEncoder) Encode(number uint64) (string, error) {
+func (e *PatternEncoder) Encode(number PositiveInt) (string, error) {
 	if number >= e.totalCombinations {
 		return "", fmt.Errorf("number %d exceeds maximum %d", number, e.totalCombinations-1)
 	}
 
 	var result strings.Builder
-	remaining := number
+	remaining := int(number)
 
 	// Convert to mixed-radix representation (right-to-left)
 	for i := len(e.positions) - 1; i >= 0; i-- {
 		position := e.positions[i]
-		charIndex := remaining % uint64(position.base)
-		remaining /= uint64(position.base)
+		charIndex := remaining % position.base
+		remaining /= position.base
 
 		result.WriteRune(position.chars[charIndex])
 	}
@@ -81,13 +160,13 @@ func (e *PhoneticEncoder) Encode(number uint64) (string, error) {
 }
 
 // Decode converts a phonetic word back to a number
-func (e *PhoneticEncoder) Decode(word string) (uint64, error) {
+func (e *PatternEncoder) Decode(word string) (int, error) {
 	runes := []rune(word)
 	if len(runes) != len(e.positions) {
 		return 0, fmt.Errorf("word length %d doesn't match pattern length %d", len(runes), len(e.positions))
 	}
 
-	var result uint64
+	var result int
 
 	for i, r := range runes {
 		position := e.positions[i]
@@ -106,20 +185,20 @@ func (e *PhoneticEncoder) Decode(word string) (uint64, error) {
 		}
 
 		// Add to result using positional notation
-		multiplier := uint64(1)
+		multiplier := int(1)
 		for j := i + 1; j < len(e.positions); j++ {
-			multiplier *= uint64(e.positions[j].base)
+			multiplier *= e.positions[j].base
 		}
 
-		result += uint64(charIndex) * multiplier
+		result += charIndex * multiplier
 	}
 
 	return result, nil
 }
 
 // MaxValue returns the maximum number that can be encoded
-func (e *PhoneticEncoder) MaxValue() uint64 {
-	return e.totalCombinations - 1
+func (e *PatternEncoder) MaxValue() int {
+	return int(e.totalCombinations) - 1
 }
 
 // reverseString reverses a string
