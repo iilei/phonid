@@ -10,8 +10,8 @@ import (
 
 // TOMLPhonidConfig represents the TOML file structure with strict validation
 type TOMLPhonidConfig struct {
-	Pattern      string            `toml:"pattern"`
-	Placeholders map[string]string `toml:"placeholders,omitempty"` // Now accepts simple strings like "aeiou"
+	Patterns     []string          `toml:"patterns"`
+	Placeholders map[string]string `toml:"placeholders,omitempty"`
 }
 
 // LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file
@@ -39,7 +39,7 @@ func ParsePhonidRC(content string) (*PhonidConfig, error) {
 
 	// Convert TOML structure to PhonidConfig
 	config := &PhonidConfig{
-		Pattern: tomlConfig.Pattern,
+		Patterns: tomlConfig.Patterns,
 	}
 
 	// Convert string-based placeholders to PlaceholderType-based

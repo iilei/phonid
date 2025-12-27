@@ -24,25 +24,33 @@ var AllowedPatternLengths = []int{5, 7, 11}
 
 // PlaceholderType represents a valid phonetic placeholder identifier
 type PlaceholderType rune
+type PlaceholderMap map[PlaceholderType]RuneSet
 
 // Valid placeholder types
+// Custom* ~> User-defined category to allow more freedom of expression
 const (
 	Consonant PlaceholderType = 'C'
-	Liquid    PlaceholderType = 'L'
 	Vowel     PlaceholderType = 'V'
+	Liquid    PlaceholderType = 'L'
+	Nasal     PlaceholderType = 'N'
 	Sibilant  PlaceholderType = 'S'
 	Fricative PlaceholderType = 'F'
-	Nasal     PlaceholderType = 'N'
+	Custom7   PlaceholderType = '7'
+	Custom8   PlaceholderType = '8'
+	Custom9   PlaceholderType = '9'
 )
 
 // AllowedPlaceholders defines the valid placeholder identifiers
 var AllowedPlaceholders = map[PlaceholderType]string{
 	Consonant: "Consonant", // Hard consonants: b,c,d,f,g,h,j,k,p,q,s,t,v,w,x,z
-	Liquid:    "Liquid",    // Liquid consonants: l,m,n,r
 	Vowel:     "Vowel",     // Pure vowels: a,e,i,o,u
+	Liquid:    "Liquid",    // Liquid consonants: l,m,n,r
+	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
 	Sibilant:  "Sibilant",  // Hissing sounds: s,z (or use IPA: ʃ,ʒ for sh,zh)
 	Fricative: "Fricative", // Friction sounds: f,v (or use IPA: θ,ð for th,dh)
-	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
+	Custom7:   "Custom 1",  // this allows for example to have "123" and bind it to "Sch" for example
+	Custom8:   "Custom 2",
+	Custom9:   "Custom 3",
 }
 
 // RuneSet is a slice of runes that can be unmarshaled from a string.
@@ -66,28 +74,11 @@ var DefaultPlaceholders = map[PlaceholderType]RuneSet{
 
 // PhonidConfig holds phonetic pattern configuration
 type PhonidConfig struct {
-	Pattern      string                      `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
-	Placeholders map[PlaceholderType]RuneSet // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
+	Patterns     []string       `default:"CLVCV"` // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
+	Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
 }
 
-// Validate checks if the phonetic config is valid
-func (pc *PhonidConfig) Validate(base BaseEncoding) error {
-	pattern := pc.Pattern
-	if pattern == "" {
-		return fmt.Errorf("pattern cannot be empty")
-	}
-
-	// Validate pattern format
-	if !isAllowedLength(len(pattern)) {
-		return fmt.Errorf("pattern length %d is not allowed (must be one of %v)", len(pattern), AllowedPatternLengths)
-	}
-
-	// Use defaults if placeholders not provided
-	placeholders := pc.Placeholders
-	if placeholders == nil {
-		placeholders = DefaultPlaceholders
-	}
-
+func validatePattern(pattern string, placeholders PlaceholderMap, base BaseEncoding) error {
 	// Count occurrences of each placeholder in pattern
 	placeholderCounts := make(map[PlaceholderType]int) // Change key type
 	for _, r := range pattern {
@@ -133,6 +124,7 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 		allPlaceholders = append(allPlaceholders, p)
 	}
 
+	// Compare each unique pair (triangular matrix pattern: inner loop starts one step ahead)
 	for i := 0; i < len(allPlaceholders); i++ {
 		for j := i + 1; j < len(allPlaceholders); j++ {
 			p1, p2 := allPlaceholders[i], allPlaceholders[j]
@@ -164,6 +156,35 @@ func (pc *PhonidConfig) Validate(base BaseEncoding) error {
 	if combinations < int(base) {
 		return fmt.Errorf("pattern '%s' produces only %d combinations (need at least %d for base %d)",
 			pattern, combinations, base, base)
+	}
+	return nil
+}
+
+// Validate checks if the phonetic config is valid
+func (pc *PhonidConfig) Validate(base BaseEncoding) error {
+	patterns := pc.Patterns
+	patternLengths := make(map[int]struct{})
+
+	// Apply defaults if not provided
+	if pc.Placeholders == nil {
+		pc.Placeholders = DefaultPlaceholders
+	}
+
+	// ensure lengths allow 1:1 mapping with patterns
+	for _, p := range patterns {
+		patternLen := len(p)
+		if _, exists := patternLengths[patternLen]; exists {
+			return fmt.Errorf("duplicate pattern length %d found", patternLen)
+		}
+		if !isAllowedLength(patternLen) {
+			return fmt.Errorf("pattern length %d is not allowed (must be one of %v)", patternLen, AllowedPatternLengths)
+		}
+
+		// Validate individual pattern
+		if err := validatePattern(p, pc.Placeholders, base); err != nil {
+			return fmt.Errorf("pattern '%s': %w", p, err)
+		}
+		patternLengths[patternLen] = struct{}{}
 	}
 
 	return nil

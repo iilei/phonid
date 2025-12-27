@@ -34,7 +34,7 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	positions := make([]Position, len(config.Pattern))
 	totalCombinations := uint64(1)
 
-	for i, r := range config.Pattern {
+	for i, r := range config.Patterns {
 		placeholder := PlaceholderType(r) // Convert rune to PlaceholderType
 		chars, exists := placeholders[placeholder]
 		if !exists {
