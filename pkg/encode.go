@@ -7,8 +7,8 @@ import (
 
 // PhoneticEncoder handles encoding/decoding between numbers and phonetic words
 type PhoneticEncoder struct {
-	config   *PhonidConfig
-	patterns []*PatternEncoder // ordered by totalCombinations ascending
+	config          *PhonidConfig
+	patternEncoders []*PatternEncoder // ordered by totalCombinations ascending
 }
 
 // PatternEncoder represents a single pattern configuration
@@ -80,28 +80,28 @@ func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternE
 
 // newPhoneticEncoder is the internal constructor (assumes valid config)
 func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
-	patterns := make([]*PatternEncoder, 0, len(config.Patterns))
+	patternEncoders := make([]*PatternEncoder, 0, len(config.Patterns))
 
 	for _, pattern := range config.Patterns {
 		encoder, err := buildPatternEncoder(pattern, config.Placeholders)
 		if err != nil {
 			return nil, err
 		}
-		patterns = append(patterns, encoder)
+		patternEncoders = append(patternEncoders, encoder)
 	}
 
 	// Sort by totalCombinations
-	for i := 0; i < len(patterns); i++ {
-		for j := i + 1; j < len(patterns); j++ {
-			if patterns[i].totalCombinations > patterns[j].totalCombinations {
-				patterns[i], patterns[j] = patterns[j], patterns[i]
+	for i := 0; i < len(patternEncoders); i++ {
+		for j := i + 1; j < len(patternEncoders); j++ {
+			if patternEncoders[i].totalCombinations > patternEncoders[j].totalCombinations {
+				patternEncoders[i], patternEncoders[j] = patternEncoders[j], patternEncoders[i]
 			}
 		}
 	}
 
 	return &PhoneticEncoder{
-		config:   config,
-		patterns: patterns,
+		config:          config,
+		patternEncoders: patternEncoders,
 	}, nil
 }
 
@@ -112,7 +112,7 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
 	}
 
 	// Find the smallest pattern that can encode this number
-	for _, pattern := range e.patterns {
+	for _, pattern := range e.patternEncoders {
 		if number < pattern.totalCombinations {
 			return pattern.Encode(number)
 		}
@@ -120,14 +120,14 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
 
 	// Number too large for any pattern
 	return "", fmt.Errorf("number %d exceeds capacity of largest pattern (max: %d)",
-		number, e.patterns[len(e.patterns)-1].totalCombinations-1)
+		number, e.patternEncoders[len(e.patternEncoders)-1].totalCombinations-1)
 }
 
 func (e *PhoneticEncoder) Decode(word string) (int, error) {
 	wordRunes := []rune(word)
 
 	// Try to match pattern by length
-	for _, pattern := range e.patterns {
+	for _, pattern := range e.patternEncoders {
 		if len(wordRunes) == pattern.length {
 			return pattern.Decode(word)
 		}
