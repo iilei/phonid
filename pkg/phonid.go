@@ -22,14 +22,13 @@ var AllowedVowels = map[rune]bool{
 }
 
 // AllowedPatternLengths defines the permitted pattern lengths
-var AllowedPatternLengths = []int{3, 5, 7, 11}
+var AllowedPatternLengths = []int{3, 5, 7, 11, 23}
 
 // PlaceholderType represents a valid phonetic placeholder identifier
 type PlaceholderType rune
 type PlaceholderMap map[PlaceholderType]RuneSet
 
 // Valid placeholder types
-// Custom* ~> User-defined category to allow more freedom of expression
 const (
 	Consonant PlaceholderType = 'C'
 	Vowel     PlaceholderType = 'V'
@@ -37,9 +36,9 @@ const (
 	Nasal     PlaceholderType = 'N'
 	Sibilant  PlaceholderType = 'S'
 	Fricative PlaceholderType = 'F'
-	Custom7   PlaceholderType = '7'
-	Custom8   PlaceholderType = '8'
-	Custom9   PlaceholderType = '9'
+	CustomX   PlaceholderType = 'X'
+	CustomY   PlaceholderType = 'Y'
+	CustomZ   PlaceholderType = 'Z'
 )
 
 // AllowedPlaceholders defines the valid placeholder identifiers
@@ -50,9 +49,9 @@ var AllowedPlaceholders = map[PlaceholderType]string{
 	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
 	Sibilant:  "Sibilant",  // Hissing sounds: s,z (or use IPA: ʃ,ʒ for sh,zh)
 	Fricative: "Fricative", // Friction sounds: f,v (or use IPA: θ,ð for th,dh)
-	Custom7:   "Custom 1",  // Example PlaceholderMap {... "1":"t", "2":"z" } ~> "12" ~> "tz"
-	Custom8:   "Custom 2",
-	Custom9:   "Custom 3",
+	CustomX:   "User-defined category 1",
+	CustomY:   "User-defined category 2",
+	CustomZ:   "User-defined category 3",
 }
 
 // RuneSet is a slice of runes that can be unmarshaled from a string.
@@ -74,6 +73,25 @@ var DefaultPlaceholders = map[PlaceholderType]RuneSet{
 	// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
 }
 
+// ProQuint-compatible configuration
+// Based on the Proquint specification: https://arxiv.org/html/0901.4016
+// Provides a pre-configured encoder that generates identifiers compatible with
+// the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
+const ProQuintPattern = "CVCVCXCVCVC"
+
+var ProQuintPlaceholders = PlaceholderMap{
+	Vowel:     RuneSet{'a', 'i', 'o', 'u'},
+	Consonant: RuneSet{'b', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z'},
+	CustomX:   RuneSet{'-'},
+}
+
+// ProQuintConfig provides Proquint-compatible encoding
+// See: https://arxiv.org/html/0901.4016
+var ProQuintConfig = PhonidConfig{
+	Patterns:     []string{ProQuintPattern},
+	Placeholders: ProQuintPlaceholders,
+}
+
 var DefaultPatterns = []string{
 	"CVC",
 	"VCCVC",
@@ -90,7 +108,18 @@ var ComplementPlaceholders = []PlaceholderType{
 	Fricative,
 }
 
-// PhonidConfig holds phonetic pattern configuration
+// PhonidConfig holds phonetic pattern configuration.
+//
+// Custom categories (X, Y, Z) can be used for domain-specific sounds:
+//
+//	config := PhonidConfig{
+//	    Patterns: []string{"CXVC"},  // Mix custom with built-in
+//	    Placeholders: PlaceholderMap{
+//	        Consonant: RuneSet("bcd"),
+//	        Vowel: RuneSet("ae"),
+//	        CustomX: RuneSet("ŋ"),  // Velar nasal
+//	    },
+//	}
 type PhonidConfig struct {
 	Patterns     []string       // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
 	Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}

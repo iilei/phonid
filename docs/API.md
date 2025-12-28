@@ -69,12 +69,18 @@ const (
 )
 ```
 
+<a name="ProQuintPattern"></a>ProQuint\-compatible configuration Based on the Proquint specification: https://arxiv.org/html/0901.4016 Provides a pre\-configured encoder that generates identifiers compatible with the original Proquint library, using the pattern CVCVC\-CVCVC to encode 32\-bit values.
+
+```go
+const ProQuintPattern = "CVCVCXCVCVC"
+```
+
 ## Variables
 
 <a name="AllowedPatternLengths"></a>AllowedPatternLengths defines the permitted pattern lengths
 
 ```go
-var AllowedPatternLengths = []int{3, 5, 7, 11}
+var AllowedPatternLengths = []int{3, 5, 7, 11, 23}
 ```
 
 <a name="AllowedPlaceholders"></a>AllowedPlaceholders defines the valid placeholder identifiers
@@ -87,9 +93,9 @@ var AllowedPlaceholders = map[PlaceholderType]string{
     Nasal:     "Nasal",
     Sibilant:  "Sibilant",
     Fricative: "Fricative",
-    Custom7:   "Custom 1",
-    Custom8:   "Custom 2",
-    Custom9:   "Custom 3",
+    CustomX:   "User-defined category 1",
+    CustomY:   "User-defined category 2",
+    CustomZ:   "User-defined category 3",
 }
 ```
 
@@ -132,6 +138,25 @@ var DefaultPlaceholders = map[PlaceholderType]RuneSet{
     Consonant: RuneSet("bcdfghjkpqstvwxz"),
     Liquid:    RuneSet("lmnr"),
     Vowel:     RuneSet("aeiou"),
+}
+```
+
+<a name="ProQuintConfig"></a>ProQuintConfig provides Proquint\-compatible encoding See: https://arxiv.org/html/0901.4016
+
+```go
+var ProQuintConfig = PhonidConfig{
+    Patterns:     []string{ProQuintPattern},
+    Placeholders: ProQuintPlaceholders,
+}
+```
+
+<a name="ProQuintPlaceholders"></a>
+
+```go
+var ProQuintPlaceholders = PlaceholderMap{
+    Vowel:     RuneSet{'a', 'i', 'o', 'u'},
+    Consonant: RuneSet{'b', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z'},
+    CustomX:   RuneSet{'-'},
 }
 ```
 
@@ -353,7 +378,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L163>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L175>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (int, error)
@@ -362,7 +387,7 @@ func (e *PatternEncoder) Decode(word string) (int, error)
 Decode converts a phonetic word back to a number
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L140>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L152>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -371,7 +396,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L200>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L212>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -400,7 +425,7 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error)
 NewPhoneticEncoder creates an encoder with a validated config
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L126>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L138>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (int, error)
@@ -409,7 +434,7 @@ func (e *PhoneticEncoder) Decode(word string) (int, error)
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L109>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L121>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
@@ -427,9 +452,22 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\)
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L94-L97>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L123-L126>)
 
-PhonidConfig holds phonetic pattern configuration
+PhonidConfig holds phonetic pattern configuration.
+
+Custom categories \(X, Y, Z\) can be used for domain\-specific sounds:
+
+```
+config := PhonidConfig{
+    Patterns: []string{"CXVC"},  // Mix custom with built-in
+    Placeholders: PlaceholderMap{
+        Consonant: RuneSet("bcd"),
+        Vowel: RuneSet("ae"),
+        CustomX: RuneSet("ŋ"),  // Velar nasal
+    },
+}
+```
 
 ```go
 type PhonidConfig struct {
@@ -439,7 +477,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L197>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L226>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -465,7 +503,7 @@ PlaceholderType represents a valid phonetic placeholder identifier
 type PlaceholderType rune
 ```
 
-<a name="Consonant"></a>Valid placeholder types Custom\* \~\> User\-defined category to allow more freedom of expression
+<a name="Consonant"></a>Valid placeholder types
 
 ```go
 const (
@@ -475,9 +513,9 @@ const (
     Nasal     PlaceholderType = 'N'
     Sibilant  PlaceholderType = 'S'
     Fricative PlaceholderType = 'F'
-    Custom7   PlaceholderType = '7'
-    Custom8   PlaceholderType = '8'
-    Custom9   PlaceholderType = '9'
+    CustomX   PlaceholderType = 'X'
+    CustomY   PlaceholderType = 'Y'
+    CustomZ   PlaceholderType = 'Z'
 )
 ```
 
@@ -523,7 +561,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L60>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L59>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -532,7 +570,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L63>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L62>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error
