@@ -2,6 +2,7 @@ package phonid
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -216,8 +217,6 @@ func (e *PatternEncoder) MaxValue() int {
 // reverseString reverses a string
 func reverseString(s string) string {
 	runes := []rune(s)
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
-	}
+	slices.Reverse(runes)
 	return string(runes)
 }

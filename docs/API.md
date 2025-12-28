@@ -367,7 +367,7 @@ func (fs *FeistelShuffler) Rounds() int
 Rounds returns the number of Feistel rounds
 
 <a name="PatternEncoder"></a>
-## type [PatternEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L15-L20>)
+## type [PatternEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L16-L21>)
 
 PatternEncoder represents a single pattern configuration
 
@@ -378,7 +378,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L175>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L176>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (int, error)
@@ -387,7 +387,7 @@ func (e *PatternEncoder) Decode(word string) (int, error)
 Decode converts a phonetic word back to a number
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L152>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L153>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -396,7 +396,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L212>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L213>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -405,7 +405,7 @@ func (e *PatternEncoder) MaxValue() int
 MaxValue returns the maximum number that can be encoded
 
 <a name="PhoneticEncoder"></a>
-## type [PhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L9-L12>)
+## type [PhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L10-L13>)
 
 PhoneticEncoder handles encoding/decoding between numbers and phonetic words
 
@@ -416,7 +416,7 @@ type PhoneticEncoder struct {
 ```
 
 <a name="NewPhoneticEncoder"></a>
-### func [NewPhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L30>)
+### func [NewPhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L31>)
 
 ```go
 func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error)
@@ -425,7 +425,7 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error)
 NewPhoneticEncoder creates an encoder with a validated config
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L138>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L139>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (int, error)
@@ -434,7 +434,7 @@ func (e *PhoneticEncoder) Decode(word string) (int, error)
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L121>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L122>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
@@ -520,7 +520,7 @@ const (
 ```
 
 <a name="Position"></a>
-## type [Position](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L23-L27>)
+## type [Position](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L24-L28>)
 
 Position represents one character position in the pattern
 

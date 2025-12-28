@@ -231,66 +231,149 @@ func Test_newPhoneticEncoder(t *testing.T) {
 }
 
 func TestPhoneticEncoder_Encode(t *testing.T) {
-	type fields struct {
-		config          *PhonidConfig
-		patternEncoders []*PatternEncoder
+	// Create a simple config for testing
+	simpleConfig := &PhonidConfig{
+		Patterns: []string{"CVC"},
+		Placeholders: PlaceholderMap{
+			Vowel:     RuneSet{'a', 'o', 'i'},
+			Consonant: RuneSet{'b', 'z', 'k'},
+		},
 	}
-	type args struct {
-		number PositiveInt
+
+	// Create encoder once
+	encoder, err := NewPhoneticEncoder(simpleConfig)
+	if err != nil {
+		t.Fatalf("failed to create encoder: %v", err)
 	}
+
 	tests := []struct {
 		name    string
-		fields  fields
-		args    args
+		number  PositiveInt
 		want    string
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "encode zero",
+			number:  PositiveInt(0),
+			want:    "bab",
+			wantErr: false,
+		},
+		{
+			name:    "encode one",
+			number:  PositiveInt(1),
+			want:    "baz",
+			wantErr: false,
+		},
+		{
+			name:    "encode small number",
+			number:  PositiveInt(5),
+			want:    "bok",
+			wantErr: false,
+		},
+		{
+			name:    "encode max value for pattern",
+			number:  PositiveInt(26), // 3*3*3 - 1
+			want:    "kik",
+			wantErr: false,
+		},
+		{
+			name:    "encode number beyond max",
+			number:  PositiveInt(27),
+			want:    "",
+			wantErr: true,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &PhoneticEncoder{
-				config:          tt.fields.config,
-				patternEncoders: tt.fields.patternEncoders,
-			}
-			got, err := e.Encode(tt.args.number)
+			got, err := encoder.Encode(tt.number)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("PhoneticEncoder.Encode() error = %v, wantErr %v", err, tt.wantErr)
-			}
-			if tt.wantErr {
-				return
 			}
 			if got != tt.want {
 				t.Errorf("PhoneticEncoder.Encode() = %v, want %v", got, tt.want)
 			}
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("PhoneticEncoder.Encode() error = %v, wantErr %v", err, tt.wantErr)
+			}
 		})
 	}
 }
-
 func TestPhoneticEncoder_Decode(t *testing.T) {
-	type fields struct {
-		config          *PhonidConfig
-		patternEncoders []*PatternEncoder
+	// Create a simple config for testing
+	simpleConfig := &PhonidConfig{
+		Patterns: []string{"CVC"},
+		Placeholders: PlaceholderMap{
+			Vowel:     RuneSet{'a', 'o', 'i'},
+			Consonant: RuneSet{'b', 'z', 'k'},
+		},
 	}
-	type args struct {
-		word string
+
+	// Create encoder once
+	encoder, err := NewPhoneticEncoder(simpleConfig)
+	if err != nil {
+		t.Fatalf("failed to create encoder: %v", err)
 	}
+
 	tests := []struct {
 		name    string
-		fields  fields
-		args    args
+		word    string
 		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "decode zero",
+			word:    "bab",
+			want:    0,
+			wantErr: false,
+		},
+		{
+			name:    "decode one",
+			word:    "baz",
+			want:    1,
+			wantErr: false,
+		},
+		{
+			name:    "decode small number",
+			word:    "bok",
+			want:    5,
+			wantErr: false,
+		},
+		{
+			name:    "decode max value for pattern",
+			word:    "kik",
+			want:    26, // 3*3*3 - 1
+			wantErr: false,
+		},
+		{
+			name:    "decode invalid word - wrong length",
+			word:    "ba",
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name:    "decode invalid word - invalid character",
+			word:    "bax", // 'x' not in consonant set
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name:    "decode invalid word - wrong placeholder",
+			word:    "bbb", // vowel position has consonant
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name:    "decode empty string",
+			word:    "",
+			want:    0,
+			wantErr: true,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &PhoneticEncoder{
-				config:          tt.fields.config,
-				patternEncoders: tt.fields.patternEncoders,
-			}
-			got, err := e.Decode(tt.args.word)
+			got, err := encoder.Decode(tt.word)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("PhoneticEncoder.Decode() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -301,6 +384,45 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 				t.Errorf("PhoneticEncoder.Decode() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+// Round-trip test to verify Encode/Decode are inverses
+func TestPhoneticEncoder_RoundTrip(t *testing.T) {
+	simpleConfig := &PhonidConfig{
+		Patterns: []string{"CVC"},
+		Placeholders: PlaceholderMap{
+			Vowel:     RuneSet{'a', 'o', 'i'},
+			Consonant: RuneSet{'b', 'z', 'k'},
+		},
+	}
+
+	encoder, err := NewPhoneticEncoder(simpleConfig)
+	if err != nil {
+		t.Fatalf("failed to create encoder: %v", err)
+	}
+
+	// Test every valid number in the range
+	maxValue := 27 // 3*3*3
+	for i := range maxValue {
+		num := PositiveInt(i)
+
+		// Encode
+		word, err := encoder.Encode(num)
+		if err != nil {
+			t.Fatalf("Encode(%d) failed: %v", num, err)
+		}
+
+		// Decode
+		decoded, err := encoder.Decode(word)
+		if err != nil {
+			t.Fatalf("Decode(%s) failed: %v", word, err)
+		}
+
+		// Verify round-trip
+		if decoded != int(num) {
+			t.Errorf("Round-trip failed: %d -> %s -> %d", num, word, decoded)
+		}
 	}
 }
 
@@ -346,33 +468,50 @@ func TestPatternEncoder_Encode(t *testing.T) {
 }
 
 func TestPatternEncoder_Decode(t *testing.T) {
-	type fields struct {
-		pattern           string
-		positions         []Position
-		totalCombinations PositiveInt
-		length            int
+	// Build a simple pattern encoder directly
+	encoder, err := buildPatternEncoder("CVC", PlaceholderMap{
+		Vowel:     RuneSet{'a', 'o', 'i'},
+		Consonant: RuneSet{'b', 'z', 'k'},
+	})
+	if err != nil {
+		t.Fatalf("failed to build pattern encoder: %v", err)
 	}
-	type args struct {
-		word string
-	}
+
 	tests := []struct {
 		name    string
-		fields  fields
-		args    args
+		word    string
 		want    int
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "decode first value",
+			word:    "bab",
+			want:    0,
+			wantErr: false,
+		},
+		{
+			name:    "decode last value",
+			word:    "kik",
+			want:    26,
+			wantErr: false,
+		},
+		{
+			name:    "wrong length",
+			word:    "ba",
+			want:    0,
+			wantErr: true,
+		},
+		{
+			name:    "invalid character",
+			word:    "bax",
+			want:    0,
+			wantErr: true,
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &PatternEncoder{
-				pattern:           tt.fields.pattern,
-				positions:         tt.fields.positions,
-				totalCombinations: tt.fields.totalCombinations,
-				length:            tt.fields.length,
-			}
-			got, err := e.Decode(tt.args.word)
+			got, err := encoder.Decode(tt.word)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("PatternEncoder.Decode() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -387,28 +526,29 @@ func TestPatternEncoder_Decode(t *testing.T) {
 }
 
 func TestPatternEncoder_MaxValue(t *testing.T) {
-	type fields struct {
-		pattern           string
-		positions         []Position
-		totalCombinations PositiveInt
-		length            int
+	placeholders := PlaceholderMap{
+		Vowel:     RuneSet{'a', 'o', 'i'},
+		Consonant: RuneSet{'b', 'z', 'k'},
 	}
+
 	tests := []struct {
-		name   string
-		fields fields
-		want   int
+		name    string
+		pattern string
+		want    int
 	}{
-		// TODO: Add test cases.
+		{
+			name:    "VC pattern - 3x3",
+			pattern: "VC",
+			want:    8, // 9 combinations - 1
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			e := &PatternEncoder{
-				pattern:           tt.fields.pattern,
-				positions:         tt.fields.positions,
-				totalCombinations: tt.fields.totalCombinations,
-				length:            tt.fields.length,
+			encoder, err := buildPatternEncoder(tt.pattern, placeholders)
+			if err != nil {
+				t.Fatalf("buildPatternEncoder() failed: %v", err)
 			}
-			if got := e.MaxValue(); got != tt.want {
+			if got := encoder.MaxValue(); got != tt.want {
 				t.Errorf("PatternEncoder.MaxValue() = %v, want %v", got, tt.want)
 			}
 		})
@@ -424,12 +564,16 @@ func Test_reverseString(t *testing.T) {
 		args args
 		want string
 	}{
-		// TODO: Add test cases.
+		{
+			name: "unicode support",
+			args: args{s: "\u26a1\u2728\U0001b66d\u0061\u0062\u0063"},
+			want: "\u0063\u0062\u0061\U0001b66d\u2728\u26a1",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := reverseString(tt.args.s); got != tt.want {
-				t.Errorf("reverseString() = %v, want %v", got, tt.want)
+				t.Errorf("reverseString() = %q, want %q", got, tt.want)
 			}
 		})
 	}
