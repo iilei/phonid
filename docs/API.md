@@ -8,9 +8,10 @@ import "github.com/iilei/phonid/pkg"
 
 ## Index
 
+- [Constants](<#constants>)
 - [Variables](<#variables>)
-- [func LoadPhonidRC\(filepath string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#LoadPhonidRC>)
-- [func LoadPhonidRCLenient\(filepath string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#LoadPhonidRCLenient>)
+- [func LoadPhonidRC\(fp string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#LoadPhonidRC>)
+- [func LoadPhonidRCLenient\(fp string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#LoadPhonidRCLenient>)
 - [func ParsePhonidRC\(content string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#ParsePhonidRC>)
 - [func ParsePhonidRCLenient\(content string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#ParsePhonidRCLenient>)
 - [func ValidatePhonidRC\(config \*PhonidConfig\) error](<#ValidatePhonidRC>)
@@ -56,6 +57,17 @@ import "github.com/iilei/phonid/pkg"
 - [type TOMLPhonidConfig](<#TOMLPhonidConfig>)
 - [type TOMLShuffleConfig](<#TOMLShuffleConfig>)
 
+
+## Constants
+
+<a name="RcFileName"></a>
+
+```go
+const (
+    RcFileName      = ".phonidrc"
+    RcFileOptSuffix = ".toml"
+)
+```
 
 ## Variables
 
@@ -123,25 +135,25 @@ var (
 ```
 
 <a name="LoadPhonidRC"></a>
-## func [LoadPhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L50>)
+## func [LoadPhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L57>)
 
 ```go
-func LoadPhonidRC(filepath string) (*PhonidConfig, []PreflightCheck, error)
+func LoadPhonidRC(fp string) (*PhonidConfig, []PreflightCheck, error)
 ```
 
 LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation.
 
 <a name="LoadPhonidRCLenient"></a>
-## func [LoadPhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L61>)
+## func [LoadPhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L68>)
 
 ```go
-func LoadPhonidRCLenient(filepath string) (*PhonidConfig, []PreflightCheck, error)
+func LoadPhonidRCLenient(fp string) (*PhonidConfig, []PreflightCheck, error)
 ```
 
 LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ParsePhonidRC"></a>
-## func [ParsePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L72>)
+## func [ParsePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L79>)
 
 ```go
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
@@ -150,7 +162,7 @@ func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
 ParsePhonidRC parses TOML content requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ParsePhonidRCLenient"></a>
-## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L78>)
+## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L85>)
 
 ```go
 func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, error)
@@ -159,7 +171,7 @@ func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, erro
 ParsePhonidRCLenient parses TOML content without requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ValidatePhonidRC"></a>
-## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L154>)
+## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L161>)
 
 ```go
 func ValidatePhonidRC(config *PhonidConfig) error
@@ -284,7 +296,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 NewFeistelShuffler creates a new shuffler for the given bit width bitWidth: total bits \(8, 16, 32, 64, etc.\) rounds: number of Feistel rounds \(3\-6 recommended. "0" will preserve linear order\) seed: seed value for generating round keys
 
 <a name="FeistelShuffler.BitWidth"></a>
-### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L144>)
+### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L146>)
 
 ```go
 func (fs *FeistelShuffler) BitWidth() int
@@ -293,7 +305,7 @@ func (fs *FeistelShuffler) BitWidth() int
 BitWidth returns the configured bit width.
 
 <a name="FeistelShuffler.Decode"></a>
-### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L105>)
+### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L107>)
 
 ```go
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
@@ -302,7 +314,7 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
 Decode performs bijective reverse shuffling \(inverse of Encode\).
 
 <a name="FeistelShuffler.Encode"></a>
-### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L74>)
+### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L76>)
 
 ```go
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
@@ -311,7 +323,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
 Encode performs bijective shuffling of input value.
 
 <a name="FeistelShuffler.MaxValue"></a>
-### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L136>)
+### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L138>)
 
 ```go
 func (fs *FeistelShuffler) MaxValue() uint64
@@ -320,7 +332,7 @@ func (fs *FeistelShuffler) MaxValue() uint64
 MaxValue returns the maximum value that can be shuffled.
 
 <a name="FeistelShuffler.Rounds"></a>
-### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L149>)
+### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L151>)
 
 ```go
 func (fs *FeistelShuffler) Rounds() int
@@ -504,7 +516,7 @@ type Position struct {
 ```
 
 <a name="PositiveInt"></a>
-## type [PositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L13>)
+## type [PositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L20>)
 
 PositiveInt represents a non\-negative integer.
 
@@ -513,7 +525,7 @@ type PositiveInt int
 ```
 
 <a name="PositiveInt.Validate"></a>
-### func \(PositiveInt\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L42>)
+### func \(PositiveInt\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L49>)
 
 ```go
 func (p PositiveInt) Validate() error
@@ -522,7 +534,7 @@ func (p PositiveInt) Validate() error
 
 
 <a name="PreflightCheck"></a>
-## type [PreflightCheck](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L23-L26>)
+## type [PreflightCheck](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L30-L33>)
 
 PreflightCheck represents a single input\-\>output verification.
 
@@ -574,7 +586,7 @@ func (sc *ShuffleConfig) Validate() error
 Validate checks if the shuffle config is valid.
 
 <a name="TOMLConfig"></a>
-## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L15-L20>)
+## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L22-L27>)
 
 TOMLConfig represents the top\-level TOML structure.
 
@@ -588,7 +600,7 @@ type TOMLConfig struct {
 ```
 
 <a name="TOMLPhonidConfig"></a>
-## type [TOMLPhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L36-L39>)
+## type [TOMLPhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L43-L46>)
 
 TOMLPhonidConfig represents the phonetic configuration.
 
@@ -600,7 +612,7 @@ type TOMLPhonidConfig struct {
 ```
 
 <a name="TOMLShuffleConfig"></a>
-## type [TOMLShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L29-L33>)
+## type [TOMLShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L36-L40>)
 
 TOMLShuffleConfig represents shuffle configuration.
 

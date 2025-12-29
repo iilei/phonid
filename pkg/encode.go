@@ -107,7 +107,7 @@ func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	}
 
 	// Check for duplicate totalCombinations
-	for i := 0; i < len(patternEncoders)-1; i++ {
+	for i := range len(patternEncoders) - 1 {
 		if patternEncoders[i].totalCombinations == patternEncoders[i+1].totalCombinations {
 			return nil, fmt.Errorf(
 				"duplicate total combinations: patterns '%s' and '%s' both produce %d combinations",

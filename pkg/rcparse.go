@@ -4,8 +4,15 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
+)
+
+const (
+	RcFileName      = ".phonidrc"
+	RcFileOptSuffix = ".toml"
 )
 
 type (
@@ -47,10 +54,10 @@ func (p PositiveInt) Validate() error {
 }
 
 // LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation.
-func LoadPhonidRC(filepath string) (*PhonidConfig, []PreflightCheck, error) {
-	data, err := os.ReadFile(filepath)
+func LoadPhonidRC(fp string) (*PhonidConfig, []PreflightCheck, error) {
+	data, err := readConfigFile(fp)
 	if err != nil {
-		return nil, make([]PreflightCheck, 0), fmt.Errorf("failed to read %s: %w", filepath, err)
+		return nil, nil, err
 	}
 
 	return ParsePhonidRC(string(data))
@@ -58,10 +65,10 @@ func LoadPhonidRC(filepath string) (*PhonidConfig, []PreflightCheck, error) {
 
 // LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks
 // Used exclusively by 'phonid preflight --suggest' command.
-func LoadPhonidRCLenient(filepath string) (*PhonidConfig, []PreflightCheck, error) {
-	data, err := os.ReadFile(filepath)
+func LoadPhonidRCLenient(fp string) (*PhonidConfig, []PreflightCheck, error) {
+	data, err := readConfigFile(fp)
 	if err != nil {
-		return nil, make([]PreflightCheck, 0), fmt.Errorf("failed to read %s: %w", filepath, err)
+		return nil, nil, err
 	}
 
 	return ParsePhonidRCLenient(string(data))
@@ -166,6 +173,61 @@ func getValidPlaceholderKeys() []string {
 		keys = append(keys, string(key))
 	}
 	return keys
+}
+
+func readConfigFile(fp string) ([]byte, error) {
+	if err := validateConfigPath(fp); err != nil {
+		return nil, err
+	}
+	// #nosec G304 -- filepath is user-provided config path, validated by caller
+	data, err := os.ReadFile(fp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read %s: %w", fp, err)
+	}
+	return data, nil
+}
+
+// validateConfigPath checks if the file path is safe to read.
+func validateConfigPath(path string) error {
+	// Clean path to prevent directory traversal
+	cleaned := filepath.Clean(path)
+
+	// Prevent path traversal attacks
+	if strings.Contains(cleaned, "..") {
+		return fmt.Errorf("invalid path: directory traversal not allowed")
+	}
+
+	// Validate filename pattern: .phonidrc[.toml] or .*.phonidrc[.toml]
+	base := filepath.Base(cleaned)
+	if !isValidPhonidRCFilename(base) {
+		return fmt.Errorf("invalid filename: must be '.phonidrc[.toml]' or '.<prefix>.phonidrc[.toml]', got '%s'", base)
+	}
+
+	return nil
+}
+
+// isValidPhonidRCFilename checks if filename matches .phonidrc or .<prefix>.phonidrc pattern,
+// optionally with a .toml extension.
+func isValidPhonidRCFilename(filename string) bool {
+	// Exact match: .phonidrc
+	filenameStripped, _ := strings.CutSuffix(filename, RcFileOptSuffix)
+	if filenameStripped == RcFileName {
+		return true
+	}
+
+	// Pattern match: .*.phonidrc
+	if strings.HasPrefix(filenameStripped, ".") && strings.HasSuffix(filenameStripped, RcFileName) {
+		// Extract prefix between first dot and .phonidrc
+		prefix := strings.TrimPrefix(filenameStripped, ".")
+		prefix = strings.TrimSuffix(prefix, RcFileName)
+
+		// Ensure prefix is non-empty and doesn't contain path separators or dots
+		if prefix != "" && !strings.ContainsAny(prefix, "/\\.:") {
+			return true
+		}
+	}
+
+	return false
 }
 
 // // LoadAndValidatePhonidRC is a convenience function that loads and validates in one step

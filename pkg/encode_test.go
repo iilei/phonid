@@ -169,6 +169,7 @@ func Test_buildPatternEncoder(t *testing.T) {
 	}
 }
 
+//gocognit:ignore
 func Test_newPhoneticEncoder(t *testing.T) {
 	placeholders := PlaceholderMap{
 		Vowel:     RuneSet{'a', 'e', 'o'},

@@ -54,10 +54,12 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 	// Generate round keys from seed using FNV hash
 	roundKeys := make([]uint64, rounds)
 	h := fnv.New64a()
-	for i := 0; i < rounds; i++ {
+	for i := range rounds {
 		h.Reset()
 		_ = binary.Write(h, binary.LittleEndian, seed)
-		_ = binary.Write(h, binary.LittleEndian, uint64(i))
+		// #nosec G115 -- i is bounded by validation (0-10), no overflow possible
+		roundIndex := uint64(i)
+		_ = binary.Write(h, binary.LittleEndian, roundIndex)
 		roundKeys[i] = h.Sum64()
 	}
 
@@ -87,7 +89,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 	right := input & fs.mask
 
 	// Feistel rounds
-	for i := 0; i < fs.rounds; i++ {
+	for i := range fs.rounds {
 		// Apply round function to right half with round key
 		roundOutput := fs.roundFunction(right, fs.roundKeys[i])
 

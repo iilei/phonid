@@ -307,7 +307,7 @@ func validateNoOverlaps(counts map[PlaceholderType]int, placeholders Placeholder
 		allPlaceholders = append(allPlaceholders, p)
 	}
 
-	for i := 0; i < len(allPlaceholders); i++ {
+	for i := range allPlaceholders {
 		for j := i + 1; j < len(allPlaceholders); j++ {
 			p1, p2 := allPlaceholders[i], allPlaceholders[j]
 			if hasOverlap(placeholders[p1], placeholders[p2]) {

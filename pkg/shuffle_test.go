@@ -5,6 +5,7 @@ import (
 	"testing"
 )
 
+//gocognit:ignore
 func TestFeistelShufflerBasicBijection(t *testing.T) {
 	testCases := []struct {
 		bitWidth int
@@ -202,7 +203,7 @@ func BenchmarkFeistelShufflerEncode(b *testing.B) {
 	testValue := uint64(987654)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = shuffler.Encode(testValue)
 	}
 }
@@ -213,7 +214,7 @@ func BenchmarkFeistelShufflerDecode(b *testing.B) {
 	encoded, _ := shuffler.Encode(testValue)
 
 	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = shuffler.Decode(encoded)
 	}
 }
