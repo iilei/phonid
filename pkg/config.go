@@ -6,7 +6,7 @@ import (
 	"github.com/creasty/defaults"
 )
 
-// Config holds the configuration for phonetic ID generation
+// Config holds the configuration for phonetic ID generation.
 type (
 	Config struct {
 		// ID format settings
@@ -16,11 +16,11 @@ type (
 		Shuffle *ShuffleConfig `default:"{}"`
 	}
 
-	// ConfigOption is a functional option for configuring Config
+	// ConfigOption is a functional option for configuring Config.
 	ConfigOption func(*Config)
 )
 
-// NewConfig returns a Config with sensible defaults applied
+// NewConfig returns a Config with sensible defaults applied.
 func NewConfig() (*Config, error) {
 	cfg := &Config{}
 	if err := defaults.Set(cfg); err != nil {
@@ -29,7 +29,7 @@ func NewConfig() (*Config, error) {
 	return cfg, nil
 }
 
-// NewConfigWithOptions returns a Config with defaults, then applies the provided options
+// NewConfigWithOptions returns a Config with defaults, then applies the provided options.
 func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
 	cfg, err := NewConfig()
 	if err != nil {
@@ -47,7 +47,7 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
 	return cfg, nil
 }
 
-// Validate checks if the config values are valid
+// Validate checks if the config values are valid.
 func (c *Config) Validate() error {
 	// Validate shuffle config
 	if c.Shuffle != nil {
@@ -66,7 +66,7 @@ func (c *Config) Validate() error {
 	return nil
 }
 
-// WithBitWidth sets the bit width
+// WithBitWidth sets the bit width.
 func WithBitWidth(bitWidth int) ConfigOption {
 	return func(c *Config) {
 		if c.Shuffle == nil {
@@ -76,7 +76,7 @@ func WithBitWidth(bitWidth int) ConfigOption {
 	}
 }
 
-// WithRounds sets the number of Feistel rounds
+// WithRounds sets the number of Feistel rounds.
 func WithRounds(rounds int) ConfigOption {
 	return func(c *Config) {
 		if c.Shuffle == nil {
@@ -86,7 +86,7 @@ func WithRounds(rounds int) ConfigOption {
 	}
 }
 
-// WithSeed sets the seed value
+// WithSeed sets the seed value.
 func WithSeed(seed uint64) ConfigOption {
 	return func(c *Config) {
 		if c.Shuffle == nil {
@@ -96,14 +96,14 @@ func WithSeed(seed uint64) ConfigOption {
 	}
 }
 
-// WithShuffle sets the shuffle configuration
+// WithShuffle sets the shuffle configuration.
 func WithShuffle(shuffle *ShuffleConfig) ConfigOption {
 	return func(c *Config) {
 		c.Shuffle = shuffle
 	}
 }
 
-// WithPhonetic sets the phonetic configuration
+// WithPhonetic sets the phonetic configuration.
 func WithPhonetic(phonetic *PhonidConfig) ConfigOption {
 	return func(c *Config) {
 		c.Phonetic = phonetic

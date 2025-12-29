@@ -3,7 +3,7 @@ package phonid
 import "fmt"
 
 // ValidatePreflight checks if preflight tests pass for this encoder
-// Performs bidirectional validation: encoding (int->string) and decoding (string->int)
+// Performs bidirectional validation: encoding (int->string) and decoding (string->int).
 func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error {
 	if len(checks) == 0 {
 		return fmt.Errorf("at least one preflight check is required")

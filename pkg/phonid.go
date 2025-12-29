@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	// MinCharsForVowel placeholder type minimal set of runes
+	// MinCharsForVowel placeholder type minimal set of runes.
 	MinCharsForVowel = 2
-	// MinCharsForComplement placeholder type minimal set of runes
+	// MinCharsForComplement placeholder type minimal set of runes.
 	MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
 
 	Consonant PlaceholderType = 'C'
@@ -32,16 +32,16 @@ const (
 )
 
 var (
-	// AllowedVowels defines the permitted vowel characters
+	// AllowedVowels defines the permitted vowel characters.
 	AllowedVowels = map[rune]bool{
 		'a': true, 'e': true, 'i': true, 'o': true, 'u': true, 'y': true,
 		'A': true, 'E': true, 'I': true, 'O': true, 'U': true, 'Y': true,
 	}
 
-	// AllowedPatternLengths defines the permitted pattern lengths
+	// AllowedPatternLengths defines the permitted pattern lengths.
 	AllowedPatternLengths = []int{3, 5, 7, 11, 23}
 
-	// AllowedPlaceholders defines the valid placeholder identifiers
+	// AllowedPlaceholders defines the valid placeholder identifiers.
 	AllowedPlaceholders = map[PlaceholderType]string{
 		Consonant: "Consonant", // Hard consonants: b,c,d,f,g,h,j,k,p,q,s,t,v,w,x,z
 		Vowel:     "Vowel",     // Pure vowels: a,e,i,o,u
@@ -66,7 +66,7 @@ var (
 		Placeholders: ProQuintPlaceholders,
 	}
 
-	// ComplementPlaceholders lists all non-vowel phonetic categories
+	// ComplementPlaceholders lists all non-vowel phonetic categories.
 	ComplementPlaceholders = []PlaceholderType{
 		Consonant,
 		Liquid,
@@ -75,7 +75,7 @@ var (
 		Fricative,
 	}
 
-	// DefaultPlaceholders provides sensible defaults for common phonetic categories
+	// DefaultPlaceholders provides sensible defaults for common phonetic categories.
 	DefaultPlaceholders = map[PlaceholderType]RuneSet{
 		Consonant: RuneSet("bcdfghjkpqstvwxz"),
 		Liquid:    RuneSet("lmnr"),
@@ -93,7 +93,7 @@ var (
 )
 
 type (
-	// PlaceholderType represents a valid phonetic placeholder identifier
+	// PlaceholderType represents a valid phonetic placeholder identifier.
 
 	PlaceholderType rune
 	PlaceholderMap  map[PlaceholderType]RuneSet
@@ -126,7 +126,7 @@ func (rs *RuneSet) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// Validate checks if the phonetic config is valid
+// Validate checks if the phonetic config is valid.
 func (pc *PhonidConfig) Validate() error {
 	// Apply defaults if not provided
 	if len(pc.Patterns) == 0 {
@@ -184,7 +184,7 @@ func validatePattern(pattern string, placeholders PlaceholderMap) error {
 	return nil
 }
 
-// countPlaceholders counts occurrences of each placeholder in the pattern
+// countPlaceholders counts occurrences of each placeholder in the pattern.
 func countPlaceholders(pattern string, placeholders PlaceholderMap) (map[PlaceholderType]int, error) {
 	counts := make(map[PlaceholderType]int)
 
@@ -199,7 +199,7 @@ func countPlaceholders(pattern string, placeholders PlaceholderMap) (map[Placeho
 	return counts, nil
 }
 
-// validatePlaceholderSets validates each placeholder's character set
+// validatePlaceholderSets validates each placeholder's character set.
 func validatePlaceholderSets(counts map[PlaceholderType]int, placeholders PlaceholderMap) error {
 	for placeholder, chars := range placeholders {
 		// Only validate placeholders actually used in pattern
@@ -222,7 +222,7 @@ func validatePlaceholderSets(counts map[PlaceholderType]int, placeholders Placeh
 	return nil
 }
 
-// validateVowelSet validates vowel placeholder character sets
+// validateVowelSet validates vowel placeholder character sets.
 func validateVowelSet(placeholder PlaceholderType, chars RuneSet) error {
 	if placeholder != Vowel {
 		return nil
@@ -244,7 +244,7 @@ func validateVowelSet(placeholder PlaceholderType, chars RuneSet) error {
 	return nil
 }
 
-// validateMinimumSize checks minimum character requirements for placeholders
+// validateMinimumSize checks minimum character requirements for placeholders.
 func validateMinimumSize(placeholder PlaceholderType, chars RuneSet) error {
 	if placeholder == Vowel && len(chars) < MinCharsForVowel {
 		return fmt.Errorf("vowel placeholder needs at least %d characters, got %d",
@@ -253,7 +253,7 @@ func validateMinimumSize(placeholder PlaceholderType, chars RuneSet) error {
 	return nil
 }
 
-// validatePatternRequirements checks pattern has required placeholder types
+// validatePatternRequirements checks pattern has required placeholder types.
 func validatePatternRequirements(counts map[PlaceholderType]int, placeholders PlaceholderMap) error {
 	if err := requireVowel(counts); err != nil {
 		return err
@@ -266,7 +266,7 @@ func validatePatternRequirements(counts map[PlaceholderType]int, placeholders Pl
 	return nil
 }
 
-// requireVowel ensures pattern contains at least one vowel
+// requireVowel ensures pattern contains at least one vowel.
 func requireVowel(counts map[PlaceholderType]int) error {
 	if counts[Vowel] > 0 {
 		return nil
@@ -279,7 +279,7 @@ func requireVowel(counts map[PlaceholderType]int) error {
 	)
 }
 
-// requireMinimalComplement ensures sufficient non-vowel variety
+// requireMinimalComplement ensures sufficient non-vowel variety.
 func requireMinimalComplement(counts map[PlaceholderType]int, placeholders PlaceholderMap) error {
 	for placeholder := range counts {
 		if isComplementPlaceholder(placeholder) &&
@@ -300,7 +300,7 @@ func requireMinimalComplement(counts map[PlaceholderType]int, placeholders Place
 	)
 }
 
-// validateNoOverlaps checks for character overlap between placeholders
+// validateNoOverlaps checks for character overlap between placeholders.
 func validateNoOverlaps(counts map[PlaceholderType]int, placeholders PlaceholderMap) error {
 	allPlaceholders := make([]PlaceholderType, 0, len(counts))
 	for p := range counts {
@@ -319,7 +319,7 @@ func validateNoOverlaps(counts map[PlaceholderType]int, placeholders Placeholder
 	return nil
 }
 
-// isComplementPlaceholder checks if a placeholder is a non-vowel phonetic category
+// isComplementPlaceholder checks if a placeholder is a non-vowel phonetic category.
 func isComplementPlaceholder(p PlaceholderType) bool {
 	for _, complement := range ComplementPlaceholders {
 		if p == complement {
@@ -329,7 +329,7 @@ func isComplementPlaceholder(p PlaceholderType) bool {
 	return false
 }
 
-// hasDuplicates checks if a rune slice contains duplicates
+// hasDuplicates checks if a rune slice contains duplicates.
 func hasDuplicates(runes []rune) bool {
 	seen := make(map[rune]bool)
 	for _, r := range runes {
@@ -341,7 +341,7 @@ func hasDuplicates(runes []rune) bool {
 	return false
 }
 
-// hasOverlap checks if two rune slices have any common elements
+// hasOverlap checks if two rune slices have any common elements.
 func hasOverlap(a, b []rune) bool {
 	set := make(map[rune]bool)
 	for _, r := range a {
@@ -355,7 +355,7 @@ func hasOverlap(a, b []rune) bool {
 	return false
 }
 
-// isAllowedLength checks if a length is in the allowed lengths list
+// isAllowedLength checks if a length is in the allowed lengths list.
 func isAllowedLength(length int) bool {
 	for _, allowed := range AllowedPatternLengths {
 		if length == allowed {
@@ -366,7 +366,7 @@ func isAllowedLength(length int) bool {
 }
 
 // isVowelBase checks if a rune is a vowel, stripping diacritics
-// Supports characters like ü, ä, ö, é, è which normalize to base vowels
+// Supports characters like ü, ä, ö, é, è which normalize to base vowels.
 func isVowelBase(r rune) bool {
 	// First check if it's directly in allowed vowels
 	if AllowedVowels[r] {

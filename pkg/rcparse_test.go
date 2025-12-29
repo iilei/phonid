@@ -51,7 +51,7 @@ F = "\u03B8\u00F0" # θð (th sounds: voiceless, voiced)
 `
 
 // Note: Sibilant, Fricative, and Nasal can be customized by users
-// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
+// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation.
 func TestParsePhonidRCEscapeChars(t *testing.T) {
 	got, _, err := ParsePhonidRCLenient(config)
 	if err != nil {

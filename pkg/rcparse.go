@@ -9,9 +9,9 @@ import (
 )
 
 type (
-	// PositiveInt represents a non-negative integer
+	// PositiveInt represents a non-negative integer.
 	PositiveInt int
-	// TOMLConfig represents the top-level TOML structure
+	// TOMLConfig represents the top-level TOML structure.
 	TOMLConfig struct {
 		Base      PositiveInt       `toml:"base,omitempty"`
 		Shuffle   TOMLShuffleConfig `toml:"shuffle,omitempty"`
@@ -19,20 +19,20 @@ type (
 		Preflight []PreflightCheck  `toml:"preflight"` // Required - no omitempty
 	}
 
-	// PreflightCheck represents a single input->output verification
+	// PreflightCheck represents a single input->output verification.
 	PreflightCheck struct {
 		Input  PositiveInt `toml:"input"`
 		Output string      `toml:"output"`
 	}
 
-	// TOMLShuffleConfig represents shuffle configuration
+	// TOMLShuffleConfig represents shuffle configuration.
 	TOMLShuffleConfig struct {
 		BitWidth PositiveInt `toml:"bit_width,omitempty"`
 		Rounds   PositiveInt `toml:"rounds,omitempty"`
 		Seed     PositiveInt `toml:"seed,omitempty"`
 	}
 
-	// TOMLPhonidConfig represents the phonetic configuration
+	// TOMLPhonidConfig represents the phonetic configuration.
 	TOMLPhonidConfig struct {
 		Patterns     []string          `toml:"patterns,omitempty"`
 		Placeholders map[string]string `toml:"placeholders,omitempty"`
@@ -46,7 +46,7 @@ func (p PositiveInt) Validate() error {
 	return nil
 }
 
-// LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation
+// LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation.
 func LoadPhonidRC(filepath string) (*PhonidConfig, []PreflightCheck, error) {
 	data, err := os.ReadFile(filepath)
 	if err != nil {
@@ -57,7 +57,7 @@ func LoadPhonidRC(filepath string) (*PhonidConfig, []PreflightCheck, error) {
 }
 
 // LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks
-// Used exclusively by 'phonid preflight --suggest' command
+// Used exclusively by 'phonid preflight --suggest' command.
 func LoadPhonidRCLenient(filepath string) (*PhonidConfig, []PreflightCheck, error) {
 	data, err := os.ReadFile(filepath)
 	if err != nil {
@@ -68,18 +68,18 @@ func LoadPhonidRCLenient(filepath string) (*PhonidConfig, []PreflightCheck, erro
 }
 
 // ParsePhonidRC parses TOML content requiring preflight checks
-// Used exclusively by 'phonid preflight --suggest' command
+// Used exclusively by 'phonid preflight --suggest' command.
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error) {
 	return parsePhonidRCInternal(content, false)
 }
 
 // ParsePhonidRCLenient parses TOML content without requiring preflight checks
-// Used exclusively by 'phonid preflight --suggest' command
+// Used exclusively by 'phonid preflight --suggest' command.
 func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, error) {
 	return parsePhonidRCInternal(content, true)
 }
 
-// ParsePhonidRC parses TOML content into a validated PhonidConfig using strict mode
+// ParsePhonidRC parses TOML content into a validated PhonidConfig using strict mode.
 func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []PreflightCheck, error) {
 	var tomlConfig TOMLConfig
 
@@ -150,7 +150,7 @@ func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []Pref
 	return config, preflight, nil
 }
 
-// ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding
+// ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding.
 func ValidatePhonidRC(config *PhonidConfig) error {
 	if config == nil {
 		return fmt.Errorf("config cannot be nil")
@@ -159,7 +159,7 @@ func ValidatePhonidRC(config *PhonidConfig) error {
 	return config.Validate()
 }
 
-// getValidPlaceholderKeys returns a slice of valid placeholder characters for error messages
+// getValidPlaceholderKeys returns a slice of valid placeholder characters for error messages.
 func getValidPlaceholderKeys() []string {
 	keys := make([]string, 0, len(AllowedPlaceholders))
 	for key := range AllowedPlaceholders {

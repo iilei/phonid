@@ -7,13 +7,13 @@ import (
 )
 
 type (
-	// PhoneticEncoder handles encoding/decoding between numbers and phonetic words
+	// PhoneticEncoder handles encoding/decoding between numbers and phonetic words.
 	PhoneticEncoder struct {
 		config          *PhonidConfig
 		patternEncoders []*PatternEncoder // ordered by totalCombinations ascending
 	}
 
-	// PatternEncoder represents a single pattern configuration
+	// PatternEncoder represents a single pattern configuration.
 	PatternEncoder struct {
 		pattern           string
 		positions         []Position
@@ -21,7 +21,7 @@ type (
 		length            int // Number of positions/characters in the pattern
 	}
 
-	// Position represents one character position in the pattern
+	// Position represents one character position in the pattern.
 	Position struct {
 		placeholder string
 		chars       []rune
@@ -29,7 +29,7 @@ type (
 	}
 )
 
-// NewPhoneticEncoder creates an encoder with a validated config
+// NewPhoneticEncoder creates an encoder with a validated config.
 func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	// Validate first
 	if err := config.Validate(); err != nil {
@@ -39,7 +39,7 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	return newPhoneticEncoder(config)
 }
 
-// buildPatternEncoder creates a PatternEncoder from a pattern string and placeholders
+// buildPatternEncoder creates a PatternEncoder from a pattern string and placeholders.
 func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternEncoder, error) {
 	if pattern == "" {
 		return nil, fmt.Errorf("pattern cannot be empty")
@@ -85,7 +85,7 @@ func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternE
 	}, nil
 }
 
-// newPhoneticEncoder is the internal constructor (assumes valid config)
+// newPhoneticEncoder is the internal constructor (assumes valid config).
 func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	patternEncoders := make([]*PatternEncoder, 0, len(config.Patterns))
 
@@ -124,7 +124,7 @@ func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	}, nil
 }
 
-// Encode converts a number to a phonetic word, automatically selecting the best pattern
+// Encode converts a number to a phonetic word, automatically selecting the best pattern.
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
 	if number < 0 {
 		return "", fmt.Errorf("number must be non-negative, got %d", number)
@@ -155,7 +155,7 @@ func (e *PhoneticEncoder) Decode(word string) (int, error) {
 	return 0, fmt.Errorf("word length %d doesn't match any pattern", len(wordRunes))
 }
 
-// Encode converts a number to a phonetic word
+// Encode converts a number to a phonetic word.
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error) {
 	if number >= e.totalCombinations {
 		return "", fmt.Errorf("number %d exceeds maximum %d", number, e.totalCombinations-1)
@@ -178,7 +178,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error) {
 	return reverseString(word), nil
 }
 
-// Decode converts a phonetic word back to a number
+// Decode converts a phonetic word back to a number.
 func (e *PatternEncoder) Decode(word string) (int, error) {
 	runes := []rune(word)
 	if len(runes) != len(e.positions) {
@@ -224,12 +224,12 @@ func (e *PatternEncoder) Decode(word string) (int, error) {
 	return result, nil
 }
 
-// MaxValue returns the maximum number that can be encoded
+// MaxValue returns the maximum number that can be encoded.
 func (e *PatternEncoder) MaxValue() int {
 	return int(e.totalCombinations) - 1
 }
 
-// reverseString reverses a string
+// reverseString reverses a string.
 func reverseString(s string) string {
 	runes := []rune(s)
 	slices.Reverse(runes)

@@ -435,7 +435,7 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 	}
 }
 
-// Round-trip test to verify Encode/Decode are inverses
+// Round-trip test to verify Encode/Decode are inverses.
 func TestPhoneticEncoder_RoundTrip(t *testing.T) {
 	simpleConfig := &PhonidConfig{
 		Patterns: []string{"CVC"},

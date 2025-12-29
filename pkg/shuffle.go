@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	// ShuffleConfig holds Feistel shuffler configuration
+	// ShuffleConfig holds Feistel shuffler configuration.
 	ShuffleConfig struct {
 		BitWidth int    `default:"32"`
 		Rounds   int    `default:"0"`
@@ -15,7 +15,7 @@ type (
 	}
 
 	// FeistelShuffler provides bijective integer shuffling using Feistel networks
-	// Supports configurable number space size and uses standard Go libraries
+	// Supports configurable number space size and uses standard Go libraries.
 	FeistelShuffler struct {
 		rounds    int      // Number of Feistel rounds (3-6 recommended)
 		bitWidth  int      // Total bit width of the number space
@@ -25,7 +25,7 @@ type (
 	}
 )
 
-// Validate checks if the shuffle config is valid
+// Validate checks if the shuffle config is valid.
 func (sc *ShuffleConfig) Validate() error {
 	if sc.BitWidth < 4 || sc.BitWidth > 64 {
 		return fmt.Errorf("bit_width must be between 4 and 64, got %d", sc.BitWidth)
@@ -70,7 +70,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 	}, nil
 }
 
-// Encode performs bijective shuffling of input value
+// Encode performs bijective shuffling of input value.
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 	// Ensure input fits in our bit width
 	if fs.bitWidth == 64 {
@@ -101,7 +101,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 	return (left << fs.halfBits) | right, nil
 }
 
-// Decode performs bijective reverse shuffling (inverse of Encode)
+// Decode performs bijective reverse shuffling (inverse of Encode).
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 	// Ensure encoded value fits in our bit width
 	if fs.bitWidth == 64 {
@@ -132,7 +132,7 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 	return (left << fs.halfBits) | right, nil
 }
 
-// MaxValue returns the maximum value that can be shuffled
+// MaxValue returns the maximum value that can be shuffled.
 func (fs *FeistelShuffler) MaxValue() uint64 {
 	if fs.bitWidth == 64 {
 		return ^uint64(0) // All bits set (max uint64)
@@ -140,17 +140,17 @@ func (fs *FeistelShuffler) MaxValue() uint64 {
 	return (uint64(1) << fs.bitWidth) - 1
 }
 
-// BitWidth returns the configured bit width
+// BitWidth returns the configured bit width.
 func (fs *FeistelShuffler) BitWidth() int {
 	return fs.bitWidth
 }
 
-// Rounds returns the number of Feistel rounds
+// Rounds returns the number of Feistel rounds.
 func (fs *FeistelShuffler) Rounds() int {
 	return fs.rounds
 }
 
-// roundFunction implements the Feistel round function using FNV hash
+// roundFunction implements the Feistel round function using FNV hash.
 func (fs *FeistelShuffler) roundFunction(input, key uint64) uint64 {
 	h := fnv.New64a()
 	_ = binary.Write(h, binary.LittleEndian, input)
