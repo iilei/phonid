@@ -210,7 +210,7 @@ func validatePlaceholderSets(counts map[PlaceholderType]int, placeholders Placeh
 			continue
 		}
 
-		if hasDuplicates(chars) {
+		if hasDuplicates([]rune(chars)) {
 			return fmt.Errorf("placeholder '%c' contains duplicate characters", placeholder)
 		}
 

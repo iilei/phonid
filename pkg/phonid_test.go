@@ -1,7 +1,9 @@
-package phonid
+package phonid_test
 
 import (
 	"testing"
+
+	. "github.com/iilei/phonid/pkg"
 )
 
 func TestPhoneticConfigValidate_Defaults(t *testing.T) {
@@ -209,100 +211,119 @@ func TestPhoneticConfigValidate_LiquidsPattern(t *testing.T) {
 	}
 }
 
-func TestHasDuplicates(t *testing.T) {
+func TestValidate_DuplicateDetection(t *testing.T) {
 	tests := []struct {
-		name  string
-		runes []rune
-		want  bool
+		name        string
+		placeholder RuneSet
+		wantErr     bool
 	}{
-		{"no duplicates", []rune{'a', 'b', 'c'}, false},
-		{"has duplicate", []rune{'a', 'b', 'a'}, true},
-		{"empty", []rune{}, false},
-		{"single", []rune{'a'}, false},
+		{"no duplicates", RuneSet("bdk"), false},
+		{"has duplicate 'b'", RuneSet("bdb"), true},
+		{"has duplicate 'z'", RuneSet("xyzz"), true},
+		{"has duplicate 'k'", RuneSet("bdktk"), true},
+		{"empty causes min-size error", RuneSet(""), true},
+		{"single causes min-size error", RuneSet("b"), true},
+		{"multiple duplicates", RuneSet("bbddkk"), true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hasDuplicates(tt.runes)
-			if got != tt.want {
-				t.Errorf("hasDuplicates(%v) = %v, want %v", tt.runes, got, tt.want)
+			pc := &PhonidConfig{
+				Patterns: []string{"CVCVC"},
+				Placeholders: map[PlaceholderType]RuneSet{
+					Vowel:     RuneSet("aei"),
+					Consonant: tt.placeholder,
+				},
+			}
+			err := pc.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("config with %q: wantErr=%v, got error=%v", tt.placeholder, tt.wantErr, err)
 			}
 		})
 	}
 }
 
-func TestHasOverlap(t *testing.T) {
+func TestValidate_OverlapDetection(t *testing.T) {
 	tests := []struct {
-		name string
-		a    []rune
-		b    []rune
-		want bool
+		name      string
+		consonant RuneSet
+		liquid    RuneSet
+		wantErr   bool
 	}{
-		{"no overlap", []rune{'a', 'b'}, []rune{'c', 'd'}, false},
-		{"has overlap", []rune{'a', 'b'}, []rune{'b', 'c'}, true},
-		{"empty a", []rune{}, []rune{'a', 'b'}, false},
-		{"empty b", []rune{'a', 'b'}, []rune{}, false},
-		{"both empty", []rune{}, []rune{}, false},
+		{"no overlap", RuneSet("bdk"), RuneSet("lmn"), false},
+		{"has overlap 'b'", RuneSet("bdk"), RuneSet("blm"), true},
+		{"has overlap 'l'", RuneSet("bdkl"), RuneSet("lmn"), true},
+		{"multiple overlaps", RuneSet("bdl"), RuneSet("lmb"), true},
+		{"empty liquid", RuneSet("bdk"), RuneSet(""), false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hasOverlap(tt.a, tt.b)
-			if got != tt.want {
-				t.Errorf("hasOverlap(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+			pc := &PhonidConfig{
+				Patterns: []string{"CLVCV"},
+				Placeholders: map[PlaceholderType]RuneSet{
+					Vowel:     RuneSet("aei"),
+					Consonant: tt.consonant,
+					Liquid:    tt.liquid,
+				},
+			}
+			err := pc.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("config C=%q L=%q: wantErr=%v, got error=%v",
+					tt.consonant, tt.liquid, tt.wantErr, err)
 			}
 		})
 	}
 }
 
-func TestIsVowelBase(t *testing.T) {
+func TestValidate_VowelValidation(t *testing.T) {
 	tests := []struct {
-		name string
-		char rune
-		want bool
+		name    string
+		vowels  RuneSet
+		wantErr bool
 	}{
 		// Basic vowels
-		{"lowercase a", 'a', true},
-		{"lowercase e", 'e', true},
-		{"lowercase i", 'i', true},
-		{"lowercase o", 'o', true},
-		{"lowercase u", 'u', true},
-		{"lowercase y", 'y', true},
-		{"uppercase A", 'A', true},
-		{"uppercase E", 'E', true},
+		{"lowercase vowels", RuneSet("aei"), false},
+		{"uppercase vowels", RuneSet("AEI"), false},
+		{"mixed case vowels", RuneSet("aEi"), false},
+		{"vowel y", RuneSet("aey"), false},
 
 		// German umlauts
-		{"lowercase a-umlaut", '\u00E4', true},
-		{"lowercase o-umlaut", '\u00F6', true},
-		{"lowercase u-umlaut", '\u00FC', true},
-		{"uppercase A-umlaut", '\u00C4', true},
-		{"uppercase O-umlaut", '\u00D6', true},
-		{"uppercase U-umlaut", '\u00DC', true},
+		{"lowercase umlauts", RuneSet("äöü"), false},
+		{"uppercase umlauts", RuneSet("ÄÖÜ"), false},
+		{"mixed umlauts", RuneSet("aöü"), false},
 
 		// French accents
-		{"e-acute", '\u00E9', true},
-		{"e-grave", '\u00E8', true},
-		{"e-circumflex", '\u00EA', true},
-		{"e-diaeresis", '\u00EB', true},
+		{"e-acute", RuneSet("éèê"), false},
+		{"e-diaeresis", RuneSet("aëi"), false},
 
 		// Other vowels with diacritics
-		{"a-acute", '\u00E1', true},
-		{"i-acute", '\u00ED', true},
-		{"o-acute", '\u00F3', true},
-		{"u-acute", '\u00FA', true},
-		{"n-tilde", '\u00F1', false}, // Not a vowel
+		{"accented vowels", RuneSet("áíó"), false},
+		{"mixed plain and accented", RuneSet("aéö"), false},
 
-		// Consonants
-		{"b", 'b', false},
-		{"k", 'k', false},
-		{"z", 'z', false},
+		// Invalid cases - consonants
+		{"consonant b", RuneSet("aeb"), true},
+		{"consonant k", RuneSet("aek"), true},
+		{"consonant z", RuneSet("aez"), true},
+
+		// Invalid cases - other characters
+		{"n-tilde not vowel", RuneSet("aeñ"), true},
+		{"digit not vowel", RuneSet("ae1"), true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isVowelBase(tt.char)
-			if got != tt.want {
-				t.Errorf("isVowelBase('%c') = %v, want %v", tt.char, got, tt.want)
+			pc := &PhonidConfig{
+				Patterns: []string{"CVCVC"},
+				Placeholders: map[PlaceholderType]RuneSet{
+					Vowel:     tt.vowels,
+					Consonant: RuneSet("bdk"),
+				},
+			}
+			err := pc.Validate()
+			if (err != nil) != tt.wantErr {
+				t.Errorf("config with vowels %q: wantErr=%v, got error=%v",
+					tt.vowels, tt.wantErr, err)
 			}
 		})
 	}

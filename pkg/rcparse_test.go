@@ -1,8 +1,10 @@
-package phonid
+package phonid_test
 
 import (
 	"slices"
 	"testing"
+
+	. "github.com/iilei/phonid/pkg"
 )
 
 var config = `
@@ -297,9 +299,9 @@ func TestIsValidPhonidRCFilename(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isValidPhonidRCFilename(tt.filename)
+			got := IsValidPhonidRCFilename(tt.filename)
 			if got != tt.want {
-				t.Errorf("isValidPhonidRCFilename(%q) = %v, want %v", tt.filename, got, tt.want)
+				t.Errorf("IsValidPhonidRCFilename(%q) = %v, want %v", tt.filename, got, tt.want)
 			}
 		})
 	}

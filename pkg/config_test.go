@@ -1,8 +1,10 @@
-package phonid
+package phonid_test
 
 import (
 	"reflect"
 	"testing"
+
+	. "github.com/iilei/phonid/pkg"
 )
 
 func TestNewConfig(t *testing.T) {

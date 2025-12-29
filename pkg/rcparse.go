@@ -199,16 +199,16 @@ func validateConfigPath(path string) error {
 
 	// Validate filename pattern: .phonidrc[.toml] or .*.phonidrc[.toml]
 	base := filepath.Base(cleaned)
-	if !isValidPhonidRCFilename(base) {
+	if !IsValidPhonidRCFilename(base) {
 		return fmt.Errorf("invalid filename: must be '.phonidrc[.toml]' or '.<prefix>.phonidrc[.toml]', got '%s'", base)
 	}
 
 	return nil
 }
 
-// isValidPhonidRCFilename checks if filename matches .phonidrc or .<prefix>.phonidrc pattern,
+// IsValidPhonidRCFilename checks if filename matches .phonidrc or .<prefix>.phonidrc pattern,
 // optionally with a .toml extension.
-func isValidPhonidRCFilename(filename string) bool {
+func IsValidPhonidRCFilename(filename string) bool {
 	// Exact match: .phonidrc
 	filenameStripped, _ := strings.CutSuffix(filename, RcFileOptSuffix)
 	if filenameStripped == RcFileName {

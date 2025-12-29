@@ -12,6 +12,7 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
 
 - [Constants](<#constants>)
 - [Variables](<#variables>)
+- [func IsValidPhonidRCFilename\(filename string\) bool](<#IsValidPhonidRCFilename>)
 - [func LoadPhonidRC\(fp string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#LoadPhonidRC>)
 - [func LoadPhonidRCLenient\(fp string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#LoadPhonidRCLenient>)
 - [func ParsePhonidRC\(content string\) \(\*PhonidConfig, \[\]PreflightCheck, error\)](<#ParsePhonidRC>)
@@ -148,6 +149,15 @@ var (
     }
 )
 ```
+
+<a name="IsValidPhonidRCFilename"></a>
+## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L211>)
+
+```go
+func IsValidPhonidRCFilename(filename string) bool
+```
+
+IsValidPhonidRCFilename checks if filename matches .phonidrc or .\<prefix\>.phonidrc pattern, optionally with a .toml extension.
 
 <a name="LoadPhonidRC"></a>
 ## func [LoadPhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L58>)

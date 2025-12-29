@@ -14,8 +14,8 @@ linters:
     - gocognit             # Computes and checks the cognitive complexity of functions
     - goconst              # Finds repeated strings that could be replaced by a constant
     - gocritic             # provides diagnostics that check for bugs, performance and style issues
-    - godoclint            # Checks Golang's documentation practice
     - gocyclo              # computes and checks the cyclomatic complexity of functions
+    - godoclint            # Checks Golang's documentation practice
     - godot                # Checks if comments end in a period
     - gomoddirectives      # Manages the use of 'replace', 'retract', and 'excludes' directives in go.mod
     - goprintffuncname     # Checks that printf-like functions are named with f at the end
@@ -54,6 +54,7 @@ linters:
     - staticcheck          # Go vet on steroids, applying a ton of static analysis checks
     - testableexamples     # Checks if examples are testable (have an expected output)
     - testifylint          # Checks usage of github.com/stretchr/testify
+    - testpackage          # makes you use a separate _test package
     - tparallel            # Detects inappropriate usage of t.Parallel() method in your Go test codes
     - unconvert            # Removes unnecessary type conversions
     - unparam              # Reports unused function parameters

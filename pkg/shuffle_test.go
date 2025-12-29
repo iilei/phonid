@@ -1,8 +1,10 @@
-package phonid
+package phonid_test
 
 import (
 	"math"
 	"testing"
+
+	. "github.com/iilei/phonid/pkg"
 )
 
 //gocognit:ignore
