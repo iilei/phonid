@@ -202,8 +202,7 @@ func BenchmarkFeistelShufflerEncode(b *testing.B) {
 	shuffler, _ := NewFeistelShuffler(32, 6, 123456)
 	testValue := uint64(987654)
 
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_, _ = shuffler.Encode(testValue)
 	}
 }
@@ -213,8 +212,7 @@ func BenchmarkFeistelShufflerDecode(b *testing.B) {
 	testValue := uint64(987654)
 	encoded, _ := shuffler.Encode(testValue)
 
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		_, _ = shuffler.Decode(encoded)
 	}
 }

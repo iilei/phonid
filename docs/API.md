@@ -69,6 +69,14 @@ const (
 )
 ```
 
+<a name="MaxBitWidth"></a>
+
+```go
+const (
+    MaxBitWidth = 64
+)
+```
+
 ## Variables
 
 <a name="AllowedVowels"></a>
@@ -276,7 +284,7 @@ func WithShuffle(shuffle *ShuffleConfig) ConfigOption
 WithShuffle sets the shuffle configuration.
 
 <a name="FeistelShuffler"></a>
-## type [FeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L19-L25>)
+## type [FeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L23-L29>)
 
 FeistelShuffler provides bijective integer shuffling using Feistel networks Supports configurable number space size and uses standard Go libraries.
 
@@ -287,7 +295,7 @@ type FeistelShuffler struct {
 ```
 
 <a name="NewFeistelShuffler"></a>
-### func [NewFeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L43>)
+### func [NewFeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L47>)
 
 ```go
 func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, error)
@@ -296,7 +304,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 NewFeistelShuffler creates a new shuffler for the given bit width bitWidth: total bits \(8, 16, 32, 64, etc.\) rounds: number of Feistel rounds \(3\-6 recommended. "0" will preserve linear order\) seed: seed value for generating round keys
 
 <a name="FeistelShuffler.BitWidth"></a>
-### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L146>)
+### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L150>)
 
 ```go
 func (fs *FeistelShuffler) BitWidth() int
@@ -305,7 +313,7 @@ func (fs *FeistelShuffler) BitWidth() int
 BitWidth returns the configured bit width.
 
 <a name="FeistelShuffler.Decode"></a>
-### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L107>)
+### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L111>)
 
 ```go
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
@@ -314,7 +322,7 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
 Decode performs bijective reverse shuffling \(inverse of Encode\).
 
 <a name="FeistelShuffler.Encode"></a>
-### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L76>)
+### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L80>)
 
 ```go
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
@@ -323,7 +331,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
 Encode performs bijective shuffling of input value.
 
 <a name="FeistelShuffler.MaxValue"></a>
-### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L138>)
+### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L142>)
 
 ```go
 func (fs *FeistelShuffler) MaxValue() uint64
@@ -332,7 +340,7 @@ func (fs *FeistelShuffler) MaxValue() uint64
 MaxValue returns the maximum value that can be shuffled.
 
 <a name="FeistelShuffler.Rounds"></a>
-### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L151>)
+### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L155>)
 
 ```go
 func (fs *FeistelShuffler) Rounds() int
@@ -426,7 +434,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L117-L120>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L118-L121>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -451,7 +459,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L130>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L131>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -460,7 +468,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid.
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L99>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L100>)
 
 
 
@@ -469,7 +477,7 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L98>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L99>)
 
 
 
@@ -546,7 +554,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L103>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L104>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -555,7 +563,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L124>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L125>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error
@@ -564,7 +572,7 @@ func (rs *RuneSet) UnmarshalText(text []byte) error
 UnmarshalText implements encoding.TextUnmarshaler for TOML/JSON unmarshaling.
 
 <a name="ShuffleConfig"></a>
-## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L11-L15>)
+## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L15-L19>)
 
 ShuffleConfig holds Feistel shuffler configuration.
 
@@ -577,7 +585,7 @@ type ShuffleConfig struct {
 ```
 
 <a name="ShuffleConfig.Validate"></a>
-### func \(\*ShuffleConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L29>)
+### func \(\*ShuffleConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L33>)
 
 ```go
 func (sc *ShuffleConfig) Validate() error

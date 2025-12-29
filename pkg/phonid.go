@@ -2,6 +2,7 @@ package phonid
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -321,12 +322,7 @@ func validateNoOverlaps(counts map[PlaceholderType]int, placeholders Placeholder
 
 // isComplementPlaceholder checks if a placeholder is a non-vowel phonetic category.
 func isComplementPlaceholder(p PlaceholderType) bool {
-	for _, complement := range ComplementPlaceholders {
-		if p == complement {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ComplementPlaceholders, p)
 }
 
 // hasDuplicates checks if a rune slice contains duplicates.
@@ -357,12 +353,7 @@ func hasOverlap(a, b []rune) bool {
 
 // isAllowedLength checks if a length is in the allowed lengths list.
 func isAllowedLength(length int) bool {
-	for _, allowed := range AllowedPatternLengths {
-		if length == allowed {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(AllowedPatternLengths, length)
 }
 
 // isVowelBase checks if a rune is a vowel, stripping diacritics

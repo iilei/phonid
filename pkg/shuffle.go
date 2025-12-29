@@ -6,6 +6,10 @@ import (
 	"hash/fnv"
 )
 
+const (
+	MaxBitWidth = 64
+)
+
 type (
 	// ShuffleConfig holds Feistel shuffler configuration.
 	ShuffleConfig struct {
@@ -48,7 +52,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 		return nil, fmt.Errorf("rounds must be between 0 and 10, got %d", rounds)
 	}
 
-	halfBits := bitWidth / 2
+	halfBits := bitWidth >> 1 // Right shift by 1 == divide by 2
 	mask := (uint64(1) << halfBits) - 1
 
 	// Generate round keys from seed using FNV hash
@@ -75,7 +79,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 // Encode performs bijective shuffling of input value.
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 	// Ensure input fits in our bit width
-	if fs.bitWidth == 64 {
+	if fs.bitWidth == MaxBitWidth {
 		// For 64-bit, all uint64 values are valid
 	} else {
 		maxValue := uint64(1) << fs.bitWidth
@@ -106,7 +110,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 // Decode performs bijective reverse shuffling (inverse of Encode).
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 	// Ensure encoded value fits in our bit width
-	if fs.bitWidth == 64 {
+	if fs.bitWidth == MaxBitWidth {
 		// For 64-bit, all uint64 values are valid
 	} else {
 		maxValue := uint64(1) << fs.bitWidth
@@ -136,7 +140,7 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 
 // MaxValue returns the maximum value that can be shuffled.
 func (fs *FeistelShuffler) MaxValue() uint64 {
-	if fs.bitWidth == 64 {
+	if fs.bitWidth == MaxBitWidth {
 		return ^uint64(0) // All bits set (max uint64)
 	}
 	return (uint64(1) << fs.bitWidth) - 1
