@@ -60,7 +60,10 @@ func TestFeistelShufflerBasicBijection(t *testing.T) {
 				}
 
 				if original > 1 && encoded == original {
-					t.Logf("Warning: Encoding didn't change value %d (might be rare edge case)", original)
+					t.Logf(
+						"Warning: Encoding didn't change value %d (might be rare edge case)",
+						original,
+					)
 				}
 			}
 		})

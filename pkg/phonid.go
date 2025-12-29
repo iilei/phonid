@@ -9,27 +9,12 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-// Minimum requirements per placeholder type
 const (
+	// Minimum requirements per placeholder type
 	MinCharsForVowel      = 2
 	MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
-)
 
-// AllowedVowels defines the permitted vowel characters
-var AllowedVowels = map[rune]bool{
-	'a': true, 'e': true, 'i': true, 'o': true, 'u': true, 'y': true,
-	'A': true, 'E': true, 'I': true, 'O': true, 'U': true, 'Y': true,
-}
-
-// AllowedPatternLengths defines the permitted pattern lengths
-var AllowedPatternLengths = []int{3, 5, 7, 11, 23}
-
-// PlaceholderType represents a valid phonetic placeholder identifier
-type PlaceholderType rune
-type PlaceholderMap map[PlaceholderType]RuneSet
-
-// Valid placeholder types
-const (
+	// Valid placeholder types
 	Consonant PlaceholderType = 'C'
 	Vowel     PlaceholderType = 'V'
 	Liquid    PlaceholderType = 'L'
@@ -39,90 +24,107 @@ const (
 	CustomX   PlaceholderType = 'X'
 	CustomY   PlaceholderType = 'Y'
 	CustomZ   PlaceholderType = 'Z'
+
+	// ProQuint-compatible configuration
+	// Based on the Proquint specification: https://arxiv.org/html/0901.4016
+	// Provides a pre-configured encoder that generates identifiers compatible with
+	// the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
+	ProQuintPattern = "CVCVCXCVCVC"
 )
 
-// AllowedPlaceholders defines the valid placeholder identifiers
-var AllowedPlaceholders = map[PlaceholderType]string{
-	Consonant: "Consonant", // Hard consonants: b,c,d,f,g,h,j,k,p,q,s,t,v,w,x,z
-	Vowel:     "Vowel",     // Pure vowels: a,e,i,o,u
-	Liquid:    "Liquid",    // Liquid consonants: l,m,n,r
-	Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
-	Sibilant:  "Sibilant",  // Hissing sounds: s,z (or use IPA: ʃ,ʒ for sh,zh)
-	Fricative: "Fricative", // Friction sounds: f,v (or use IPA: θ,ð for th,dh)
-	CustomX:   "User-defined category 1",
-	CustomY:   "User-defined category 2",
-	CustomZ:   "User-defined category 3",
-}
+var (
+	// AllowedVowels defines the permitted vowel characters
+	AllowedVowels = map[rune]bool{
+		'a': true, 'e': true, 'i': true, 'o': true, 'u': true, 'y': true,
+		'A': true, 'E': true, 'I': true, 'O': true, 'U': true, 'Y': true,
+	}
 
-// RuneSet is a slice of runes that can be unmarshaled from a string.
-// This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
-type RuneSet []rune
+	// AllowedPatternLengths defines the permitted pattern lengths
+	AllowedPatternLengths = []int{3, 5, 7, 11, 23}
+
+	// AllowedPlaceholders defines the valid placeholder identifiers
+	AllowedPlaceholders = map[PlaceholderType]string{
+		Consonant: "Consonant", // Hard consonants: b,c,d,f,g,h,j,k,p,q,s,t,v,w,x,z
+		Vowel:     "Vowel",     // Pure vowels: a,e,i,o,u
+		Liquid:    "Liquid",    // Liquid consonants: l,m,n,r
+		Nasal:     "Nasal",     // Nasal sounds: m,n (or use IPA: ŋ for ng)
+		Sibilant:  "Sibilant",  // Hissing sounds: s,z (or use IPA: ʃ,ʒ for sh,zh)
+		Fricative: "Fricative", // Friction sounds: f,v (or use IPA: θ,ð for th,dh)
+		CustomX:   "User-defined category 1",
+		CustomY:   "User-defined category 2",
+		CustomZ:   "User-defined category 3",
+	}
+	ProQuintPlaceholders = PlaceholderMap{
+		Vowel:     []rune("aiou"),
+		Consonant: []rune("bdfghjklmnprstvz"),
+		CustomX:   RuneSet{'-'},
+	}
+
+	// ProQuintConfig provides Proquint-compatible encoding
+	// See: https://arxiv.org/html/0901.4016
+	ProQuintConfig = PhonidConfig{
+		Patterns:     []string{ProQuintPattern},
+		Placeholders: ProQuintPlaceholders,
+	}
+
+	// ComplementPlaceholders lists all non-vowel phonetic categories
+	ComplementPlaceholders = []PlaceholderType{
+		Consonant,
+		Liquid,
+		Nasal,
+		Sibilant,
+		Fricative,
+	}
+
+	// DefaultPlaceholders provides sensible defaults for common phonetic categories
+	DefaultPlaceholders = map[PlaceholderType]RuneSet{
+		Consonant: RuneSet("bcdfghjkpqstvwxz"),
+		Liquid:    RuneSet("lmnr"),
+		Vowel:     RuneSet("aeiou"),
+		// Note: Sibilant, Fricative, and Nasal can be customized by users
+		// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
+	}
+
+	DefaultPatterns = []string{
+		"CVC",
+		"VCCVC",
+		"CVCVCVC",
+		"CVCVCVCVCVC",
+	}
+)
+
+type (
+	// PlaceholderType represents a valid phonetic placeholder identifier
+
+	PlaceholderType rune
+	PlaceholderMap  map[PlaceholderType]RuneSet
+
+	// RuneSet is a slice of runes that can be unmarshaled from a string.
+	// This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
+	RuneSet []rune
+
+	// PhonidConfig holds phonetic pattern configuration.
+	//
+	// Custom categories (X, Y, Z) can be used for domain-specific sounds:
+	//
+	//	config := PhonidConfig{
+	//	    Patterns: []string{"CXVC"},  // Mix custom with built-in
+	//	    Placeholders: PlaceholderMap{
+	//	        Consonant: RuneSet("bcd"),
+	//	        Vowel: RuneSet("ae"),
+	//	        CustomX: RuneSet("ŋ"),  // Velar nasal
+	//	    },
+	//	}
+	PhonidConfig struct {
+		Patterns     []string       // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
+		Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
+	}
+)
 
 // UnmarshalText implements encoding.TextUnmarshaler for TOML/JSON unmarshaling.
 func (rs *RuneSet) UnmarshalText(text []byte) error {
 	*rs = []rune(string(text))
 	return nil
-}
-
-// DefaultPlaceholders provides sensible defaults for common phonetic categories
-var DefaultPlaceholders = map[PlaceholderType]RuneSet{
-	Consonant: RuneSet("bcdfghjkpqstvwxz"),
-	Liquid:    RuneSet("lmnr"),
-	Vowel:     RuneSet("aeiou"),
-	// Note: Sibilant, Fricative, and Nasal can be customized by users
-	// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
-}
-
-// ProQuint-compatible configuration
-// Based on the Proquint specification: https://arxiv.org/html/0901.4016
-// Provides a pre-configured encoder that generates identifiers compatible with
-// the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
-const ProQuintPattern = "CVCVCXCVCVC"
-
-var ProQuintPlaceholders = PlaceholderMap{
-	Vowel:     RuneSet{'a', 'i', 'o', 'u'},
-	Consonant: RuneSet{'b', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z'},
-	CustomX:   RuneSet{'-'},
-}
-
-// ProQuintConfig provides Proquint-compatible encoding
-// See: https://arxiv.org/html/0901.4016
-var ProQuintConfig = PhonidConfig{
-	Patterns:     []string{ProQuintPattern},
-	Placeholders: ProQuintPlaceholders,
-}
-
-var DefaultPatterns = []string{
-	"CVC",
-	"VCCVC",
-	"CVCVCVC",
-	"CVCVCVCVCVC",
-}
-
-// ComplementPlaceholders lists all non-vowel phonetic categories
-var ComplementPlaceholders = []PlaceholderType{
-	Consonant,
-	Liquid,
-	Nasal,
-	Sibilant,
-	Fricative,
-}
-
-// PhonidConfig holds phonetic pattern configuration.
-//
-// Custom categories (X, Y, Z) can be used for domain-specific sounds:
-//
-//	config := PhonidConfig{
-//	    Patterns: []string{"CXVC"},  // Mix custom with built-in
-//	    Placeholders: PlaceholderMap{
-//	        Consonant: RuneSet("bcd"),
-//	        Vowel: RuneSet("ae"),
-//	        CustomX: RuneSet("ŋ"),  // Velar nasal
-//	    },
-//	}
-type PhonidConfig struct {
-	Patterns     []string       // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
-	Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
 }
 
 func validatePattern(pattern string, placeholders PlaceholderMap) error {
@@ -164,11 +166,18 @@ func validatePattern(pattern string, placeholders PlaceholderMap) error {
 		if placeholder == Vowel {
 
 			if len(chars) == 0 {
-				return fmt.Errorf("vowel placeholder '%c' must have at least one character", placeholder)
+				return fmt.Errorf(
+					"vowel placeholder '%c' must have at least one character",
+					placeholder,
+				)
 			}
 			for _, char := range chars {
 				if !isVowelBase(char) {
-					return fmt.Errorf("vowel placeholder '%c' contains invalid vowel '%c' (allowed: a,e,i,o,u,y and their diacritical variants)", placeholder, char)
+					return fmt.Errorf(
+						"vowel placeholder '%c' contains invalid vowel '%c' (allowed: a,e,i,o,u,y and their diacritical variants)",
+						placeholder,
+						char,
+					)
 				}
 			}
 		}
@@ -183,7 +192,11 @@ func validatePattern(pattern string, placeholders PlaceholderMap) error {
 		}
 	}
 	if !hasVowel {
-		return fmt.Errorf("pattern must contain at least one vowel placeholder ('%c': %s)", Vowel, AllowedPlaceholders[Vowel])
+		return fmt.Errorf(
+			"pattern must contain at least one vowel placeholder ('%c': %s)",
+			Vowel,
+			AllowedPlaceholders[Vowel],
+		)
 	}
 
 	// Require at least one complement category with sufficient variety
@@ -192,8 +205,11 @@ func validatePattern(pattern string, placeholders PlaceholderMap) error {
 		for i, complement := range ComplementPlaceholders {
 			complementNames[i] = string(complement)
 		}
-		return fmt.Errorf("pattern must use at least one complement placeholder (%s) with at least %d characters",
-			strings.Join(complementNames, ", "), MinCharsForComplement)
+		return fmt.Errorf(
+			"pattern must use at least one complement placeholder (%s) with at least %d characters",
+			strings.Join(complementNames, ", "),
+			MinCharsForComplement,
+		)
 	}
 
 	// Check for overlaps between all placeholder character sets
@@ -242,7 +258,11 @@ func (pc *PhonidConfig) Validate() error {
 			return fmt.Errorf("duplicate pattern length %d found", patternLen)
 		}
 		if !isAllowedLength(patternLen) {
-			return fmt.Errorf("pattern length %d is not allowed (must be one of %v)", patternLen, AllowedPatternLengths)
+			return fmt.Errorf(
+				"pattern length %d is not allowed (must be one of %v)",
+				patternLen,
+				AllowedPatternLengths,
+			)
 		}
 
 		// Validate individual pattern

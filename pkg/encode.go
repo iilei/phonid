@@ -6,26 +6,28 @@ import (
 	"strings"
 )
 
-// PhoneticEncoder handles encoding/decoding between numbers and phonetic words
-type PhoneticEncoder struct {
-	config          *PhonidConfig
-	patternEncoders []*PatternEncoder // ordered by totalCombinations ascending
-}
+type (
+	// PhoneticEncoder handles encoding/decoding between numbers and phonetic words
+	PhoneticEncoder struct {
+		config          *PhonidConfig
+		patternEncoders []*PatternEncoder // ordered by totalCombinations ascending
+	}
 
-// PatternEncoder represents a single pattern configuration
-type PatternEncoder struct {
-	pattern           string
-	positions         []Position
-	totalCombinations PositiveInt
-	length            int // Number of positions/characters in the pattern
-}
+	// PatternEncoder represents a single pattern configuration
+	PatternEncoder struct {
+		pattern           string
+		positions         []Position
+		totalCombinations PositiveInt
+		length            int // Number of positions/characters in the pattern
+	}
 
-// Position represents one character position in the pattern
-type Position struct {
-	placeholder string
-	chars       []rune
-	base        int
-}
+	// Position represents one character position in the pattern
+	Position struct {
+		placeholder string
+		chars       []rune
+		base        int
+	}
+)
 
 // NewPhoneticEncoder creates an encoder with a validated config
 func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
@@ -53,7 +55,11 @@ func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternE
 		// Look up the character set for this placeholder
 		chars, exists := placeholders[placeholderType]
 		if !exists {
-			return nil, fmt.Errorf("placeholder '%c' at position %d not found in placeholders", char, i)
+			return nil, fmt.Errorf(
+				"placeholder '%c' at position %d not found in placeholders",
+				char,
+				i,
+			)
 		}
 
 		if len(chars) == 0 {
@@ -176,7 +182,11 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error) {
 func (e *PatternEncoder) Decode(word string) (int, error) {
 	runes := []rune(word)
 	if len(runes) != len(e.positions) {
-		return 0, fmt.Errorf("word length %d doesn't match pattern length %d", len(runes), len(e.positions))
+		return 0, fmt.Errorf(
+			"word length %d doesn't match pattern length %d",
+			len(runes),
+			len(e.positions),
+		)
 	}
 
 	var result int
@@ -194,7 +204,12 @@ func (e *PatternEncoder) Decode(word string) (int, error) {
 		}
 
 		if charIndex == -1 {
-			return 0, fmt.Errorf("character '%c' at position %d is not valid for placeholder '%s'", r, i, position.placeholder)
+			return 0, fmt.Errorf(
+				"character '%c' at position %d is not valid for placeholder '%s'",
+				r,
+				i,
+				position.placeholder,
+			)
 		}
 
 		// Add to result using positional notation

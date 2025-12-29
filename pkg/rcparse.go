@@ -8,41 +8,42 @@ import (
 	"github.com/pelletier/go-toml/v2"
 )
 
-// PositiveInt represents a non-negative integer
-type PositiveInt int
+type (
+	// PositiveInt represents a non-negative integer
+	PositiveInt int
+	// TOMLConfig represents the top-level TOML structure
+	TOMLConfig struct {
+		Base      PositiveInt       `toml:"base,omitempty"`
+		Shuffle   TOMLShuffleConfig `toml:"shuffle,omitempty"`
+		Phonetic  TOMLPhonidConfig  `toml:"phonetic,omitempty"`
+		Preflight []PreflightCheck  `toml:"preflight"` // Required - no omitempty
+	}
+
+	// PreflightCheck represents a single input->output verification
+	PreflightCheck struct {
+		Input  PositiveInt `toml:"input"`
+		Output string      `toml:"output"`
+	}
+
+	// TOMLShuffleConfig represents shuffle configuration
+	TOMLShuffleConfig struct {
+		BitWidth PositiveInt `toml:"bit_width,omitempty"`
+		Rounds   PositiveInt `toml:"rounds,omitempty"`
+		Seed     PositiveInt `toml:"seed,omitempty"`
+	}
+
+	// TOMLPhonidConfig represents the phonetic configuration
+	TOMLPhonidConfig struct {
+		Patterns     []string          `toml:"patterns,omitempty"`
+		Placeholders map[string]string `toml:"placeholders,omitempty"`
+	}
+)
 
 func (p PositiveInt) Validate() error {
 	if p < 0 {
 		return fmt.Errorf("value must be non-negative, got %d", p)
 	}
 	return nil
-}
-
-// TOMLConfig represents the top-level TOML structure
-type TOMLConfig struct {
-	Base      PositiveInt       `toml:"base,omitempty"`
-	Shuffle   TOMLShuffleConfig `toml:"shuffle,omitempty"`
-	Phonetic  TOMLPhonidConfig  `toml:"phonetic,omitempty"`
-	Preflight []PreflightCheck  `toml:"preflight"` // Required - no omitempty
-}
-
-// PreflightCheck represents a single input->output verification
-type PreflightCheck struct {
-	Input  PositiveInt `toml:"input"`
-	Output string      `toml:"output"`
-}
-
-// TOMLShuffleConfig represents shuffle configuration
-type TOMLShuffleConfig struct {
-	BitWidth PositiveInt `toml:"bit_width,omitempty"`
-	Rounds   PositiveInt `toml:"rounds,omitempty"`
-	Seed     PositiveInt `toml:"seed,omitempty"`
-}
-
-// TOMLPhonidConfig represents the phonetic configuration
-type TOMLPhonidConfig struct {
-	Patterns     []string          `toml:"patterns,omitempty"`
-	Placeholders map[string]string `toml:"placeholders,omitempty"`
 }
 
 // LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation
@@ -122,15 +123,21 @@ func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []Pref
 			// Validate placeholder key - convert to runes first for proper UTF-8 handling
 			keyRunes := []rune(keyStr)
 			if len(keyRunes) != 1 {
-				return nil, preflight, fmt.Errorf("placeholder key '%s' must be single character", keyStr)
+				return nil, preflight, fmt.Errorf(
+					"placeholder key '%s' must be single character",
+					keyStr,
+				)
 			}
 
 			placeholderType := PlaceholderType(keyRunes[0])
 
 			// Validate placeholder type is allowed
 			if _, isAllowed := AllowedPlaceholders[placeholderType]; !isAllowed {
-				return nil, preflight, fmt.Errorf("placeholder '%c' is not allowed. Valid placeholders: %v",
-					placeholderType, getValidPlaceholderKeys())
+				return nil, preflight, fmt.Errorf(
+					"placeholder '%c' is not allowed. Valid placeholders: %v",
+					placeholderType,
+					getValidPlaceholderKeys(),
+				)
 			}
 
 			// Convert string to RuneSet (simple conversion)

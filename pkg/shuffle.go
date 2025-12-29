@@ -6,12 +6,24 @@ import (
 	"hash/fnv"
 )
 
-// ShuffleConfig holds Feistel shuffler configuration
-type ShuffleConfig struct {
-	BitWidth int    `default:"32"`
-	Rounds   int    `default:"4"`
-	Seed     uint64 `default:"0"`
-}
+type (
+	// ShuffleConfig holds Feistel shuffler configuration
+	ShuffleConfig struct {
+		BitWidth int    `default:"32"`
+		Rounds   int    `default:"0"`
+		Seed     uint64 `default:"0"`
+	}
+
+	// FeistelShuffler provides bijective integer shuffling using Feistel networks
+	// Supports configurable number space size and uses standard Go libraries
+	FeistelShuffler struct {
+		rounds    int      // Number of Feistel rounds (3-6 recommended)
+		bitWidth  int      // Total bit width of the number space
+		halfBits  int      // Bits per half (left/right)
+		mask      uint64   // Mask for half-width values
+		roundKeys []uint64 // Round keys derived from seed
+	}
+)
 
 // Validate checks if the shuffle config is valid
 func (sc *ShuffleConfig) Validate() error {
@@ -22,16 +34,6 @@ func (sc *ShuffleConfig) Validate() error {
 		return fmt.Errorf("rounds must be between 3 and 10, got %d", sc.Rounds)
 	}
 	return nil
-}
-
-// FeistelShuffler provides bijective integer shuffling using Feistel networks
-// Supports configurable number space size and uses standard Go libraries
-type FeistelShuffler struct {
-	rounds    int      // Number of Feistel rounds (3-6 recommended)
-	bitWidth  int      // Total bit width of the number space
-	halfBits  int      // Bits per half (left/right)
-	mask      uint64   // Mask for half-width values
-	roundKeys []uint64 // Round keys derived from seed
 }
 
 // NewFeistelShuffler creates a new shuffler for the given bit width

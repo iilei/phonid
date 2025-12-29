@@ -7,7 +7,10 @@ import (
 func TestNewPhoneticEncoder(t *testing.T) {
 	placeholderMapFewComposites := PlaceholderMap{Vowel: RuneSet{'a', 'e'}, Consonant: RuneSet{'z'}}
 	placeholderMapNoVowels := PlaceholderMap{Vowel: RuneSet{}, Consonant: RuneSet{'z'}}
-	placeholderCustomOK := PlaceholderMap{Vowel: RuneSet{'a', 'e', 'o'}, Consonant: RuneSet{'z', 'b', 'k'}}
+	placeholderCustomOK := PlaceholderMap{
+		Vowel:     RuneSet{'a', 'e', 'o'},
+		Consonant: RuneSet{'z', 'b', 'k'},
+	}
 
 	type args struct {
 		config *PhonidConfig
@@ -25,32 +28,48 @@ func TestNewPhoneticEncoder(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:    "bad config: too few composites",
-			args:    args{config: &PhonidConfig{Patterns: []string{"VCV"}, Placeholders: placeholderMapFewComposites}},
+			name: "bad config: too few composites",
+			args: args{
+				config: &PhonidConfig{
+					Patterns:     []string{"VCV"},
+					Placeholders: placeholderMapFewComposites,
+				},
+			},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "bad config: no Vowels",
-			args:    args{config: &PhonidConfig{Patterns: []string{"VCV"}, Placeholders: placeholderMapNoVowels}},
+			name: "bad config: no Vowels",
+			args: args{
+				config: &PhonidConfig{
+					Patterns:     []string{"VCV"},
+					Placeholders: placeholderMapNoVowels,
+				},
+			},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "custom config ok",
-			args:    args{config: &PhonidConfig{Patterns: []string{"VCV"}, Placeholders: placeholderCustomOK}},
+			name: "custom config ok",
+			args: args{
+				config: &PhonidConfig{Patterns: []string{"VCV"}, Placeholders: placeholderCustomOK},
+			},
 			want:    &PhoneticEncoder{},
 			wantErr: false,
 		},
 		{
-			name:    "ok config, bad patterns",
-			args:    args{config: &PhonidConfig{Patterns: []string{"V"}, Placeholders: placeholderCustomOK}},
+			name: "ok config, bad patterns",
+			args: args{
+				config: &PhonidConfig{Patterns: []string{"V"}, Placeholders: placeholderCustomOK},
+			},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "ok config, no patterns",
-			args:    args{config: &PhonidConfig{Patterns: []string{}, Placeholders: placeholderCustomOK}},
+			name: "ok config, no patterns",
+			args: args{
+				config: &PhonidConfig{Patterns: []string{}, Placeholders: placeholderCustomOK},
+			},
 			want:    &PhoneticEncoder{},
 			wantErr: false,
 		},
@@ -84,29 +103,47 @@ func Test_buildPatternEncoder(t *testing.T) {
 		wantTotalCombinations int
 	}{
 		{
-			name:                  "pattern Encoder built with minimal config",
-			args:                  args{pattern: "CVC", placeholders: PlaceholderMap{Vowel: RuneSet{'o', 'e', 'a'}, Consonant: RuneSet{'z', 'b', 'k'}}},
+			name: "pattern Encoder built with minimal config",
+			args: args{
+				pattern: "CVC",
+				placeholders: PlaceholderMap{
+					Vowel:     RuneSet{'o', 'e', 'a'},
+					Consonant: RuneSet{'z', 'b', 'k'},
+				},
+			},
 			want:                  &PatternEncoder{},
 			wantErr:               false,
 			wantTotalCombinations: 27,
 		},
 		{
-			name:                  "pattern Encoder built regardless of vowel presence",
-			args:                  args{pattern: "CCF", placeholders: PlaceholderMap{Fricative: RuneSet{'f'}, Consonant: RuneSet{'z', 'b', 'k'}}},
+			name: "pattern Encoder built regardless of vowel presence",
+			args: args{
+				pattern: "CCF",
+				placeholders: PlaceholderMap{
+					Fricative: RuneSet{'f'},
+					Consonant: RuneSet{'z', 'b', 'k'},
+				},
+			},
 			want:                  &PatternEncoder{},
 			wantErr:               false,
 			wantTotalCombinations: 9,
 		},
 		{
-			name:                  "total Combinations corresponds with proquint",
-			args:                  args{pattern: ProQuintConfig.Patterns[0], placeholders: ProQuintConfig.Placeholders},
+			name: "total Combinations corresponds with proquint",
+			args: args{
+				pattern:      ProQuintConfig.Patterns[0],
+				placeholders: ProQuintConfig.Placeholders,
+			},
 			want:                  &PatternEncoder{},
 			wantErr:               false,
 			wantTotalCombinations: 4294967295 + 1, // Correct: this is the COUNT of combinations
 		},
 		{
-			name:                  "total combinations unaffected by single-option placeholder positions",
-			args:                  args{pattern: "CVCVCCVCVC", placeholders: ProQuintConfig.Placeholders},
+			name: "total combinations unaffected by single-option placeholder positions",
+			args: args{
+				pattern:      "CVCVCCVCVC",
+				placeholders: ProQuintConfig.Placeholders,
+			},
 			want:                  &PatternEncoder{},
 			wantErr:               false,
 			wantTotalCombinations: 4294967295 + 1, // same as proquint
@@ -122,7 +159,11 @@ func Test_buildPatternEncoder(t *testing.T) {
 				return
 			}
 			if got.totalCombinations != PositiveInt(tt.wantTotalCombinations) {
-				t.Errorf("totalCombinations expected to be %d, got %d", tt.wantTotalCombinations, got.totalCombinations)
+				t.Errorf(
+					"totalCombinations expected to be %d, got %d",
+					tt.wantTotalCombinations,
+					got.totalCombinations,
+				)
 			}
 		})
 	}
@@ -192,7 +233,9 @@ func Test_newPhoneticEncoder(t *testing.T) {
 				Placeholders: PlaceholderMap{
 					Vowel:     RuneSet{'a', 'e', 'o'},
 					Consonant: RuneSet{'b', 'd', 'k'},
-					CustomX:   RuneSet{'g'}, // Single character = multiplier of 1, doesn't affect outcome
+					CustomX: RuneSet{
+						'g',
+					}, // Single character = multiplier of 1, doesn't affect outcome
 				},
 			}},
 			wantPatternCount:      2,
@@ -212,7 +255,11 @@ func Test_newPhoneticEncoder(t *testing.T) {
 
 			// Check pattern count
 			if len(got.patternEncoders) != tt.wantPatternCount {
-				t.Errorf("patternEncoders length = %d, want %d", len(got.patternEncoders), tt.wantPatternCount)
+				t.Errorf(
+					"patternEncoders length = %d, want %d",
+					len(got.patternEncoders),
+					tt.wantPatternCount,
+				)
 			}
 
 			// Compare totalCombinations
@@ -299,6 +346,7 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 		})
 	}
 }
+
 func TestPhoneticEncoder_Decode(t *testing.T) {
 	// Create a simple config for testing
 	simpleConfig := &PhonidConfig{

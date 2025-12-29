@@ -7,13 +7,18 @@ import (
 )
 
 // Config holds the configuration for phonetic ID generation
-type Config struct {
-	// ID format settings
-	Phonetic *PhonidConfig // nil = no phonetic encoding
+type (
+	Config struct {
+		// ID format settings
+		Phonetic *PhonidConfig `default:"{}"`
 
-	// Feistel shuffler settings
-	Shuffle *ShuffleConfig `default:"{}"`
-}
+		// Feistel shuffler settings
+		Shuffle *ShuffleConfig `default:"{}"`
+	}
+
+	// ConfigOption is a functional option for configuring Config
+	ConfigOption func(*Config)
+)
 
 // NewConfig returns a Config with sensible defaults applied
 func NewConfig() (*Config, error) {
@@ -22,6 +27,25 @@ func NewConfig() (*Config, error) {
 		return nil, fmt.Errorf("failed to set defaults: %w", err)
 	}
 	return cfg, nil
+}
+
+// Validate checks if the config values are valid
+func (c *Config) Validate() error {
+	// Validate shuffle config
+	if c.Shuffle != nil {
+		if err := c.Shuffle.Validate(); err != nil {
+			return fmt.Errorf("shuffle config invalid: %w", err)
+		}
+	}
+
+	// Validate phonetic config if provided
+	if c.Phonetic != nil {
+		if err := c.Phonetic.Validate(); err != nil {
+			return fmt.Errorf("phonetic config invalid: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // NewConfigWithOptions returns a Config with defaults, then applies the provided options
@@ -41,9 +65,6 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
 
 	return cfg, nil
 }
-
-// ConfigOption is a functional option for configuring Config
-type ConfigOption func(*Config)
 
 // WithBitWidth sets the bit width
 func WithBitWidth(bitWidth int) ConfigOption {
@@ -87,23 +108,4 @@ func WithPhonetic(phonetic *PhonidConfig) ConfigOption {
 	return func(c *Config) {
 		c.Phonetic = phonetic
 	}
-}
-
-// Validate checks if the config values are valid
-func (c *Config) Validate() error {
-	// Validate shuffle config
-	if c.Shuffle != nil {
-		if err := c.Shuffle.Validate(); err != nil {
-			return fmt.Errorf("shuffle config invalid: %w", err)
-		}
-	}
-
-	// Validate phonetic config if provided
-	if c.Phonetic != nil {
-		if err := c.Phonetic.Validate(); err != nil {
-			return fmt.Errorf("phonetic config invalid: %w", err)
-		}
-	}
-
-	return nil
 }
