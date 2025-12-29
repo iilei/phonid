@@ -6,17 +6,11 @@ import (
 )
 
 func TestNewConfig(t *testing.T) {
-	cfg := &Config{
-		Phonetic: &PhonidConfig{}, // defaults are applied when validatePattern is called
-		Shuffle:  &ShuffleConfig{32, 0, 0},
-	}
-
 	tests := []struct {
 		name    string
-		want    Config
 		wantErr bool
 	}{
-		{"sensible defaults", *cfg, false},
+		{"sensible defaults", false},
 	}
 
 	for _, tt := range tests {
@@ -25,19 +19,22 @@ func TestNewConfig(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("NewConfig(): wantErr=%v, got error=%v", tt.wantErr, err)
 			}
-			if !reflect.DeepEqual(got.Phonetic, tt.want.Phonetic) {
-				t.Errorf(
-					"NewConfigWithOptions().Phonetic = %v, want %v",
-					got.Phonetic,
-					tt.want.Phonetic,
-				)
+			if got.Phonetic == nil {
+				t.Error("NewConfig().Phonetic is nil")
 			}
-			if !reflect.DeepEqual(got.Shuffle, tt.want.Shuffle) {
-				t.Errorf(
-					"NewConfigWithOptions().Shuffle = %v, want %v",
-					got.Shuffle,
-					tt.want.Shuffle,
-				)
+			if got.Shuffle == nil {
+				t.Error("NewConfig().Shuffle is nil")
+			}
+			// BitWidth is 0 until Validate() is called
+			if got.Shuffle.BitWidth != 0 {
+				t.Errorf("NewConfig().Shuffle.BitWidth should be 0 before Validate(), got %d", got.Shuffle.BitWidth)
+			}
+			// After validation, BitWidth should be auto-calculated
+			if err := got.Validate(); err != nil {
+				t.Errorf("Validate() error = %v", err)
+			}
+			if got.Shuffle.BitWidth == 0 {
+				t.Error("After Validate(), Shuffle.BitWidth should be auto-calculated, got 0")
 			}
 		})
 	}
@@ -54,7 +51,7 @@ func TestConfig_Validate(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "non-shuffle",
+			name: "valid config",
 			fields: fields{
 				Phonetic: &PhonidConfig{
 					Patterns: []string{"CXVXC"},
@@ -65,9 +62,8 @@ func TestConfig_Validate(t *testing.T) {
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 32,
-					Seed:     0,
-					Rounds:   0,
+					Seed:   0,
+					Rounds: 0,
 				},
 			},
 			wantErr: false,
@@ -91,15 +87,14 @@ func TestConfig_Validate(t *testing.T) {
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 32,
-					Seed:     0,
-					Rounds:   0,
+					Seed:   0,
+					Rounds: 0,
 				},
 			},
 			wantErr: true,
 		},
 		{
-			name: "invalid ShuffleConfig",
+			name: "valid PhonidConfig",
 			fields: fields{
 				Phonetic: &PhonidConfig{
 					Patterns: []string{"CVC"},
@@ -109,9 +104,8 @@ func TestConfig_Validate(t *testing.T) {
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 32,
-					Seed:     0,
-					Rounds:   0,
+					Seed:   0,
+					Rounds: 0,
 				},
 			},
 			wantErr: false,
@@ -144,9 +138,6 @@ func TestNewConfigWithOptions(t *testing.T) {
 			name: "with custom options",
 			args: args{
 				opts: []ConfigOption{
-					WithBitWidth(16),
-					WithSeed(12345),
-					WithRounds(3),
 					WithPhonetic(&PhonidConfig{
 						Patterns: []string{"CVC"},
 						Placeholders: PlaceholderMap{
@@ -154,6 +145,8 @@ func TestNewConfigWithOptions(t *testing.T) {
 							Vowel:     RuneSet("ae"),
 						},
 					}),
+					WithSeed(12345),
+					WithRounds(3),
 				},
 			},
 			want: &Config{
@@ -165,7 +158,7 @@ func TestNewConfigWithOptions(t *testing.T) {
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 16,
+					BitWidth: 5, // Auto-calculated: 4*2*4 = 32 combinations, needs 5 bits
 					Seed:     12345,
 					Rounds:   3,
 				},
@@ -185,6 +178,72 @@ func TestNewConfigWithOptions(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got.Shuffle, tt.want.Shuffle) {
 				t.Errorf("NewConfigWithOptions().Shuffle = %v, want %v", got.Shuffle, tt.want.Shuffle)
+			}
+		})
+	}
+}
+
+func TestConfig_PreflightAssertion(t *testing.T) {
+	tests := []struct {
+		name              string
+		phonetic          *PhonidConfig
+		expectedBitWidth  int
+		wantErr           bool
+		wantCalculatedBit int
+	}{
+		{
+			name: "matching expected bit width",
+			phonetic: &PhonidConfig{
+				Patterns: []string{"CVC"},
+				Placeholders: PlaceholderMap{
+					Consonant: RuneSet("bcdx"),
+					Vowel:     RuneSet("ae"),
+				},
+			},
+			expectedBitWidth:  5, // 4*2*4 = 32, needs 5 bits
+			wantCalculatedBit: 5,
+			wantErr:           false,
+		},
+		{
+			name: "mismatched expected bit width",
+			phonetic: &PhonidConfig{
+				Patterns: []string{"CVC"},
+				Placeholders: PlaceholderMap{
+					Consonant: RuneSet("bcdx"),
+					Vowel:     RuneSet("ae"),
+				},
+			},
+			expectedBitWidth:  6, // Wrong expectation
+			wantCalculatedBit: 5,
+			wantErr:           true,
+		},
+		{
+			name: "no expected bit width (skip assertion)",
+			phonetic: &PhonidConfig{
+				Patterns: []string{"CVC"},
+				Placeholders: PlaceholderMap{
+					Consonant: RuneSet("bcdx"),
+					Vowel:     RuneSet("ae"),
+				},
+			},
+			expectedBitWidth:  0, // No assertion
+			wantCalculatedBit: 5,
+			wantErr:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg, err := NewConfigWithOptions(
+				WithPhonetic(tt.phonetic),
+				WithExpectedBitWidth(tt.expectedBitWidth),
+			)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("NewConfigWithOptions() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !tt.wantErr && cfg.Shuffle.BitWidth != tt.wantCalculatedBit {
+				t.Errorf("Calculated BitWidth = %d, want %d", cfg.Shuffle.BitWidth, tt.wantCalculatedBit)
 			}
 		})
 	}

@@ -18,7 +18,7 @@ const (
 type (
 	// ShuffleConfig holds Feistel shuffler configuration.
 	ShuffleConfig struct {
-		BitWidth int    `default:"32"`
+		BitWidth int    `default:"0"` // 0 means auto-detect from phonetic patterns
 		Rounds   int    `default:"0"`
 		Seed     uint64 `default:"0"`
 	}

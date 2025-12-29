@@ -22,7 +22,7 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
   - [func NewConfigWithOptions\(opts ...ConfigOption\) \(\*Config, error\)](<#NewConfigWithOptions>)
   - [func \(c \*Config\) Validate\(\) error](<#Config.Validate>)
 - [type ConfigOption](<#ConfigOption>)
-  - [func WithBitWidth\(bitWidth int\) ConfigOption](<#WithBitWidth>)
+  - [func WithExpectedBitWidth\(bitWidth int\) ConfigOption](<#WithExpectedBitWidth>)
   - [func WithPhonetic\(phonetic \*PhonidConfig\) ConfigOption](<#WithPhonetic>)
   - [func WithRounds\(rounds int\) ConfigOption](<#WithRounds>)
   - [func WithSeed\(seed uint64\) ConfigOption](<#WithSeed>)
@@ -195,7 +195,7 @@ func ValidatePhonidRC(config *PhonidConfig) error
 ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding.
 
 <a name="Config"></a>
-## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L12-L18>)
+## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L12-L22>)
 
 Config holds the configuration for phonetic ID generation.
 
@@ -206,20 +206,24 @@ type Config struct {
 
     // Feistel shuffler settings
     Shuffle *ShuffleConfig `default:"{}"`
+
+    // Optional: Expected BitWidth for preflight assertion
+    // If set, Validate() will fail if calculated BitWidth doesn't match
+    ExpectedBitWidth int
 }
 ```
 
 <a name="NewConfig"></a>
-### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L25>)
+### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L30>)
 
 ```go
 func NewConfig() (*Config, error)
 ```
 
-NewConfig returns a Config with sensible defaults applied.
+NewConfig returns a Config with sensible defaults applied. BitWidth is auto\-calculated during Validate\(\) based on phonetic patterns.
 
 <a name="NewConfigWithOptions"></a>
-### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L34>)
+### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L39>)
 
 ```go
 func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
@@ -228,16 +232,16 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
 NewConfigWithOptions returns a Config with defaults, then applies the provided options.
 
 <a name="Config.Validate"></a>
-### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L52>)
+### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L57>)
 
 ```go
 func (c *Config) Validate() error
 ```
 
-Validate checks if the config values are valid.
+Validate checks if the config values are valid and auto\-calculates BitWidth.
 
 <a name="ConfigOption"></a>
-## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L21>)
+## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L25>)
 
 ConfigOption is a functional option for configuring Config.
 
@@ -245,17 +249,17 @@ ConfigOption is a functional option for configuring Config.
 type ConfigOption func(*Config)
 ```
 
-<a name="WithBitWidth"></a>
-### func [WithBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L75>)
+<a name="WithExpectedBitWidth"></a>
+### func [WithExpectedBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L142>)
 
 ```go
-func WithBitWidth(bitWidth int) ConfigOption
+func WithExpectedBitWidth(bitWidth int) ConfigOption
 ```
 
-WithBitWidth sets the bit width.
+WithExpectedBitWidth sets the expected bit width for preflight assertion. If the calculated BitWidth doesn't match, Validate\(\) will fail. This helps catch breaking changes in phonetic configuration.
 
 <a name="WithPhonetic"></a>
-### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L112>)
+### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L133>)
 
 ```go
 func WithPhonetic(phonetic *PhonidConfig) ConfigOption
@@ -264,7 +268,7 @@ func WithPhonetic(phonetic *PhonidConfig) ConfigOption
 WithPhonetic sets the phonetic configuration.
 
 <a name="WithRounds"></a>
-### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L85>)
+### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L106>)
 
 ```go
 func WithRounds(rounds int) ConfigOption
@@ -273,7 +277,7 @@ func WithRounds(rounds int) ConfigOption
 WithRounds sets the number of Feistel rounds.
 
 <a name="WithSeed"></a>
-### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L95>)
+### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L116>)
 
 ```go
 func WithSeed(seed uint64) ConfigOption
@@ -282,7 +286,7 @@ func WithSeed(seed uint64) ConfigOption
 WithSeed sets the seed value.
 
 <a name="WithShuffle"></a>
-### func [WithShuffle](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L105>)
+### func [WithShuffle](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L126>)
 
 ```go
 func WithShuffle(shuffle *ShuffleConfig) ConfigOption
@@ -585,7 +589,7 @@ ShuffleConfig holds Feistel shuffler configuration.
 
 ```go
 type ShuffleConfig struct {
-    BitWidth int    `default:"32"`
+    BitWidth int    `default:"0"` // 0 means auto-detect from phonetic patterns
     Rounds   int    `default:"0"`
     Seed     uint64 `default:"0"`
 }
