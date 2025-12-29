@@ -1,6 +1,7 @@
 package phonid
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -42,7 +43,7 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 // buildPatternEncoder creates a PatternEncoder from a pattern string and placeholders.
 func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternEncoder, error) {
 	if pattern == "" {
-		return nil, fmt.Errorf("pattern cannot be empty")
+		return nil, errors.New("pattern cannot be empty")
 	}
 
 	positions := make([]Position, 0, len(pattern))

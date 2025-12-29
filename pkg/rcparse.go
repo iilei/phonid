@@ -2,6 +2,7 @@ package phonid
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -102,13 +103,12 @@ func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []Pref
 
 	// Require at least one preflight check
 	if len(tomlConfig.Preflight) == 0 && !lenitent {
-		return nil, make([]PreflightCheck, 0), fmt.Errorf(
-			"config must include at least one [[preflight]] check\n\n" +
-				"Example:\n" +
-				"  [[preflight]]\n" +
-				"  input = 0\n" +
-				"  output = \"babab\"\n\n" +
-				"Hint: Run 'phonid preflight --suggest' to generate recommended checks")
+		return nil, make([]PreflightCheck, 0), errors.New("config must include at least one [[preflight]] check\n\n" +
+			"Example:\n" +
+			"  [[preflight]]\n" +
+			"  input = 0\n" +
+			"  output = \"babab\"\n\n" +
+			"Hint: Run 'phonid preflight --suggest' to generate recommended checks")
 	}
 	preflight = tomlConfig.Preflight
 
@@ -160,7 +160,7 @@ func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []Pref
 // ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding.
 func ValidatePhonidRC(config *PhonidConfig) error {
 	if config == nil {
-		return fmt.Errorf("config cannot be nil")
+		return errors.New("config cannot be nil")
 	}
 
 	return config.Validate()
@@ -194,7 +194,7 @@ func validateConfigPath(path string) error {
 
 	// Prevent path traversal attacks
 	if strings.Contains(cleaned, "..") {
-		return fmt.Errorf("invalid path: directory traversal not allowed")
+		return errors.New("invalid path: directory traversal not allowed")
 	}
 
 	// Validate filename pattern: .phonidrc[.toml] or .*.phonidrc[.toml]

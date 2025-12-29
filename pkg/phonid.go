@@ -1,3 +1,5 @@
+// Package phonid generates phonetic identifiers using configurable patterns
+// and bijective shuffling via Feistel networks.
 package phonid
 
 import (
