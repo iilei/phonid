@@ -1,6 +1,7 @@
 package phonid
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/creasty/defaults"
@@ -49,18 +50,22 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
 
 // Validate checks if the config values are valid.
 func (c *Config) Validate() error {
-	// Validate shuffle config
-	if c.Shuffle != nil {
-		if err := c.Shuffle.Validate(); err != nil {
-			return fmt.Errorf("shuffle config invalid: %w", err)
-		}
+	// Ensure required fields are initialized
+	if c.Shuffle == nil {
+		return errors.New("shuffle config is required")
+	}
+	if c.Phonetic == nil {
+		return errors.New("phonetic config is required")
 	}
 
-	// Validate phonetic config if provided
-	if c.Phonetic != nil {
-		if err := c.Phonetic.Validate(); err != nil {
-			return fmt.Errorf("phonetic config invalid: %w", err)
-		}
+	// Validate shuffle config
+	if err := c.Shuffle.Validate(); err != nil {
+		return fmt.Errorf("shuffle config invalid: %w", err)
+	}
+
+	// Validate phonetic config
+	if err := c.Phonetic.Validate(); err != nil {
+		return fmt.Errorf("phonetic config invalid: %w", err)
 	}
 
 	return nil

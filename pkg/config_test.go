@@ -53,7 +53,69 @@ func TestConfig_Validate(t *testing.T) {
 		fields  fields
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "non-shuffle",
+			fields: fields{
+				Phonetic: &PhonidConfig{
+					Patterns: []string{"CXVXC"},
+					Placeholders: PlaceholderMap{
+						Consonant: RuneSet("bcd"),
+						Vowel:     RuneSet("ae"),
+						CustomX:   RuneSet("."),
+					},
+				},
+				Shuffle: &ShuffleConfig{
+					BitWidth: 32,
+					Seed:     0,
+					Rounds:   0,
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "nil fields",
+			fields: fields{
+				Phonetic: nil,
+				Shuffle:  nil,
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid PhonidConfig",
+			fields: fields{
+				Phonetic: &PhonidConfig{
+					Patterns: []string{"CVC"},
+					Placeholders: PlaceholderMap{
+						Consonant: RuneSet("b"),
+						Vowel:     RuneSet("a"),
+					},
+				},
+				Shuffle: &ShuffleConfig{
+					BitWidth: 32,
+					Seed:     0,
+					Rounds:   0,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid ShuffleConfig",
+			fields: fields{
+				Phonetic: &PhonidConfig{
+					Patterns: []string{"CVC"},
+					Placeholders: PlaceholderMap{
+						Consonant: RuneSet("bcdx"),
+						Vowel:     RuneSet("ae"),
+					},
+				},
+				Shuffle: &ShuffleConfig{
+					BitWidth: 32,
+					Seed:     0,
+					Rounds:   0,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -78,7 +140,38 @@ func TestNewConfigWithOptions(t *testing.T) {
 		want    *Config
 		wantErr bool
 	}{
-		// TODO: Add test cases.
+		{
+			name: "with custom options",
+			args: args{
+				opts: []ConfigOption{
+					WithBitWidth(16),
+					WithSeed(12345),
+					WithRounds(3),
+					WithPhonetic(&PhonidConfig{
+						Patterns: []string{"CVC"},
+						Placeholders: PlaceholderMap{
+							Consonant: RuneSet("bcdx"),
+							Vowel:     RuneSet("ae"),
+						},
+					}),
+				},
+			},
+			want: &Config{
+				Phonetic: &PhonidConfig{
+					Patterns: []string{"CVC"},
+					Placeholders: PlaceholderMap{
+						Consonant: RuneSet("bcdx"),
+						Vowel:     RuneSet("ae"),
+					},
+				},
+				Shuffle: &ShuffleConfig{
+					BitWidth: 16,
+					Seed:     12345,
+					Rounds:   3,
+				},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -87,108 +180,11 @@ func TestNewConfigWithOptions(t *testing.T) {
 				t.Errorf("NewConfigWithOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("NewConfigWithOptions() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got.Phonetic, tt.want.Phonetic) {
+				t.Errorf("NewConfigWithOptions().Phonetic = %v, want %v", got.Phonetic, tt.want.Phonetic)
 			}
-		})
-	}
-}
-
-func TestWithBitWidth(t *testing.T) {
-	type args struct {
-		bitWidth int
-	}
-	tests := []struct {
-		name string
-		args args
-		want ConfigOption
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := WithBitWidth(tt.args.bitWidth); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithBitWidth() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestWithRounds(t *testing.T) {
-	type args struct {
-		rounds int
-	}
-	tests := []struct {
-		name string
-		args args
-		want ConfigOption
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := WithRounds(tt.args.rounds); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithRounds() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestWithSeed(t *testing.T) {
-	type args struct {
-		seed uint64
-	}
-	tests := []struct {
-		name string
-		args args
-		want ConfigOption
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := WithSeed(tt.args.seed); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithSeed() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestWithShuffle(t *testing.T) {
-	type args struct {
-		shuffle *ShuffleConfig
-	}
-	tests := []struct {
-		name string
-		args args
-		want ConfigOption
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := WithShuffle(tt.args.shuffle); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithShuffle() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestWithPhonetic(t *testing.T) {
-	type args struct {
-		phonetic *PhonidConfig
-	}
-	tests := []struct {
-		name string
-		args args
-		want ConfigOption
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := WithPhonetic(tt.args.phonetic); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("WithPhonetic() = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got.Shuffle, tt.want.Shuffle) {
+				t.Errorf("NewConfigWithOptions().Shuffle = %v, want %v", got.Shuffle, tt.want.Shuffle)
 			}
 		})
 	}

@@ -77,6 +77,10 @@ const (
 const (
     // MaxBitWidth is the maximum supported bit width (uint64 size).
     MaxBitWidth = 64
+    // MinRounds is the minimum number of rounds to shuffle.
+    MinRounds = 0
+    // MaxRounds is the maximum number of rounds to shuffle.
+    MaxRounds = 12
 )
 ```
 
@@ -191,7 +195,7 @@ func ValidatePhonidRC(config *PhonidConfig) error
 ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding.
 
 <a name="Config"></a>
-## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L11-L17>)
+## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L12-L18>)
 
 Config holds the configuration for phonetic ID generation.
 
@@ -206,7 +210,7 @@ type Config struct {
 ```
 
 <a name="NewConfig"></a>
-### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L24>)
+### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L25>)
 
 ```go
 func NewConfig() (*Config, error)
@@ -215,7 +219,7 @@ func NewConfig() (*Config, error)
 NewConfig returns a Config with sensible defaults applied.
 
 <a name="NewConfigWithOptions"></a>
-### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L33>)
+### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L34>)
 
 ```go
 func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
@@ -224,7 +228,7 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
 NewConfigWithOptions returns a Config with defaults, then applies the provided options.
 
 <a name="Config.Validate"></a>
-### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L51>)
+### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L52>)
 
 ```go
 func (c *Config) Validate() error
@@ -233,7 +237,7 @@ func (c *Config) Validate() error
 Validate checks if the config values are valid.
 
 <a name="ConfigOption"></a>
-## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L20>)
+## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L21>)
 
 ConfigOption is a functional option for configuring Config.
 
@@ -242,7 +246,7 @@ type ConfigOption func(*Config)
 ```
 
 <a name="WithBitWidth"></a>
-### func [WithBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L70>)
+### func [WithBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L75>)
 
 ```go
 func WithBitWidth(bitWidth int) ConfigOption
@@ -251,7 +255,7 @@ func WithBitWidth(bitWidth int) ConfigOption
 WithBitWidth sets the bit width.
 
 <a name="WithPhonetic"></a>
-### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L107>)
+### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L112>)
 
 ```go
 func WithPhonetic(phonetic *PhonidConfig) ConfigOption
@@ -260,7 +264,7 @@ func WithPhonetic(phonetic *PhonidConfig) ConfigOption
 WithPhonetic sets the phonetic configuration.
 
 <a name="WithRounds"></a>
-### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L80>)
+### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L85>)
 
 ```go
 func WithRounds(rounds int) ConfigOption
@@ -269,7 +273,7 @@ func WithRounds(rounds int) ConfigOption
 WithRounds sets the number of Feistel rounds.
 
 <a name="WithSeed"></a>
-### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L90>)
+### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L95>)
 
 ```go
 func WithSeed(seed uint64) ConfigOption
@@ -278,7 +282,7 @@ func WithSeed(seed uint64) ConfigOption
 WithSeed sets the seed value.
 
 <a name="WithShuffle"></a>
-### func [WithShuffle](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L100>)
+### func [WithShuffle](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L105>)
 
 ```go
 func WithShuffle(shuffle *ShuffleConfig) ConfigOption
@@ -287,7 +291,7 @@ func WithShuffle(shuffle *ShuffleConfig) ConfigOption
 WithShuffle sets the shuffle configuration.
 
 <a name="FeistelShuffler"></a>
-## type [FeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L24-L30>)
+## type [FeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L28-L34>)
 
 FeistelShuffler provides bijective integer shuffling using Feistel networks Supports configurable number space size and uses standard Go libraries.
 
@@ -298,7 +302,7 @@ type FeistelShuffler struct {
 ```
 
 <a name="NewFeistelShuffler"></a>
-### func [NewFeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L48>)
+### func [NewFeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L52>)
 
 ```go
 func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, error)
@@ -307,7 +311,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 NewFeistelShuffler creates a new shuffler for the given bit width bitWidth: total bits \(8, 16, 32, 64, etc.\) rounds: number of Feistel rounds \(3\-6 recommended. "0" will preserve linear order\) seed: seed value for generating round keys
 
 <a name="FeistelShuffler.BitWidth"></a>
-### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L149>)
+### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L153>)
 
 ```go
 func (fs *FeistelShuffler) BitWidth() int
@@ -316,7 +320,7 @@ func (fs *FeistelShuffler) BitWidth() int
 BitWidth returns the configured bit width.
 
 <a name="FeistelShuffler.Decode"></a>
-### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L111>)
+### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L115>)
 
 ```go
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
@@ -325,7 +329,7 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
 Decode performs bijective reverse shuffling \(inverse of Encode\).
 
 <a name="FeistelShuffler.Encode"></a>
-### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L81>)
+### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L85>)
 
 ```go
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
@@ -334,7 +338,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
 Encode performs bijective shuffling of input value.
 
 <a name="FeistelShuffler.MaxValue"></a>
-### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L141>)
+### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L145>)
 
 ```go
 func (fs *FeistelShuffler) MaxValue() uint64
@@ -343,7 +347,7 @@ func (fs *FeistelShuffler) MaxValue() uint64
 MaxValue returns the maximum value that can be shuffled.
 
 <a name="FeistelShuffler.Rounds"></a>
-### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L154>)
+### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L158>)
 
 ```go
 func (fs *FeistelShuffler) Rounds() int
@@ -575,7 +579,7 @@ func (rs *RuneSet) UnmarshalText(text []byte) error
 UnmarshalText implements encoding.TextUnmarshaler for TOML/JSON unmarshaling.
 
 <a name="ShuffleConfig"></a>
-## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L16-L20>)
+## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L20-L24>)
 
 ShuffleConfig holds Feistel shuffler configuration.
 
@@ -588,7 +592,7 @@ type ShuffleConfig struct {
 ```
 
 <a name="ShuffleConfig.Validate"></a>
-### func \(\*ShuffleConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L34>)
+### func \(\*ShuffleConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L38>)
 
 ```go
 func (sc *ShuffleConfig) Validate() error

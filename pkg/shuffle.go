@@ -9,6 +9,10 @@ import (
 const (
 	// MaxBitWidth is the maximum supported bit width (uint64 size).
 	MaxBitWidth = 64
+	// MinRounds is the minimum number of rounds to shuffle.
+	MinRounds = 0
+	// MaxRounds is the maximum number of rounds to shuffle.
+	MaxRounds = 12
 )
 
 type (
@@ -35,8 +39,8 @@ func (sc *ShuffleConfig) Validate() error {
 	if sc.BitWidth < 4 || sc.BitWidth > 64 {
 		return fmt.Errorf("bit_width must be between 4 and 64, got %d", sc.BitWidth)
 	}
-	if sc.Rounds < 3 || sc.Rounds > 10 {
-		return fmt.Errorf("rounds must be between 3 and 10, got %d", sc.Rounds)
+	if sc.Rounds < MinRounds || sc.Rounds > MaxRounds {
+		return fmt.Errorf("rounds must be between %d and %d, got %d", MinRounds, MaxRounds, sc.Rounds)
 	}
 	return nil
 }
