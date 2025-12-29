@@ -147,7 +147,7 @@ LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks Used
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
 ```
 
-ParsePhonidRCLenient parses TOML content requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command
+ParsePhonidRC parses TOML content requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command
 
 <a name="ParsePhonidRCLenient"></a>
 ## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L78>)
@@ -192,7 +192,7 @@ func NewConfig() (*Config, error)
 NewConfig returns a Config with sensible defaults applied
 
 <a name="NewConfigWithOptions"></a>
-### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L52>)
+### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L33>)
 
 ```go
 func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
@@ -201,7 +201,7 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
 NewConfigWithOptions returns a Config with defaults, then applies the provided options
 
 <a name="Config.Validate"></a>
-### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L33>)
+### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L51>)
 
 ```go
 func (c *Config) Validate() error
@@ -284,7 +284,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 NewFeistelShuffler creates a new shuffler for the given bit width bitWidth: total bits \(8, 16, 32, 64, etc.\) rounds: number of Feistel rounds \(3\-6 recommended. "0" will preserve linear order\) seed: seed value for generating round keys
 
 <a name="FeistelShuffler.BitWidth"></a>
-### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L155>)
+### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L144>)
 
 ```go
 func (fs *FeistelShuffler) BitWidth() int
@@ -311,7 +311,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
 Encode performs bijective shuffling of input value
 
 <a name="FeistelShuffler.MaxValue"></a>
-### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L147>)
+### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L136>)
 
 ```go
 func (fs *FeistelShuffler) MaxValue() uint64
@@ -320,7 +320,7 @@ func (fs *FeistelShuffler) MaxValue() uint64
 MaxValue returns the maximum value that can be shuffled
 
 <a name="FeistelShuffler.Rounds"></a>
-### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L160>)
+### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L149>)
 
 ```go
 func (fs *FeistelShuffler) Rounds() int
@@ -414,7 +414,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\)
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L118-L121>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L117-L120>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -439,7 +439,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L242>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L130>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -448,7 +448,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L100>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L99>)
 
 
 
@@ -457,7 +457,7 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L99>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L98>)
 
 
 
@@ -469,11 +469,11 @@ type PlaceholderType rune
 
 ```go
 const (
-    // Minimum requirements per placeholder type
-    MinCharsForVowel      = 2
+    // MinCharsForVowel placeholder type minimal set of runes
+    MinCharsForVowel = 2
+    // MinCharsForComplement placeholder type minimal set of runes
     MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
 
-    // Valid placeholder types
     Consonant PlaceholderType = 'C'
     Vowel     PlaceholderType = 'V'
     Liquid    PlaceholderType = 'L'
@@ -484,7 +484,7 @@ const (
     CustomY   PlaceholderType = 'Y'
     CustomZ   PlaceholderType = 'Z'
 
-    // ProQuint-compatible configuration
+    // ProQuintPattern in accordance with ProQuint-compatible configuration
     // Based on the Proquint specification: https://arxiv.org/html/0901.4016
     // Provides a pre-configured encoder that generates identifiers compatible with
     // the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
@@ -534,7 +534,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L104>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L103>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -543,7 +543,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L125>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L124>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error

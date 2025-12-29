@@ -132,17 +132,6 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 	return (left << fs.halfBits) | right, nil
 }
 
-// roundFunction implements the Feistel round function using FNV hash
-func (fs *FeistelShuffler) roundFunction(input, key uint64) uint64 {
-	h := fnv.New64a()
-	_ = binary.Write(h, binary.LittleEndian, input)
-	_ = binary.Write(h, binary.LittleEndian, key)
-	result := h.Sum64()
-
-	// Mask to half-bit width to ensure proper size
-	return result & fs.mask
-}
-
 // MaxValue returns the maximum value that can be shuffled
 func (fs *FeistelShuffler) MaxValue() uint64 {
 	if fs.bitWidth == 64 {
@@ -159,4 +148,15 @@ func (fs *FeistelShuffler) BitWidth() int {
 // Rounds returns the number of Feistel rounds
 func (fs *FeistelShuffler) Rounds() int {
 	return fs.rounds
+}
+
+// roundFunction implements the Feistel round function using FNV hash
+func (fs *FeistelShuffler) roundFunction(input, key uint64) uint64 {
+	h := fnv.New64a()
+	_ = binary.Write(h, binary.LittleEndian, input)
+	_ = binary.Write(h, binary.LittleEndian, key)
+	result := h.Sum64()
+
+	// Mask to half-bit width to ensure proper size
+	return result & fs.mask
 }

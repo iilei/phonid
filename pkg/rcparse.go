@@ -67,7 +67,7 @@ func LoadPhonidRCLenient(filepath string) (*PhonidConfig, []PreflightCheck, erro
 	return ParsePhonidRCLenient(string(data))
 }
 
-// ParsePhonidRCLenient parses TOML content requiring preflight checks
+// ParsePhonidRC parses TOML content requiring preflight checks
 // Used exclusively by 'phonid preflight --suggest' command
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error) {
 	return parsePhonidRCInternal(content, false)

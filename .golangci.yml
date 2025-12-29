@@ -5,6 +5,8 @@ linters:
   enable:
     - bodyclose      # Checks HTTP response body is closed
     - copyloopvar    # Detects places where loop variables are copied
+    - decorder
+    - dupl
     - dupword        # Checks for duplicate words
     - errcheck
     - errorlint      # Problems with error wrapping (Go 1.13+)
@@ -12,10 +14,14 @@ linters:
     - govet
     - ineffassign
     - noctx          # Finds sending http request without context.Context
+    - nolintlint     # reports ill-formed or insufficient nolint directives
     - staticcheck
     - unconvert
     - unused
-    - decorder
+    - funcorder
+    - gocognit
+    - goconst
+    - godoclint
   settings:
     dupl:
       threshold: 100
@@ -87,6 +93,8 @@ formatters:
     goimports:
       local-prefixes:
         - github.com/iilei/phonid
+    golines:
+      max-len: 120
 
 issues:
   max-issues-per-linter: 0

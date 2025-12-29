@@ -29,6 +29,24 @@ func NewConfig() (*Config, error) {
 	return cfg, nil
 }
 
+// NewConfigWithOptions returns a Config with defaults, then applies the provided options
+func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
+	cfg, err := NewConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, opt := range opts {
+		opt(cfg)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	return cfg, nil
+}
+
 // Validate checks if the config values are valid
 func (c *Config) Validate() error {
 	// Validate shuffle config
@@ -46,24 +64,6 @@ func (c *Config) Validate() error {
 	}
 
 	return nil
-}
-
-// NewConfigWithOptions returns a Config with defaults, then applies the provided options
-func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
-	cfg, err := NewConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, opt := range opts {
-		opt(cfg)
-	}
-
-	if err := cfg.Validate(); err != nil {
-		return nil, err
-	}
-
-	return cfg, nil
 }
 
 // WithBitWidth sets the bit width
