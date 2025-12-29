@@ -60,10 +60,3 @@ repos:
         language: system
         pass_filenames: false
         files: 'pkg/.*\.go$'
-
-      - id: search-and-replace
-        language: system
-        name: search and replace
-        entry: bash -c 'for x in "$@"; do echo "Processing $x"; sed -i -E "/^(\S{5})|(#.*)$/!d"  "$x"; done' --
-        files: internal/data/.*words.txt$
-        pass_filenames: true
