@@ -7,6 +7,7 @@ import (
 )
 
 const (
+	// MaxBitWidth is the maximum supported bit width (uint64 size).
 	MaxBitWidth = 64
 )
 
@@ -79,9 +80,8 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 // Encode performs bijective shuffling of input value.
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 	// Ensure input fits in our bit width
-	if fs.bitWidth == MaxBitWidth {
-		// For 64-bit, all uint64 values are valid
-	} else {
+	// For 64-bit, all uint64 values are valid. For others, ensure it.
+	if fs.bitWidth != MaxBitWidth {
 		maxValue := uint64(1) << fs.bitWidth
 		if input >= maxValue {
 			return 0, fmt.Errorf("input %d exceeds bit width %d (max: %d)", input, fs.bitWidth, maxValue-1)
@@ -110,9 +110,8 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error) {
 // Decode performs bijective reverse shuffling (inverse of Encode).
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error) {
 	// Ensure encoded value fits in our bit width
-	if fs.bitWidth == MaxBitWidth {
-		// For 64-bit, all uint64 values are valid
-	} else {
+	// For 64-bit, all uint64 values are valid. For others, ensure it.
+	if fs.bitWidth != MaxBitWidth {
 		maxValue := uint64(1) << fs.bitWidth
 		if encoded >= maxValue {
 			return 0, fmt.Errorf("encoded value %d exceeds bit width %d (max: %d)", encoded, fs.bitWidth, maxValue-1)
