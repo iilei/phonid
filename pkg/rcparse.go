@@ -75,20 +75,22 @@ func LoadPhonidRCLenient(fp string) (*PhonidConfig, []PreflightCheck, error) {
 	return ParsePhonidRCLenient(string(data))
 }
 
-// ParsePhonidRC parses TOML content requiring preflight checks
-// Used exclusively by 'phonid preflight --suggest' command.
+// ParsePhonidRC parses TOML content requiring preflight checks.
+// Returns config and preflight checks for validation with NewPhoneticEncoderWithPreflight.
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error) {
 	return parsePhonidRCInternal(content, false)
 }
 
-// ParsePhonidRCLenient parses TOML content without requiring preflight checks
+// ParsePhonidRCLenient parses TOML content without requiring preflight checks.
 // Used exclusively by 'phonid preflight --suggest' command.
 func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, error) {
 	return parsePhonidRCInternal(content, true)
 }
 
-// ParsePhonidRC parses TOML content into a validated PhonidConfig using strict mode.
-func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []PreflightCheck, error) {
+// parsePhonidRCInternal parses TOML content into a PhonidConfig.
+// Only handles TOML structure parsing and conversion - does not validate behavior.
+// Validation is delegated to NewPhoneticEncoder* constructors.
+func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []PreflightCheck, error) {
 	var tomlConfig TOMLConfig
 
 	// Create decoder with strict mode enabled
@@ -101,9 +103,9 @@ func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []Pref
 		return nil, preflight, fmt.Errorf("failed to parse TOML config: %w", err)
 	}
 
-	// Require at least one preflight check
-	if len(tomlConfig.Preflight) == 0 && !lenitent {
-		return nil, make([]PreflightCheck, 0), errors.New("config must include at least one [[preflight]] check\n\n" +
+	// Require at least one preflight check in strict mode
+	if len(tomlConfig.Preflight) == 0 && !lenient {
+		return nil, preflight, errors.New("config must include at least one [[preflight]] check\n\n" +
 			"Example:\n" +
 			"  [[preflight]]\n" +
 			"  input = 0\n" +
@@ -112,7 +114,7 @@ func parsePhonidRCInternal(content string, lenitent bool) (*PhonidConfig, []Pref
 	}
 	preflight = tomlConfig.Preflight
 
-	// Validate PositiveInt fields
+	// Validate PositiveInt fields (basic structural validation)
 	if err := tomlConfig.Base.Validate(); err != nil {
 		return nil, preflight, fmt.Errorf("invalid base: %w", err)
 	}

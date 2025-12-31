@@ -40,6 +40,37 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	return newPhoneticEncoder(config)
 }
 
+// NewPhoneticEncoderWithPreflight creates an encoder and validates preflight checks.
+// This is the standard way to create an encoder from a config file with preflight tests.
+func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error) {
+	encoder, err := NewPhoneticEncoder(config)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := encoder.ValidatePreflight(checks); err != nil {
+		return nil, fmt.Errorf("preflight validation failed: %w", err)
+	}
+
+	return encoder, nil
+}
+
+// NewPhoneticEncoderLenient creates an encoder with minimal validation.
+// Used exclusively by 'phonid preflight --suggest' command to allow
+// generating suggestions even with incomplete configs.
+func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error) {
+	// Skip preflight validation but still validate config structure
+	if config == nil {
+		return nil, errors.New("config cannot be nil")
+	}
+
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	return newPhoneticEncoder(config)
+}
+
 // buildPatternEncoder creates a PatternEncoder from a pattern string and placeholders.
 func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternEncoder, error) {
 	if pattern == "" {

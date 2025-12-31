@@ -41,6 +41,8 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
   - [func \(e \*PatternEncoder\) MaxValue\(\) int](<#PatternEncoder.MaxValue>)
 - [type PhoneticEncoder](<#PhoneticEncoder>)
   - [func NewPhoneticEncoder\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoder>)
+  - [func NewPhoneticEncoderLenient\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderLenient>)
+  - [func NewPhoneticEncoderWithPreflight\(config \*PhonidConfig, checks \[\]PreflightCheck\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderWithPreflight>)
   - [func \(e \*PhoneticEncoder\) Decode\(word string\) \(int, error\)](<#PhoneticEncoder.Decode>)
   - [func \(e \*PhoneticEncoder\) Encode\(number PositiveInt\) \(string, error\)](<#PhoneticEncoder.Encode>)
   - [func \(p \*PhoneticEncoder\) ValidatePreflight\(checks \[\]PreflightCheck\) error](<#PhoneticEncoder.ValidatePreflight>)
@@ -151,7 +153,7 @@ var (
 ```
 
 <a name="IsValidPhonidRCFilename"></a>
-## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L211>)
+## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L213>)
 
 ```go
 func IsValidPhonidRCFilename(filename string) bool
@@ -184,7 +186,7 @@ LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks Used
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
 ```
 
-ParsePhonidRC parses TOML content requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command.
+ParsePhonidRC parses TOML content requiring preflight checks. Returns config and preflight checks for validation with NewPhoneticEncoderWithPreflight.
 
 <a name="ParsePhonidRCLenient"></a>
 ## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L86>)
@@ -193,10 +195,10 @@ ParsePhonidRC parses TOML content requiring preflight checks Used exclusively by
 func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, error)
 ```
 
-ParsePhonidRCLenient parses TOML content without requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command.
+ParsePhonidRCLenient parses TOML content without requiring preflight checks. Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ValidatePhonidRC"></a>
-## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L161>)
+## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L163>)
 
 ```go
 func ValidatePhonidRC(config *PhonidConfig) error
@@ -381,7 +383,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L183>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L214>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (int, error)
@@ -390,7 +392,7 @@ func (e *PatternEncoder) Decode(word string) (int, error)
 Decode converts a phonetic word back to a number.
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L160>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L191>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -399,7 +401,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word.
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L229>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L260>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -427,8 +429,26 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error)
 
 NewPhoneticEncoder creates an encoder with a validated config.
 
+<a name="NewPhoneticEncoderLenient"></a>
+### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L61>)
+
+```go
+func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
+```
+
+NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating suggestions even with incomplete configs.
+
+<a name="NewPhoneticEncoderWithPreflight"></a>
+### func [NewPhoneticEncoderWithPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L45>)
+
+```go
+func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error)
+```
+
+NewPhoneticEncoderWithPreflight creates an encoder and validates preflight checks. This is the standard way to create an encoder from a config file with preflight tests.
+
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L146>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L177>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (int, error)
@@ -437,7 +457,7 @@ func (e *PhoneticEncoder) Decode(word string) (int, error)
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L129>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L160>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
