@@ -24,7 +24,7 @@ Phonid represents numbers as **words composed of consonants (C) and vowels (V)**
 Each encoded word has a length that is a **prime number**:
 
 * Required: `3`, `5`
-* Optional: `7`, `11`
+* Optional: `7`, `11`, `23`
 
 Using prime lengths prevents accidental re-segmentation and guarantees that words are treated as atomic units during decoding.
 
