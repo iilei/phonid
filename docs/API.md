@@ -45,6 +45,7 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
   - [func NewPhoneticEncoderWithPreflight\(config \*PhonidConfig, checks \[\]PreflightCheck\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderWithPreflight>)
   - [func \(e \*PhoneticEncoder\) Decode\(word string\) \(int, error\)](<#PhoneticEncoder.Decode>)
   - [func \(e \*PhoneticEncoder\) Encode\(number PositiveInt\) \(string, error\)](<#PhoneticEncoder.Encode>)
+  - [func \(e \*PhoneticEncoder\) GetSmallestPatternCapacity\(\) int](<#PhoneticEncoder.GetSmallestPatternCapacity>)
   - [func \(p \*PhoneticEncoder\) ValidatePreflight\(checks \[\]PreflightCheck\) error](<#PhoneticEncoder.ValidatePreflight>)
 - [type PhonidConfig](<#PhonidConfig>)
   - [func \(pc \*PhonidConfig\) Validate\(\) error](<#PhonidConfig.Validate>)
@@ -465,6 +466,15 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
 
 Encode converts a number to a phonetic word, automatically selecting the best pattern.
 
+<a name="PhoneticEncoder.GetSmallestPatternCapacity"></a>
+### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L266>)
+
+```go
+func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
+```
+
+GetSmallestPatternCapacity returns the maximum value that can be encoded with the smallest \(first\) pattern. This is useful for generating preflight suggestions.
+
 <a name="PhoneticEncoder.ValidatePreflight"></a>
 ### func \(\*PhoneticEncoder\) [ValidatePreflight](<https://github.com/iilei/phonid/blob/master/pkg/preflight.go#L10>)
 
@@ -672,5 +682,177 @@ type TOMLShuffleConfig struct {
     Seed     PositiveInt `toml:"seed,omitempty"`
 }
 ```
+
+# preflight
+
+```go
+import "github.com/iilei/phonid/pkg/preflight"
+```
+
+Package preflight represents preflight checks and code generation.
+
+## Index
+
+- [type Assertion](<#Assertion>)
+- [type AssertionTable](<#AssertionTable>)
+  - [func GenerateSuggestions\(encoder \*phonid.PhoneticEncoder\) \(AssertionTable, error\)](<#GenerateSuggestions>)
+- [type Formatter](<#Formatter>)
+  - [func NewTOMLFormatter\(\) Formatter](<#NewTOMLFormatter>)
+- [type FormatterRegistry](<#FormatterRegistry>)
+  - [func NewFormatterRegistry\(\) \*FormatterRegistry](<#NewFormatterRegistry>)
+  - [func \(r \*FormatterRegistry\) AvailableFormats\(\) \[\]OutputFormat](<#FormatterRegistry.AvailableFormats>)
+  - [func \(r \*FormatterRegistry\) Get\(format OutputFormat\) \(Formatter, error\)](<#FormatterRegistry.Get>)
+  - [func \(r \*FormatterRegistry\) Register\(formatter Formatter\)](<#FormatterRegistry.Register>)
+- [type OutputFormat](<#OutputFormat>)
+- [type TOMLFormatter](<#TOMLFormatter>)
+  - [func \(f \*TOMLFormatter\) Format\(w io.Writer, assertions \*AssertionTable\) error](<#TOMLFormatter.Format>)
+  - [func \(f \*TOMLFormatter\) Name\(\) OutputFormat](<#TOMLFormatter.Name>)
+
+
+<a name="Assertion"></a>
+## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L12-L16>)
+
+Assertion represents a single suggested preflight check.
+
+```go
+type Assertion struct {
+    Input   phonid.PositiveInt
+    Output  string
+    Comment string // e.g., "Lower boundary", "Mid-range", etc.
+}
+```
+
+<a name="AssertionTable"></a>
+## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L18>)
+
+AssertionTable represents a collection of preflight check assertions.
+
+```go
+type AssertionTable []Assertion
+```
+
+<a name="GenerateSuggestions"></a>
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L23>)
+
+```go
+func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
+```
+
+GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space.
+
+<a name="Formatter"></a>
+## type [Formatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L19-L22>)
+
+Formatter handles rendering suggestions in a specific format.
+
+```go
+type Formatter interface {
+    Format(w io.Writer, suggestions *AssertionTable) error
+    Name() OutputFormat
+}
+```
+
+<a name="NewTOMLFormatter"></a>
+### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L16>)
+
+```go
+func NewTOMLFormatter() Formatter
+```
+
+NewTOMLFormatter provides toml formatting.
+
+<a name="FormatterRegistry"></a>
+## type [FormatterRegistry](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L25-L27>)
+
+FormatterRegistry manages available formatters.
+
+```go
+type FormatterRegistry struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="NewFormatterRegistry"></a>
+### func [NewFormatterRegistry](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L31>)
+
+```go
+func NewFormatterRegistry() *FormatterRegistry
+```
+
+NewFormatterRegistry creates a registry with all built\-in formatters.
+
+<a name="FormatterRegistry.AvailableFormats"></a>
+### func \(\*FormatterRegistry\) [AvailableFormats](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L54>)
+
+```go
+func (r *FormatterRegistry) AvailableFormats() []OutputFormat
+```
+
+AvailableFormats returns a list of all registered format names.
+
+<a name="FormatterRegistry.Get"></a>
+### func \(\*FormatterRegistry\) [Get](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L45>)
+
+```go
+func (r *FormatterRegistry) Get(format OutputFormat) (Formatter, error)
+```
+
+Get retrieves a formatter by name.
+
+<a name="FormatterRegistry.Register"></a>
+### func \(\*FormatterRegistry\) [Register](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L40>)
+
+```go
+func (r *FormatterRegistry) Register(formatter Formatter)
+```
+
+Register adds a formatter to the registry.
+
+<a name="OutputFormat"></a>
+## type [OutputFormat](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L16>)
+
+OutputFormat represents a supported output format.
+
+```go
+type OutputFormat string
+```
+
+<a name="FormatTOML"></a>
+
+```go
+const (
+    FormatTOML OutputFormat = "toml"
+    FormatGo   OutputFormat = "go"
+)
+```
+
+<a name="TOMLFormatter"></a>
+## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L11-L13>)
+
+TOMLFormatter implements the Formatter interface for TOML output.
+
+```go
+type TOMLFormatter struct {
+    // contains filtered or unexported fields
+}
+```
+
+<a name="TOMLFormatter.Format"></a>
+### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L28>)
+
+```go
+func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
+```
+
+Format writes preflight assertions as TOML to the writer.
+
+<a name="TOMLFormatter.Name"></a>
+### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L23>)
+
+```go
+func (f *TOMLFormatter) Name() OutputFormat
+```
+
+Name returns the format name.
 
 Generated by [gomarkdoc](<https://github.com/princjef/gomarkdoc>)

@@ -261,6 +261,15 @@ func (e *PatternEncoder) MaxValue() int {
 	return int(e.totalCombinations) - 1
 }
 
+// GetSmallestPatternCapacity returns the maximum value that can be encoded
+// with the smallest (first) pattern. This is useful for generating preflight suggestions.
+func (e *PhoneticEncoder) GetSmallestPatternCapacity() int {
+	if len(e.patternEncoders) == 0 {
+		return 0
+	}
+	return e.patternEncoders[0].MaxValue()
+}
+
 // reverseString reverses a string.
 func reverseString(s string) string {
 	runes := []rune(s)
