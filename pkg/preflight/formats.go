@@ -1,4 +1,3 @@
-// Package preflight represents preflight checks and code generation.
 package preflight
 
 import (
