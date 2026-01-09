@@ -147,6 +147,11 @@ formatters:
     - golines
 
   settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/iilei/phonid)
     gofumpt:
       extra-rules: true
     goimports:

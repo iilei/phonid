@@ -714,7 +714,7 @@ Package preflight represents preflight checks and code generation.
 
 
 <a name="SuggestConfig"></a>
-## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L111>)
+## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L88>)
 
 ```go
 func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig) (string, error)
@@ -723,7 +723,7 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved.
 
 <a name="Assertion"></a>
-## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L28-L32>)
+## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L13-L17>)
 
 Assertion represents a single suggested preflight check.
 
@@ -736,7 +736,7 @@ type Assertion struct {
 ```
 
 <a name="AssertionTable"></a>
-## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L34>)
+## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L19>)
 
 AssertionTable represents a collection of preflight check assertions.
 
@@ -745,7 +745,7 @@ type AssertionTable []Assertion
 ```
 
 <a name="GenerateSuggestions"></a>
-### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L60>)
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L24>)
 
 ```go
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
@@ -766,7 +766,7 @@ type Formatter interface {
 ```
 
 <a name="NewTOMLFormatter"></a>
-### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L16>)
+### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L59>)
 
 ```go
 func NewTOMLFormatter() Formatter
@@ -840,7 +840,7 @@ const (
 ```
 
 <a name="PhoneticConfig"></a>
-## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L52-L55>)
+## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L47-L50>)
 
 PhoneticConfig represents phonetic configuration in TOML.
 
@@ -852,7 +852,7 @@ type PhoneticConfig struct {
 ```
 
 <a name="ShuffleConfig"></a>
-## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L45-L49>)
+## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L40-L44>)
 
 ShuffleConfig represents shuffle configuration in TOML.
 
@@ -865,7 +865,7 @@ type ShuffleConfig struct {
 ```
 
 <a name="TOMLConfig"></a>
-## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L37-L42>)
+## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L32-L37>)
 
 TOMLConfig represents the full .phonidrc TOML structure.
 
@@ -879,7 +879,7 @@ type TOMLConfig struct {
 ```
 
 <a name="TOMLFormatter"></a>
-## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L11-L13>)
+## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L53-L55>)
 
 TOMLFormatter implements the Formatter interface for TOML output.
 
@@ -890,7 +890,7 @@ type TOMLFormatter struct {
 ```
 
 <a name="TOMLFormatter.Format"></a>
-### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L28>)
+### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L71>)
 
 ```go
 func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
@@ -899,7 +899,7 @@ func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
 Format writes preflight assertions as TOML to the writer.
 
 <a name="TOMLFormatter.Name"></a>
-### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L23>)
+### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L66>)
 
 ```go
 func (f *TOMLFormatter) Name() OutputFormat
