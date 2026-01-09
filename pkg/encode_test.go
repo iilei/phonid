@@ -80,12 +80,12 @@ func TestNewPhoneticEncoder(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name: "ok config, no patterns",
+			name: "empty patterns with custom placeholders should error",
 			args: args{
 				config: &PhonidConfig{Patterns: []string{}, Placeholders: placeholderCustomOK},
 			},
-			want:    &PhoneticEncoder{},
-			wantErr: false,
+			want:    nil,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

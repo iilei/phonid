@@ -204,18 +204,22 @@ func TestSuggestConfigErrorCases(t *testing.T) {
 		errContains string
 	}{
 		{
-			name:        "nil encoder",
-			encoder:     nil,
-			config:      config,
-			wantErr:     true,
-			errContains: "encoder cannot be nil",
+			name:    "nil encoder with valid config",
+			encoder: nil,
+			config:  config,
+			wantErr: false,
 		},
 		{
-			name:        "nil config",
-			encoder:     encoder,
-			config:      nil,
-			wantErr:     true,
-			errContains: "config cannot be nil",
+			name:    "nil config with valid encoder",
+			encoder: encoder,
+			config:  nil,
+			wantErr: false,
+		},
+		{
+			name:    "both nil uses defaults",
+			encoder: nil,
+			config:  nil,
+			wantErr: false,
 		},
 	}
 

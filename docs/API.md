@@ -66,6 +66,36 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
 
 ## Constants
 
+<a name="MinCharsForVowel"></a>
+
+```go
+const (
+    // MinCharsForVowel placeholder type minimal set of runes.
+    MinCharsForVowel = 2
+    // MinCharsForComplement placeholder type minimal set of runes.
+    MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
+
+    Consonant PlaceholderType = 'C'
+    Vowel     PlaceholderType = 'V'
+    Liquid    PlaceholderType = 'L'
+    Nasal     PlaceholderType = 'N'
+    Sibilant  PlaceholderType = 'S'
+    Fricative PlaceholderType = 'F'
+    CustomX   PlaceholderType = 'X'
+    CustomY   PlaceholderType = 'Y'
+    CustomZ   PlaceholderType = 'Z'
+
+    // ProQuintPattern in accordance with ProQuint-compatible configuration
+    // Based on the Proquint specification: https://arxiv.org/html/0901.4016
+    // Provides a pre-configured encoder that generates identifiers compatible with
+    // the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
+    ProQuintPattern    = "CVCVCXCVCVC"
+    ProquintVowels     = "aiou"
+    ProquintConsonants = "bdfghjklmnprstvz"
+    ProquintDelimiter  = "-"
+)
+```
+
 <a name="RcFileName"></a>
 
 ```go
@@ -116,9 +146,9 @@ var (
         CustomZ:   "User-defined category 3",
     }
     ProQuintPlaceholders = PlaceholderMap{
-        Vowel:     []rune("aiou"),
-        Consonant: []rune("bdfghjklmnprstvz"),
-        CustomX:   RuneSet{'-'},
+        Vowel:     []rune(ProquintVowels),
+        Consonant: []rune(ProquintConsonants),
+        CustomX:   []rune(ProquintDelimiter),
     }
 
     // ProQuintConfig provides Proquint-compatible encoding
@@ -138,18 +168,11 @@ var (
     }
 
     // DefaultPlaceholders provides sensible defaults for common phonetic categories.
-    DefaultPlaceholders = map[PlaceholderType]RuneSet{
-        Consonant: RuneSet("bcdfghjkpqstvwxz"),
-        Liquid:    RuneSet("lmnr"),
-        Vowel:     RuneSet("aeiou"),
-    }
+    DefaultPlaceholders = ProQuintPlaceholders
 
-    DefaultPatterns = []string{
-        "CVC",
-        "VCCVC",
-        "CVCVCVC",
-        "CVCVCVCVCVC",
-    }
+    DefaultPatterns = []string{ProQuintPattern}
+
+    DefaultConfig = ProQuintConfig
 )
 ```
 
@@ -384,7 +407,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L214>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L215>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (int, error)
@@ -393,7 +416,7 @@ func (e *PatternEncoder) Decode(word string) (int, error)
 Decode converts a phonetic word back to a number.
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L191>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L192>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -402,7 +425,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word.
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L260>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L261>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -431,13 +454,13 @@ func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error)
 NewPhoneticEncoder creates an encoder with a validated config.
 
 <a name="NewPhoneticEncoderLenient"></a>
-### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L61>)
+### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L62>)
 
 ```go
 func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
 ```
 
-NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating suggestions even with incomplete configs.
+NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating suggestions even with incomplete configs. If config is nil, uses DefaultConfig \(ProQuint\-compatible encoding\).
 
 <a name="NewPhoneticEncoderWithPreflight"></a>
 ### func [NewPhoneticEncoderWithPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L45>)
@@ -449,7 +472,7 @@ func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightChe
 NewPhoneticEncoderWithPreflight creates an encoder and validates preflight checks. This is the standard way to create an encoder from a config file with preflight tests.
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L177>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L178>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (int, error)
@@ -458,7 +481,7 @@ func (e *PhoneticEncoder) Decode(word string) (int, error)
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L160>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L161>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
@@ -467,7 +490,7 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word, automatically selecting the best pattern.
 
 <a name="PhoneticEncoder.GetSmallestPatternCapacity"></a>
-### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L266>)
+### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L267>)
 
 ```go
 func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
@@ -485,7 +508,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L120-L123>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L115-L118>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -510,7 +533,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L133>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L128>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -519,7 +542,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid.
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L102>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L97>)
 
 
 
@@ -528,39 +551,12 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L101>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L96>)
 
 
 
 ```go
 type PlaceholderType rune
-```
-
-<a name="MinCharsForVowel"></a>
-
-```go
-const (
-    // MinCharsForVowel placeholder type minimal set of runes.
-    MinCharsForVowel = 2
-    // MinCharsForComplement placeholder type minimal set of runes.
-    MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
-
-    Consonant PlaceholderType = 'C'
-    Vowel     PlaceholderType = 'V'
-    Liquid    PlaceholderType = 'L'
-    Nasal     PlaceholderType = 'N'
-    Sibilant  PlaceholderType = 'S'
-    Fricative PlaceholderType = 'F'
-    CustomX   PlaceholderType = 'X'
-    CustomY   PlaceholderType = 'Y'
-    CustomZ   PlaceholderType = 'Z'
-
-    // ProQuintPattern in accordance with ProQuint-compatible configuration
-    // Based on the Proquint specification: https://arxiv.org/html/0901.4016
-    // Provides a pre-configured encoder that generates identifiers compatible with
-    // the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
-    ProQuintPattern = "CVCVCXCVCVC"
-)
 ```
 
 <a name="Position"></a>
@@ -605,7 +601,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L106>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L101>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -614,7 +610,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L127>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L122>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error
@@ -714,13 +710,13 @@ Package preflight represents preflight checks and code generation.
 
 
 <a name="SuggestConfig"></a>
-## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L88>)
+## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L89>)
 
 ```go
 func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig) (string, error)
 ```
 
-SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved.
+SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved. If encoder is nil, creates a default encoder. If config is nil, uses DefaultConfig.
 
 <a name="Assertion"></a>
 ## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L13-L17>)
@@ -745,13 +741,13 @@ type AssertionTable []Assertion
 ```
 
 <a name="GenerateSuggestions"></a>
-### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L24>)
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L25>)
 
 ```go
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
 ```
 
-GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space.
+GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="Formatter"></a>
 ## type [Formatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L18-L21>)

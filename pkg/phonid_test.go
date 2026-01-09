@@ -7,9 +7,7 @@ import (
 )
 
 func TestPhoneticConfigValidate_Defaults(t *testing.T) {
-	pc := &PhonidConfig{
-		Patterns: []string{"CLVCV"},
-	}
+	pc := &PhonidConfig{}
 
 	err := pc.Validate()
 	if err != nil {
@@ -44,6 +42,10 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := &PhonidConfig{
 				Patterns: []string{tt.pattern},
+				Placeholders: PlaceholderMap{
+					Vowel:     RuneSet("aei"),
+					Consonant: RuneSet("bcd"),
+				},
 			}
 			err := pc.Validate()
 			if (err != nil) != tt.wantErr {

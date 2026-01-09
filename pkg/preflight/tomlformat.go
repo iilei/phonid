@@ -85,12 +85,17 @@ func newTOMLFormatter() *toml.Encoder {
 // SuggestConfig generates a complete TOML configuration string with preflight suggestions.
 // It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions
 // with inline comments preserved.
+// If encoder is nil, creates a default encoder. If config is nil, uses DefaultConfig.
 func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig) (string, error) {
-	if encoder == nil {
-		return "", errors.New("encoder cannot be nil")
-	}
 	if config == nil {
-		return "", errors.New("config cannot be nil")
+		config = &phonid.DefaultConfig
+	}
+	if encoder == nil {
+		var err error
+		encoder, err = phonid.NewPhoneticEncoderLenient(config)
+		if err != nil {
+			return "", fmt.Errorf("failed to create default encoder: %w", err)
+		}
 	}
 
 	// Generate suggestions

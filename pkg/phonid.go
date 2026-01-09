@@ -3,6 +3,7 @@
 package phonid
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -31,7 +32,10 @@ const (
 	// Based on the Proquint specification: https://arxiv.org/html/0901.4016
 	// Provides a pre-configured encoder that generates identifiers compatible with
 	// the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
-	ProQuintPattern = "CVCVCXCVCVC"
+	ProQuintPattern    = "CVCVCXCVCVC"
+	ProquintVowels     = "aiou"
+	ProquintConsonants = "bdfghjklmnprstvz"
+	ProquintDelimiter  = "-"
 )
 
 var (
@@ -57,9 +61,9 @@ var (
 		CustomZ:   "User-defined category 3",
 	}
 	ProQuintPlaceholders = PlaceholderMap{
-		Vowel:     []rune("aiou"),
-		Consonant: []rune("bdfghjklmnprstvz"),
-		CustomX:   RuneSet{'-'},
+		Vowel:     []rune(ProquintVowels),
+		Consonant: []rune(ProquintConsonants),
+		CustomX:   []rune(ProquintDelimiter),
 	}
 
 	// ProQuintConfig provides Proquint-compatible encoding
@@ -79,20 +83,11 @@ var (
 	}
 
 	// DefaultPlaceholders provides sensible defaults for common phonetic categories.
-	DefaultPlaceholders = map[PlaceholderType]RuneSet{
-		Consonant: RuneSet("bcdfghjkpqstvwxz"),
-		Liquid:    RuneSet("lmnr"),
-		Vowel:     RuneSet("aeiou"),
-		// Note: Sibilant, Fricative, and Nasal can be customized by users
-		// to include IPA symbols (ʃ,ʒ,θ,ð,ŋ) for more precise phonetic representation
-	}
+	DefaultPlaceholders = ProQuintPlaceholders
 
-	DefaultPatterns = []string{
-		"CVC",
-		"VCCVC",
-		"CVCVCVC",
-		"CVCVCVCVCVC",
-	}
+	DefaultPatterns = []string{ProQuintPattern}
+
+	DefaultConfig = ProQuintConfig
 )
 
 type (
@@ -131,12 +126,21 @@ func (rs *RuneSet) UnmarshalText(text []byte) error {
 
 // Validate checks if the phonetic config is valid.
 func (pc *PhonidConfig) Validate() error {
-	// Apply defaults if not provided
-	if len(pc.Patterns) == 0 {
+	// Apply defaults only if both patterns and placeholders are empty
+	// This ensures consistency between patterns and placeholders
+	switch {
+	case len(pc.Patterns) == 0 && len(pc.Placeholders) == 0:
 		pc.Patterns = DefaultPatterns
-	}
-	if len(pc.Placeholders) == 0 {
 		pc.Placeholders = DefaultPlaceholders
+	case len(pc.Patterns) == 0:
+		// If only patterns are empty but placeholders are provided,
+		// we cannot safely apply default patterns as they might require
+		// placeholders not in the provided map
+		return errors.New("patterns cannot be empty when placeholders are provided")
+	case len(pc.Placeholders) == 0:
+		// If only placeholders are empty but patterns are provided,
+		// require explicit placeholder definitions to avoid ambiguity
+		return errors.New("placeholders cannot be empty when patterns are provided")
 	}
 
 	patterns := pc.Patterns

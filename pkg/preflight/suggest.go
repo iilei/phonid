@@ -21,9 +21,14 @@ type (
 
 // GenerateSuggestions creates preflight check suggestions for an encoder.
 // It generates boundary values and representative test points across the encoding space.
+// If encoder is nil, creates a default encoder using ProQuint configuration.
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error) {
 	if encoder == nil {
-		return nil, errors.New("encoder cannot be nil")
+		var err error
+		encoder, err = phonid.NewPhoneticEncoderLenient(nil)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create default encoder: %w", err)
+		}
 	}
 
 	// Get capacity from smallest pattern (first pattern encoder)

@@ -29,13 +29,24 @@ func TestGenerateSuggestions(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "asdf",
+			name: "with custom encoder",
 			args: args{
 				encoder: encoder,
 			},
 			want: AssertionTable{
 				{Input: 0, Output: "aza", Comment: "Lower boundary"},
 				{Input: 26, Output: "iti", Comment: "Upper boundary (single word)"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "nil encoder uses defaults",
+			args: args{
+				encoder: nil,
+			},
+			want: AssertionTable{
+				{Input: 0, Output: "babab-babab", Comment: "Lower boundary"},
+				{Input: 4294967295, Output: "zuzuz-zuzuz", Comment: "Upper boundary (single word)"},
 			},
 			wantErr: false,
 		},

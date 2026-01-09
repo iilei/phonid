@@ -58,10 +58,11 @@ func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightChe
 // NewPhoneticEncoderLenient creates an encoder with minimal validation.
 // Used exclusively by 'phonid preflight --suggest' command to allow
 // generating suggestions even with incomplete configs.
+// If config is nil, uses DefaultConfig (ProQuint-compatible encoding).
 func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error) {
 	// Skip preflight validation but still validate config structure
 	if config == nil {
-		return nil, errors.New("config cannot be nil")
+		config = &DefaultConfig
 	}
 
 	if err := config.Validate(); err != nil {

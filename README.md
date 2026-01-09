@@ -21,12 +21,11 @@ Phonid represents numbers as **words composed of consonants (C) and vowels (V)**
 
 ### 1. Prime-Length Words
 
-Each encoded word has a length that is a **prime number**:
+Phonid enforces that all pattern lengths must be prime numbers (3, 5, 7, 11, 23).
 
-* Required: `3`, `5`
-* Optional: `7`, `11`, `23`
+This design choice, while limiting the available word lengths, **keeps the door open for concatenating phonids indefinitely while preserving unambiguous decoding back to their original components**.
 
-Using prime lengths prevents accidental re-segmentation and guarantees that words are treated as atomic units during decoding.
+See `AllowedPatternLengths` in API.md#variables.
 
 ### 2. Explicit Word Templates
 
