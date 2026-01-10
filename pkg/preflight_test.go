@@ -25,7 +25,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 			name: "basic test",
 			fields: fields{
 				config: &PhonidConfig{
-					Patterns: []string{"CVC"},
+					Patterns: []string{"CVCVC"},
 					Placeholders: map[PlaceholderType]RuneSet{
 						Vowel:     RuneSet("ae"),
 						Consonant: RuneSet("bdf"),
@@ -36,11 +36,11 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 				checks: []PreflightCheck{
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(0)},
-						Output: "bab",
+						Output: "babab",
 					},
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
-						Output: "baf",
+						Output: "babaf",
 					},
 				},
 			},
@@ -50,7 +50,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 			name: "err test",
 			fields: fields{
 				config: &PhonidConfig{
-					Patterns: []string{"CVC"},
+					Patterns: []string{"CVCVC"},
 					Placeholders: map[PlaceholderType]RuneSet{
 						Vowel:     RuneSet("ae"),
 						Consonant: RuneSet("bdf"),
@@ -61,11 +61,11 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 				checks: []PreflightCheck{
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(0)},
-						Output: "bab",
+						Output: "babab",
 					},
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
-						Output: "bad",
+						Output: "wrong", // This should cause an error
 					},
 				},
 			},

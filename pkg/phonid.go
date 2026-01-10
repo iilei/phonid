@@ -48,7 +48,10 @@ var (
 	}
 
 	// AllowedPatternLengths defines the permitted pattern lengths.
-	AllowedPatternLengths = []int{3, 5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
+	// Length 3 is excluded because it requires more characters (10+) to reach
+	// the minimum capacity (128) needed for shuffle compatibility. Lengths 5+
+	// automatically exceed this threshold with the minimum 3 chars/placeholder.
+	AllowedPatternLengths = []int{5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
 
 	// AllowedPlaceholders defines the valid placeholder identifiers.
 	AllowedPlaceholders = map[PlaceholderType]string{

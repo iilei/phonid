@@ -315,11 +315,11 @@
 
         // Tiny preset - minimal configuration
         const PRESET_TINY = `[shuffle]
-  rounds = 0
+  rounds = 3
   seed = 0
 
 [phonetic]
-  patterns = ['CVC']
+  patterns = ['CVCVC']
 
   [phonetic.placeholders]
     C = 'bzk'
@@ -327,21 +327,22 @@
 
 # Output of 'phonid preflight --suggest'
 #
-# Capacity per word: 26 combinations (0-26)
+# Capacity per word: 242 combinations (0-242)
 #
 # Suggested preflight checks:
 
 [[preflight]]
-  input = '0'           # Lower boundary (CVC)
-  output = 'bab'
+  input = '0'           # Lower boundary (CVCVC)
+  output = 'zobob'
 
 [[preflight]]
-  input = '13'          # Mid-range (CVC)
-  output = 'ziz'
+  input = '121'         # Mid-range (CVCVC)
+  output = 'bikib'
 
 [[preflight]]
-  input = '26'          # Upper boundary (CVC)
-  output = 'kok'`;
+  input = '242'         # Upper boundary (CVCVC)
+  output = 'zizob'
+`;
 
         // Special preset - Unicode symbols
         const PRESET_SPECIAL = `# Special Configuration with Unicode Symbols
@@ -495,6 +496,9 @@
                 alert('WASM not ready yet');
                 return;
             }
+
+            // apply config first
+            document.getElementById('applyConfigBtn').click()
 
             // Generate suggestions based on current config
             const suggestions = phonidGenerateSuggestions();

@@ -16,7 +16,7 @@ func TestSuggestConfig(t *testing.T) {
 	}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"CVC", "CVCVC"},
+		Patterns:     []string{"CVCVC"},
 		Placeholders: placeholderMap,
 	}
 
@@ -105,7 +105,7 @@ func TestSuggestConfigInlineComments(t *testing.T) {
 	}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"VCV"},
+		Patterns:     []string{"VCVCV"},
 		Placeholders: placeholderMap,
 	}
 
@@ -179,7 +179,7 @@ func TestSuggestConfigInlineComments(t *testing.T) {
 
 func TestSuggestConfigErrorCases(t *testing.T) {
 	config := &p.PhonidConfig{
-		Patterns:     []string{"CVC"},
+		Patterns:     []string{"CVCVC"},
 		Placeholders: p.PlaceholderMap{p.Vowel: p.RuneSet{'a', 'e', 'i'}, p.Consonant: p.RuneSet{'b', 'c', 'd'}},
 	}
 
@@ -236,7 +236,7 @@ func TestSuggestConfigNumberFormatting(t *testing.T) {
 	}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"CVC", "CVCVC"},
+		Patterns:     []string{"CVCVC"},
 		Placeholders: placeholderMap,
 	}
 

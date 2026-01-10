@@ -45,7 +45,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 			name: "bad config: too few composites",
 			args: args{
 				config: &PhonidConfig{
-					Patterns:     []string{"VCV"},
+					Patterns:     []string{"VCVCV"},
 					Placeholders: placeholderMapFewComposites,
 				},
 			},
@@ -56,7 +56,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 			name: "bad config: no Vowels",
 			args: args{
 				config: &PhonidConfig{
-					Patterns:     []string{"VCV"},
+					Patterns:     []string{"VCVCV"},
 					Placeholders: placeholderMapNoVowels,
 				},
 			},
@@ -66,7 +66,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 		{
 			name: "custom config ok",
 			args: args{
-				config: &PhonidConfig{Patterns: []string{"VCV"}, Placeholders: placeholderCustomOK},
+				config: &PhonidConfig{Patterns: []string{"VCVCV"}, Placeholders: placeholderCustomOK},
 			},
 			want:    &PhoneticEncoder{},
 			wantErr: false,
@@ -107,7 +107,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 func TestPhoneticEncoder_Encode(t *testing.T) {
 	// Create a simple config for testing
 	configA := &PhonidConfig{
-		Patterns: []string{"CVC"},
+		Patterns: []string{"CVCVC"},
 		Placeholders: PlaceholderMap{
 			Vowel:     RuneSet{'a', 'o', 'i'},
 			Consonant: []rune("bzk"),
@@ -132,7 +132,7 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 			config:  *configA,
 			name:    "encode zero",
 			number:  NewPositiveInt(0),
-			want:    "bab",
+			want:    "babab",
 			wantErr: false,
 		},
 		{
@@ -153,27 +153,27 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 			config:  *configA,
 			name:    "encode 1",
 			number:  NewPositiveInt(1),
-			want:    "baz",
+			want:    "babaz",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode small number",
 			number:  NewPositiveInt(5),
-			want:    "bok",
+			want:    "babok",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode max value for pattern",
-			number:  NewPositiveInt(26), // 3*3*3 - 1
-			want:    "kik",
+			number:  NewPositiveInt(242), // 3*3*3*3*3 - 1
+			want:    "kikik",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode number beyond max",
-			number:  NewPositiveInt(27),
+			number:  NewPositiveInt(243),
 			want:    "",
 			wantErr: true,
 		},
@@ -203,7 +203,7 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 func TestPhoneticEncoder_Decode(t *testing.T) {
 	// Create a simple config for testing
 	simpleConfig := &PhonidConfig{
-		Patterns: []string{"CVC"},
+		Patterns: []string{"CVCVC"},
 		Placeholders: PlaceholderMap{
 			Vowel:     RuneSet{'a', 'o', 'i'},
 			Consonant: RuneSet{'b', 'z', 'k'},
@@ -224,26 +224,26 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 	}{
 		{
 			name:    "decode zero",
-			word:    "bab",
+			word:    "babab",
 			want:    0,
 			wantErr: false,
 		},
 		{
 			name:    "decode one",
-			word:    "baz",
+			word:    "babaz",
 			want:    1,
 			wantErr: false,
 		},
 		{
 			name:    "decode small number",
-			word:    "bok",
+			word:    "babok",
 			want:    5,
 			wantErr: false,
 		},
 		{
 			name:    "decode max value for pattern",
-			word:    "kik",
-			want:    26, // 3*3*3 - 1
+			word:    "kikik",
+			want:    242, // 3*3*3*3*3 - 1
 			wantErr: false,
 		},
 		{
@@ -254,13 +254,13 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 		},
 		{
 			name:    "decode invalid word - invalid character",
-			word:    "bax", // 'x' not in consonant set
+			word:    "babax", // 'x' not in consonant set
 			want:    0,
 			wantErr: true,
 		},
 		{
 			name:    "decode invalid word - wrong placeholder",
-			word:    "bbb", // vowel position has consonant
+			word:    "bbbbb", // vowel positions have consonants
 			want:    0,
 			wantErr: true,
 		},
@@ -295,7 +295,7 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 // Round-trip test to verify Encode/Decode are inverses.
 func TestPhoneticEncoder_RoundTrip(t *testing.T) {
 	simpleConfig := &PhonidConfig{
-		Patterns: []string{"CVC"},
+		Patterns: []string{"CVCVC"},
 		Placeholders: PlaceholderMap{
 			Vowel:     RuneSet{'a', 'o', 'i'},
 			Consonant: RuneSet{'b', 'z', 'k'},
@@ -396,7 +396,7 @@ func TestPhoneticEncoder_LargePatternCapacity(t *testing.T) {
 func TestShufflingWithUint64Max(t *testing.T) {
 	// Config from the example - supports uint64 max
 	config := &PhonidConfig{
-		Patterns: []string{"VCV", "CVCCV", "CVCVCXCVCVC", "CVCVCXCVCVCXCVCVCXCVCVC"},
+		Patterns: []string{"CVCCV", "CVCVCXCVCVC", "CVCVCXCVCVCXCVCVCXCVCVC"},
 		Placeholders: PlaceholderMap{
 			Consonant: RuneSet("bdfghjklmnprstvz"),
 			Vowel:     RuneSet("aiou"),

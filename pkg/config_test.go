@@ -82,7 +82,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "invalid PhonidConfig",
 			fields: fields{
 				Phonetic: &PhonidConfig{
-					Patterns: []string{"CVC"},
+					Patterns: []string{"CVCVC"},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("b"),
 						Vowel:     RuneSet("a"),
@@ -99,7 +99,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid PhonidConfig",
 			fields: fields{
 				Phonetic: &PhonidConfig{
-					Patterns: []string{"CVC"},
+					Patterns: []string{"CVCVC"},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
 						Vowel:     RuneSet("ae"),
@@ -141,7 +141,7 @@ func TestNewConfigWithOptions(t *testing.T) {
 			args: args{
 				opts: []ConfigOption{
 					WithPhonetic(&PhonidConfig{
-						Patterns: []string{"CVC"},
+						Patterns: []string{"CVCVC"},
 						Placeholders: PlaceholderMap{
 							Consonant: RuneSet("bcdx"),
 							Vowel:     RuneSet("ae"),
@@ -153,14 +153,14 @@ func TestNewConfigWithOptions(t *testing.T) {
 			},
 			want: &Config{
 				Phonetic: &PhonidConfig{
-					Patterns: []string{"CVC"},
+					Patterns: []string{"CVCVC"},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
 						Vowel:     RuneSet("ae"),
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 8, // Auto-calculated: 4*2*4 = 32 combinations, needs 5 bits
+					BitWidth: 16, // Auto-calculated: 4³*2² = 256 combinations, needs 9 bits, rounds to 16
 					Seed:     12345,
 					Rounds:   3,
 				},
@@ -196,40 +196,40 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 		{
 			name: "matching expected bit width",
 			phonetic: &PhonidConfig{
-				Patterns: []string{"CVC"},
+				Patterns: []string{"CVCVC"},
 				Placeholders: PlaceholderMap{
 					Consonant: RuneSet("bcdx"),
 					Vowel:     RuneSet("ae"),
 				},
 			},
-			expectedBitWidth:  8, // 4*2*4 = 32, needs 5 bits
-			wantCalculatedBit: 8,
+			expectedBitWidth:  16, // 4³*2² = 256, needs 9 bits, rounds to 16
+			wantCalculatedBit: 16,
 			wantErr:           false,
 		},
 		{
 			name: "mismatched expected bit width",
 			phonetic: &PhonidConfig{
-				Patterns: []string{"CVC"},
+				Patterns: []string{"CVCVC"},
 				Placeholders: PlaceholderMap{
 					Consonant: RuneSet("bcdx"),
 					Vowel:     RuneSet("ae"),
 				},
 			},
 			expectedBitWidth:  6, // Wrong expectation
-			wantCalculatedBit: 8,
+			wantCalculatedBit: 16,
 			wantErr:           true,
 		},
 		{
 			name: "no expected bit width (skip assertion)",
 			phonetic: &PhonidConfig{
-				Patterns: []string{"CVC"},
+				Patterns: []string{"CVCVC"},
 				Placeholders: PlaceholderMap{
 					Consonant: RuneSet("bcdx"),
 					Vowel:     RuneSet("ae"),
 				},
 			},
 			expectedBitWidth:  0, // No assertion
-			wantCalculatedBit: 8,
+			wantCalculatedBit: 16,
 			wantErr:           false,
 		},
 	}

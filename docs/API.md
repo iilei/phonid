@@ -150,7 +150,10 @@ var (
     }
 
     // AllowedPatternLengths defines the permitted pattern lengths.
-    AllowedPatternLengths = []int{3, 5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
+    // Length 3 is excluded because it requires more characters (10+) to reach
+    // the minimum capacity (128) needed for shuffle compatibility. Lengths 5+
+    // automatically exceed this threshold with the minimum 3 chars/placeholder.
+    AllowedPatternLengths = []int{5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
 
     // AllowedPlaceholders defines the valid placeholder identifiers.
     AllowedPlaceholders = map[PlaceholderType]string{
@@ -561,7 +564,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L126-L130>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L129-L133>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -587,7 +590,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L140>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L143>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -596,7 +599,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid.
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L108>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L111>)
 
 
 
@@ -605,7 +608,7 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L107>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L110>)
 
 
 
@@ -691,7 +694,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L112>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L115>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -700,7 +703,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L134>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L137>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error
