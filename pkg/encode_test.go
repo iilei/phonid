@@ -166,14 +166,14 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 		{
 			config:  *configA,
 			name:    "encode max value for pattern",
-			number:  NewPositiveInt(242), // 3*3*3*3*3 - 1
+			number:  NewPositiveInt(242), // Capacity 243 minus 1
 			want:    "kikik",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode number beyond max",
-			number:  NewPositiveInt(243),
+			number:  NewPositiveInt(243), // Beyond capacity
 			want:    "",
 			wantErr: true,
 		},
@@ -243,12 +243,12 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 		{
 			name:    "decode max value for pattern",
 			word:    "kikik",
-			want:    242, // 3*3*3*3*3 - 1
+			want:    242, // 3^3 * 3^2 - 1
 			wantErr: false,
 		},
 		{
 			name:    "decode invalid word - wrong length",
-			word:    "ba",
+			word:    "baba",
 			want:    0,
 			wantErr: true,
 		},
@@ -260,7 +260,7 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 		},
 		{
 			name:    "decode invalid word - wrong placeholder",
-			word:    "bbbbb", // vowel positions have consonants
+			word:    "bbbbb", // vowel position has consonant
 			want:    0,
 			wantErr: true,
 		},
@@ -396,7 +396,7 @@ func TestPhoneticEncoder_LargePatternCapacity(t *testing.T) {
 func TestShufflingWithUint64Max(t *testing.T) {
 	// Config from the example - supports uint64 max
 	config := &PhonidConfig{
-		Patterns: []string{"CVCCV", "CVCVCXCVCVC", "CVCVCXCVCVCXCVCVCXCVCVC"},
+		Patterns: []string{"CVCVC", "CVCVCVC", "CVCVCXCVCVC", "CVCVCXCVCVCXCVCVCXCVCVC"},
 		Placeholders: PlaceholderMap{
 			Consonant: RuneSet("bdfghjklmnprstvz"),
 			Vowel:     RuneSet("aiou"),

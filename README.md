@@ -1,5 +1,7 @@
 # Phonid
 
+> **Try it live:** Experiment with different configurations and encoding patterns in the [interactive playground](https://iilei.github.io/phonid/)
+
 Phonid is a Go library for encoding and decoding numeric identifiers into **pronounceable, human-friendly fantasy words** while preserving **strict mathematical reversibility**.
 
 Inspired by ProQuint, Phonid generalizes the idea into a configurable, extensible system that allows different "phonetic languages" (e.g. Minion-like, Elvish-like) **without ever sacrificing bidirectional decodability**.

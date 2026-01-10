@@ -8,10 +8,20 @@ import (
 	. "github.com/iilei/phonid/pkg/preflight"
 )
 
+const (
+	patternCVCVCVC   = "CVCVCVC"
+	placeholderOther = "other"
+)
+
 // makeTwoPatternBoundaries creates boundary assertions for two patterns.
 func makeTwoPatternBoundaries(pattern2 string) AssertionTable {
-	// For VCVCV: 3*3*3*3*3 = 243, mid = 121
-	// For CVCVCVC: 3*3*3*3*3*3*3 = 2187, mid = 1093
+	output1093 := "kokokok" // CVCVCVC starts at 243
+	output2186 := "tititit"
+	if pattern2 != patternCVCVCVC {
+		output1093 = placeholderOther
+		output2186 = placeholderOther
+	}
+
 	return AssertionTable{
 		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(0)}, Output: "azaza", Comment: "Lower boundary (VCVCV)"},
 		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(121)}, Output: "okoko", Comment: "Mid-range (VCVCV)"},
@@ -27,12 +37,12 @@ func makeTwoPatternBoundaries(pattern2 string) AssertionTable {
 		},
 		{
 			Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(1093)},
-			Output:  "kokokok",
+			Output:  output1093,
 			Comment: "Mid-range (" + pattern2 + ")",
 		},
 		{
 			Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(2186)},
-			Output:  "tititit",
+			Output:  output2186,
 			Comment: "Upper boundary (" + pattern2 + ")",
 		},
 	}
@@ -97,7 +107,7 @@ func TestGenerateSuggestions(t *testing.T) {
 			args: args{
 				encoder: multiPatternEncoder,
 			},
-			want:    makeTwoPatternBoundaries("CVCVCVC"),
+			want:    makeTwoPatternBoundaries(patternCVCVCVC),
 			wantErr: false,
 		},
 		{
@@ -250,7 +260,7 @@ func TestGenerateSuggestionsWithCustom(t *testing.T) {
 			name: "custom value exceeds capacity",
 			args: args{
 				encoder:           encoder,
-				customValues:      []p.PositiveInt{p.NewPositiveInt(3000)},
+				customValues:      []p.PositiveInt{p.NewPositiveInt(3000)}, // Exceeds CVCVCVC capacity (2186)
 				includeBoundaries: false,
 			},
 			want:    nil,

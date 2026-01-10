@@ -100,7 +100,7 @@ func TestSuggestConfig(t *testing.T) {
 //nolint:gocognit,gocyclo // Comprehensive integration test with multiple subtests
 func TestSuggestConfigInlineComments(t *testing.T) {
 	placeholderMap := p.PlaceholderMap{
-		p.Vowel:     p.RuneSet{'a', 'o'},
+		p.Vowel:     p.RuneSet{'a', 'o', 'i'},
 		p.Consonant: p.RuneSet{'z', 'k', 't'},
 	}
 

@@ -13,8 +13,14 @@ import (
 )
 
 const (
-	// MinCharsForVowel placeholder type minimal set of runes.
-	MinCharsForVowel = 2
+	// MinCharsForVowelShort is minimum vowels for short patterns (length 5).
+	// With 3 consonants and 3 vowels: 3³×3² = 243 combinations (> 128).
+	MinCharsForVowelShort = 3
+	// MinCharsForVowelLong is minimum vowels for longer patterns (length >= 7).
+	// With 3 consonants and 2 vowels: 3⁴×2³ = 648 combinations (> 128).
+	MinCharsForVowelLong = 2
+	// MinPatternLengthForShortVowels is the pattern length that requires MinCharsForVowelShort.
+	MinPatternLengthForShortVowels = 5
 	// MinCharsForComplement placeholder type minimal set of runes.
 	MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
 
@@ -48,9 +54,6 @@ var (
 	}
 
 	// AllowedPatternLengths defines the permitted pattern lengths.
-	// Length 3 is excluded because it requires more characters (10+) to reach
-	// the minimum capacity (128) needed for shuffle compatibility. Lengths 5+
-	// automatically exceed this threshold with the minimum 3 chars/placeholder.
 	AllowedPatternLengths = []int{5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
 
 	// AllowedPlaceholders defines the valid placeholder identifiers.
@@ -191,7 +194,7 @@ func validatePattern(pattern string, placeholders PlaceholderMap) error {
 		return err
 	}
 
-	if err := validatePlaceholderSets(placeholderCounts, placeholders); err != nil {
+	if err := validatePlaceholderSets(placeholderCounts, placeholders, len(pattern)); err != nil {
 		return err
 	}
 
@@ -222,7 +225,7 @@ func countPlaceholders(pattern string, placeholders PlaceholderMap) (map[Placeho
 }
 
 // validatePlaceholderSets validates each placeholder's character set.
-func validatePlaceholderSets(counts map[PlaceholderType]int, placeholders PlaceholderMap) error {
+func validatePlaceholderSets(counts map[PlaceholderType]int, placeholders PlaceholderMap, patternLength int) error {
 	for placeholder, chars := range placeholders {
 		// Only validate placeholders actually used in pattern
 		if counts[placeholder] == 0 {
@@ -237,7 +240,7 @@ func validatePlaceholderSets(counts map[PlaceholderType]int, placeholders Placeh
 			return err
 		}
 
-		if err := validateMinimumSize(placeholder, chars); err != nil {
+		if err := validateMinimumSize(placeholder, chars, patternLength); err != nil {
 			return err
 		}
 	}
@@ -267,10 +270,22 @@ func validateVowelSet(placeholder PlaceholderType, chars RuneSet) error {
 }
 
 // validateMinimumSize checks minimum character requirements for placeholders.
-func validateMinimumSize(placeholder PlaceholderType, chars RuneSet) error {
-	if placeholder == Vowel && len(chars) < MinCharsForVowel {
-		return fmt.Errorf("vowel placeholder needs at least %d characters, got %d",
-			MinCharsForVowel, len(chars))
+// Vowel minimums depend on pattern length to ensure shuffle capacity >= 128:
+//   - Length 5: needs 3 vowels (with 3 consonants: 3³×3² = 243)
+//   - Length 7+: needs 2 vowels (with 3 consonants: 3⁴×2³ = 648)
+func validateMinimumSize(placeholder PlaceholderType, chars RuneSet, patternLength int) error {
+	if placeholder != Vowel {
+		return nil
+	}
+
+	minVowels := MinCharsForVowelLong // Default for length >= 7
+	if patternLength == MinPatternLengthForShortVowels {
+		minVowels = MinCharsForVowelShort
+	}
+
+	if len(chars) < minVowels {
+		return fmt.Errorf("vowel placeholder needs at least %d characters for pattern length %d, got %d",
+			minVowels, patternLength, len(chars))
 	}
 	return nil
 }

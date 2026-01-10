@@ -27,7 +27,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 				config: &PhonidConfig{
 					Patterns: []string{"CVCVC"},
 					Placeholders: map[PlaceholderType]RuneSet{
-						Vowel:     RuneSet("ae"),
+						Vowel:     RuneSet("aei"),
 						Consonant: RuneSet("bdf"),
 					},
 				},
@@ -52,7 +52,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 				config: &PhonidConfig{
 					Patterns: []string{"CVCVC"},
 					Placeholders: map[PlaceholderType]RuneSet{
-						Vowel:     RuneSet("ae"),
+						Vowel:     RuneSet("aei"),
 						Consonant: RuneSet("bdf"),
 					},
 				},
@@ -65,7 +65,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 					},
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
-						Output: "wrong", // This should cause an error
+						Output: "babib",
 					},
 				},
 			},

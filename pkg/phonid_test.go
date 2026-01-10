@@ -147,12 +147,12 @@ func TestPhoneticConfigValidate_InsufficientCombinations(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
-	// With 3 consonants and 2 vowels in CVCVC pattern:
-	// 3^3 * 2^2 = 27 * 4 = 108 combinations (more than 36 needed)
+	// With 3 consonants and 3 vowels in CVCVC pattern:
+	// 3^3 * 3^2 = 27 * 9 = 243 combinations (more than 36 needed)
 	pc := &PhonidConfig{
 		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
-			Vowel:     RuneSet("ae"),
+			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdk"),
 		},
 	}

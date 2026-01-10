@@ -78,12 +78,18 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
 
 ## Constants
 
-<a name="MinCharsForVowel"></a>
+<a name="MinCharsForVowelShort"></a>
 
 ```go
 const (
-    // MinCharsForVowel placeholder type minimal set of runes.
-    MinCharsForVowel = 2
+    // MinCharsForVowelShort is minimum vowels for short patterns (length 5).
+    // With 3 consonants and 3 vowels: 3³×3² = 243 combinations (> 128).
+    MinCharsForVowelShort = 3
+    // MinCharsForVowelLong is minimum vowels for longer patterns (length >= 7).
+    // With 3 consonants and 2 vowels: 3⁴×2³ = 648 combinations (> 128).
+    MinCharsForVowelLong = 2
+    // MinPatternLengthForShortVowels is the pattern length that requires MinCharsForVowelShort.
+    MinPatternLengthForShortVowels = 5
     // MinCharsForComplement placeholder type minimal set of runes.
     MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
 
@@ -150,9 +156,6 @@ var (
     }
 
     // AllowedPatternLengths defines the permitted pattern lengths.
-    // Length 3 is excluded because it requires more characters (10+) to reach
-    // the minimum capacity (128) needed for shuffle compatibility. Lengths 5+
-    // automatically exceed this threshold with the minimum 3 chars/placeholder.
     AllowedPatternLengths = []int{5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
 
     // AllowedPlaceholders defines the valid placeholder identifiers.
@@ -564,7 +567,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L129-L133>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L132-L136>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -590,7 +593,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L143>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L146>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -599,7 +602,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid.
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L111>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L114>)
 
 
 
@@ -608,7 +611,7 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L110>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L113>)
 
 
 
@@ -694,7 +697,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L115>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L118>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -703,7 +706,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L137>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L140>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error

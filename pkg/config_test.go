@@ -59,7 +59,7 @@ func TestConfig_Validate(t *testing.T) {
 					Patterns: []string{"CXVXC"},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcd"),
-						Vowel:     RuneSet("ae"),
+						Vowel:     RuneSet("aei"),
 						CustomX:   RuneSet("."),
 					},
 				},
@@ -84,8 +84,8 @@ func TestConfig_Validate(t *testing.T) {
 				Phonetic: &PhonidConfig{
 					Patterns: []string{"CVCVC"},
 					Placeholders: PlaceholderMap{
-						Consonant: RuneSet("b"),
-						Vowel:     RuneSet("a"),
+						Consonant: RuneSet("bcdx"),
+						Vowel:     RuneSet("ae"), // Only 2 vowels, needs 3 for length 5
 					},
 				},
 				Shuffle: &ShuffleConfig{
@@ -102,7 +102,7 @@ func TestConfig_Validate(t *testing.T) {
 					Patterns: []string{"CVCVC"},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
-						Vowel:     RuneSet("ae"),
+						Vowel:     RuneSet("aei"),
 					},
 				},
 				Shuffle: &ShuffleConfig{
@@ -144,7 +144,7 @@ func TestNewConfigWithOptions(t *testing.T) {
 						Patterns: []string{"CVCVC"},
 						Placeholders: PlaceholderMap{
 							Consonant: RuneSet("bcdx"),
-							Vowel:     RuneSet("ae"),
+							Vowel:     RuneSet("aei"),
 						},
 					}),
 					WithSeed(12345),
@@ -156,11 +156,11 @@ func TestNewConfigWithOptions(t *testing.T) {
 					Patterns: []string{"CVCVC"},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
-						Vowel:     RuneSet("ae"),
+						Vowel:     RuneSet("aei"),
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 16, // Auto-calculated: 4³*2² = 256 combinations, needs 9 bits, rounds to 16
+					BitWidth: 16, // Auto-calculated: 4³ × 3² = 576 combinations, needs 10 bits → rounds to 16
 					Seed:     12345,
 					Rounds:   3,
 				},
@@ -199,10 +199,10 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 				Patterns: []string{"CVCVC"},
 				Placeholders: PlaceholderMap{
 					Consonant: RuneSet("bcdx"),
-					Vowel:     RuneSet("ae"),
+					Vowel:     RuneSet("aei"),
 				},
 			},
-			expectedBitWidth:  16, // 4³*2² = 256, needs 9 bits, rounds to 16
+			expectedBitWidth:  16, // 4³ × 3² = 576, needs 10 bits → rounds to 16
 			wantCalculatedBit: 16,
 			wantErr:           false,
 		},
@@ -212,10 +212,10 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 				Patterns: []string{"CVCVC"},
 				Placeholders: PlaceholderMap{
 					Consonant: RuneSet("bcdx"),
-					Vowel:     RuneSet("ae"),
+					Vowel:     RuneSet("aei"),
 				},
 			},
-			expectedBitWidth:  6, // Wrong expectation
+			expectedBitWidth:  8, // Wrong expectation (actual is 16)
 			wantCalculatedBit: 16,
 			wantErr:           true,
 		},
@@ -225,7 +225,7 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 				Patterns: []string{"CVCVC"},
 				Placeholders: PlaceholderMap{
 					Consonant: RuneSet("bcdx"),
-					Vowel:     RuneSet("ae"),
+					Vowel:     RuneSet("aei"),
 				},
 			},
 			expectedBitWidth:  0, // No assertion
