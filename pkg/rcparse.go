@@ -67,10 +67,10 @@ type (
 	}
 
 	// TOMLShuffleConfig represents shuffle configuration.
+	// BitWidth is calculated automatically from pattern capacity.
 	TOMLShuffleConfig struct {
-		BitWidth *TomlPositiveInt `toml:"bit_width,omitempty"`
-		Rounds   *TomlPositiveInt `toml:"rounds,omitempty"`
-		Seed     *TomlPositiveInt `toml:"seed,omitempty"`
+		Rounds *TomlPositiveInt `toml:"rounds,omitempty"`
+		Seed   *TomlPositiveInt `toml:"seed,omitempty"`
 	}
 
 	// TOMLPhonidConfig represents the phonetic configuration.
@@ -334,13 +334,12 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 	}
 
 	// Convert shuffle config if present
-	bitWidth := toInt(tomlConfig.Shuffle.BitWidth)
 	rounds := toInt(tomlConfig.Shuffle.Rounds)
 	seed := toUint64(tomlConfig.Shuffle.Seed)
 
-	if bitWidth > 0 || rounds > 0 || seed > 0 {
+	if rounds > 0 || seed > 0 {
 		config.Shuffle = &ShuffleConfig{
-			BitWidth: bitWidth,
+			BitWidth: 0, // Will be calculated after patterns are built
 			Rounds:   rounds,
 			Seed:     seed,
 		}

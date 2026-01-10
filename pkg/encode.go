@@ -165,6 +165,17 @@ func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	// Initialize shuffler if shuffle config is provided
 	var shuffler *FeistelShuffler
 	if config.Shuffle != nil && config.Shuffle.Rounds > 0 {
+		// Calculate bit_width from the largest pattern capacity if not set
+		if config.Shuffle.BitWidth == 0 {
+			maxCapacity := big.NewInt(0)
+			for _, pe := range patternEncoders {
+				if pe.totalCombinations.Cmp(maxCapacity) > 0 {
+					maxCapacity = pe.totalCombinations
+				}
+			}
+			config.Shuffle.BitWidth = calculateRequiredBitWidth(maxCapacity)
+		}
+
 		var err error
 		shuffler, err = NewFeistelShuffler(
 			config.Shuffle.BitWidth,
@@ -191,21 +202,9 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
 	}
 
 	// Apply shuffling if configured (requires fitting in uint64)
-	encodedNumber := number
-	if e.shuffler != nil {
-		// Get value as int64 for shuffling
-		val, ok := number.Int64()
-		if !ok {
-			return "", fmt.Errorf("number too large for shuffling (max: %d)", uint64(math.MaxUint64))
-		}
-
-		//nolint:gosec // G115: Intentional conversion - val is validated to be non-negative
-		shuffled, err := e.shuffler.Encode(uint64(val))
-		if err != nil {
-			return "", fmt.Errorf("shuffle failed: %w", err)
-		}
-		//nolint:gosec // G115: Intentional conversion - shuffled is within valid range
-		encodedNumber = NewPositiveInt(int64(shuffled))
+	encodedNumber, err := e.applyShuffle(number)
+	if err != nil {
+		return "", err
 	}
 
 	// Find the smallest pattern that can encode this number
@@ -218,13 +217,15 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
 	// Number too large for any pattern
 	maxCapacity := e.patternEncoders[len(e.patternEncoders)-1].totalCombinations
 	// For display, limit to MaxInt if capacity is larger
+	// Calculate max value (capacity - 1) for error message
+	maxValue := new(big.Int).Sub(maxCapacity, big.NewInt(1))
 	var displayMax string
-	if maxCapacity.Cmp(big.NewInt(int64(math.MaxInt))) > 0 {
+	if maxValue.Cmp(big.NewInt(int64(math.MaxInt))) > 0 {
 		displayMax = fmt.Sprintf(">%d", math.MaxInt)
 	} else {
-		displayMax = maxCapacity.String()
+		displayMax = maxValue.String()
 	}
-	return "", fmt.Errorf("number %s exceeds capacity of largest pattern (max capacity: %s)",
+	return "", fmt.Errorf("number %s exceeds largest pattern capacity (max value: %s)",
 		number.String(), displayMax)
 }
 
@@ -243,21 +244,7 @@ func (e *PhoneticEncoder) Decode(word string) (PositiveInt, error) {
 		}
 
 		// Apply unshuffling if configured
-		if e.shuffler == nil {
-			return number, nil
-		}
-
-		val, ok := number.Int64()
-		if !ok {
-			return nil, errors.New("decoded number too large for shuffling")
-		}
-		//nolint:gosec // G115: Intentional conversion - val validated
-		unshuffled, err := e.shuffler.Decode(uint64(val))
-		if err != nil {
-			return nil, fmt.Errorf("unshuffle failed: %w", err)
-		}
-		//nolint:gosec // G115: Intentional conversion - unshuffled within range
-		return NewPositiveInt(int64(unshuffled)), nil
+		return e.applyUnshuffle(number)
 	}
 
 	return nil, fmt.Errorf("word length %d doesn't match any pattern", len(wordRunes))
@@ -378,6 +365,78 @@ func (e *PhoneticEncoder) GetPatternInfo() []struct {
 	}
 
 	return result
+}
+
+// applyShuffle applies Feistel shuffling to the input number if configured.
+// Returns the shuffled number, or the original if no shuffler is configured.
+func (e *PhoneticEncoder) applyShuffle(number PositiveInt) (PositiveInt, error) {
+	if e.shuffler == nil {
+		return number, nil
+	}
+
+	// Check if number fits in uint64 for shuffling
+	bigVal := number.BigInt()
+	maxUint64 := new(big.Int).SetUint64(math.MaxUint64)
+
+	if bigVal.Cmp(maxUint64) > 0 {
+		return nil, fmt.Errorf("number too large for shuffling (max: %d)", uint64(math.MaxUint64))
+	}
+
+	// Convert to uint64 for shuffling
+	var val uint64
+	if v, ok := number.Int64(); ok && v >= 0 {
+		val = uint64(v)
+	} else {
+		// Use BigInt conversion for values > MaxInt64
+		val = bigVal.Uint64()
+	}
+
+	shuffled, err := e.shuffler.Encode(val)
+	if err != nil {
+		return nil, fmt.Errorf("shuffle failed: %w", err)
+	}
+
+	// Convert shuffled value back to PositiveInt
+	if shuffled > math.MaxInt64 {
+		return NewPositiveIntFromBig(new(big.Int).SetUint64(shuffled)), nil
+	}
+	return NewPositiveInt(int64(shuffled)), nil
+}
+
+// applyUnshuffle applies Feistel unshuffling to the decoded number if configured.
+// Returns the unshuffled number, or the original if no shuffler is configured.
+func (e *PhoneticEncoder) applyUnshuffle(number PositiveInt) (PositiveInt, error) {
+	if e.shuffler == nil {
+		return number, nil
+	}
+
+	// Check if number fits in uint64 for unshuffling
+	bigVal := number.BigInt()
+	maxUint64 := new(big.Int).SetUint64(math.MaxUint64)
+
+	if bigVal.Cmp(maxUint64) > 0 {
+		return nil, errors.New("decoded number too large for shuffling")
+	}
+
+	// Convert to uint64 for unshuffling
+	var val uint64
+	if v, ok := number.Int64(); ok && v >= 0 {
+		val = uint64(v)
+	} else {
+		// Use BigInt conversion for values > MaxInt64
+		val = bigVal.Uint64()
+	}
+
+	unshuffled, err := e.shuffler.Decode(val)
+	if err != nil {
+		return nil, fmt.Errorf("unshuffle failed: %w", err)
+	}
+
+	// Convert unshuffled value back to PositiveInt
+	if unshuffled > math.MaxInt64 {
+		return NewPositiveIntFromBig(new(big.Int).SetUint64(unshuffled)), nil
+	}
+	return NewPositiveInt(int64(unshuffled)), nil
 }
 
 // encodeInt64 is the fast path for encoding int64 values.

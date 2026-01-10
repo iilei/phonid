@@ -3,8 +3,17 @@ package phonid
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/creasty/defaults"
+)
+
+const (
+	// Standard bit widths for shuffling.
+	bitWidth8  = 8
+	bitWidth16 = 16
+	bitWidth32 = 32
+	bitWidth64 = 64
 )
 
 // Config holds the configuration for phonetic ID generation.
@@ -80,7 +89,7 @@ func (c *Config) Validate() error {
 
 	// Auto-calculate BitWidth from largest pattern's capacity
 	largestPattern := encoder.patternEncoders[len(encoder.patternEncoders)-1]
-	c.Shuffle.BitWidth = calculateRequiredBitWidth(largestPattern.MaxValue() + 1)
+	c.Shuffle.BitWidth = calculateRequiredBitWidth(big.NewInt(int64(largestPattern.MaxValue() + 1)))
 
 	// Preflight assertion: check if BitWidth matches expected value
 	if c.ExpectedBitWidth > 0 && c.Shuffle.BitWidth != c.ExpectedBitWidth {
@@ -146,16 +155,24 @@ func WithExpectedBitWidth(bitWidth int) ConfigOption {
 }
 
 // calculateRequiredBitWidth returns the minimum bit width needed to represent totalCombinations.
-func calculateRequiredBitWidth(totalCombinations int) int {
-	if totalCombinations <= 1 {
-		return 1
+// Returns standard bit widths: 8, 16, 32, or 64.
+func calculateRequiredBitWidth(totalCombinations *big.Int) int {
+	if totalCombinations.Sign() <= 0 {
+		return bitWidth8 // Minimum bit width
 	}
-	// Calculate ceil(log2(totalCombinations))
-	bitWidth := 0
-	value := totalCombinations - 1
-	for value > 0 {
-		bitWidth++
-		value >>= 1
+
+	// Count the number of bits needed
+	bitLen := totalCombinations.BitLen()
+
+	// Round up to standard bit widths: 8, 16, 32, 64
+	switch {
+	case bitLen <= bitWidth8:
+		return bitWidth8
+	case bitLen <= bitWidth16:
+		return bitWidth16
+	case bitLen <= bitWidth32:
+		return bitWidth32
+	default:
+		return bitWidth64
 	}
-	return bitWidth
 }

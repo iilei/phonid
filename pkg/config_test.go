@@ -160,7 +160,7 @@ func TestNewConfigWithOptions(t *testing.T) {
 					},
 				},
 				Shuffle: &ShuffleConfig{
-					BitWidth: 5, // Auto-calculated: 4*2*4 = 32 combinations, needs 5 bits
+					BitWidth: 8, // Auto-calculated: 4*2*4 = 32 combinations, needs 5 bits
 					Seed:     12345,
 					Rounds:   3,
 				},
@@ -202,8 +202,8 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 					Vowel:     RuneSet("ae"),
 				},
 			},
-			expectedBitWidth:  5, // 4*2*4 = 32, needs 5 bits
-			wantCalculatedBit: 5,
+			expectedBitWidth:  8, // 4*2*4 = 32, needs 5 bits
+			wantCalculatedBit: 8,
 			wantErr:           false,
 		},
 		{
@@ -216,7 +216,7 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 				},
 			},
 			expectedBitWidth:  6, // Wrong expectation
-			wantCalculatedBit: 5,
+			wantCalculatedBit: 8,
 			wantErr:           true,
 		},
 		{
@@ -229,7 +229,7 @@ func TestConfig_PreflightAssertion(t *testing.T) {
 				},
 			},
 			expectedBitWidth:  0, // No assertion
-			wantCalculatedBit: 5,
+			wantCalculatedBit: 8,
 			wantErr:           false,
 		},
 	}

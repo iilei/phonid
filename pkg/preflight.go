@@ -27,22 +27,22 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error {
 		// Test encoding
 		encoded, err := p.Encode(input)
 		if err != nil {
-			return fmt.Errorf("preflight[%d]: encode(%s) failed: %w", i, input.String(), err)
+			return fmt.Errorf("check #%d failed: encoding %s failed: %w", i+1, input.String(), err)
 		}
 		if encoded != check.Output {
-			return fmt.Errorf("preflight[%d]: encode(%s) = %q, want %q",
-				i, input.String(), encoded, check.Output)
+			return fmt.Errorf("check #%d failed: encoding %s produced %q, but expected %q",
+				i+1, input.String(), encoded, check.Output)
 		}
 
 		// Test decoding (implicit round-trip)
 		decoded, err := p.Decode(check.Output)
 		if err != nil {
-			return fmt.Errorf("preflight[%d]: decode(%q) failed: %w",
-				i, check.Output, err)
+			return fmt.Errorf("check #%d failed: decoding %q failed: %w",
+				i+1, check.Output, err)
 		}
 		if decoded.Cmp(input) != 0 {
-			return fmt.Errorf("preflight[%d]: decode(%q) = %s, want %s",
-				i, check.Output, decoded.String(), input.String())
+			return fmt.Errorf("check #%d failed: decoding %q produced %s, but expected %s",
+				i+1, check.Output, decoded.String(), input.String())
 		}
 	}
 

@@ -216,7 +216,7 @@ var ErrNoPreflightChecks = errors.New("config must include at least one [[prefli
 ```
 
 <a name="IsValidPhonidRCFilename"></a>
-## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L444>)
+## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L443>)
 
 ```go
 func IsValidPhonidRCFilename(filename string) bool
@@ -261,7 +261,7 @@ func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, erro
 ParsePhonidRCLenient parses TOML content without requiring preflight checks. Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ValidatePhonidRC"></a>
-## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L394>)
+## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L393>)
 
 ```go
 func ValidatePhonidRC(config *PhonidConfig) error
@@ -270,7 +270,7 @@ func ValidatePhonidRC(config *PhonidConfig) error
 ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding.
 
 <a name="Config"></a>
-## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L12-L22>)
+## type [Config](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L21-L31>)
 
 Config holds the configuration for phonetic ID generation.
 
@@ -289,7 +289,7 @@ type Config struct {
 ```
 
 <a name="NewConfig"></a>
-### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L30>)
+### func [NewConfig](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L39>)
 
 ```go
 func NewConfig() (*Config, error)
@@ -298,7 +298,7 @@ func NewConfig() (*Config, error)
 NewConfig returns a Config with sensible defaults applied. BitWidth is auto\-calculated during Validate\(\) based on phonetic patterns.
 
 <a name="NewConfigWithOptions"></a>
-### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L39>)
+### func [NewConfigWithOptions](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L48>)
 
 ```go
 func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
@@ -307,7 +307,7 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error)
 NewConfigWithOptions returns a Config with defaults, then applies the provided options.
 
 <a name="Config.Validate"></a>
-### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L57>)
+### func \(\*Config\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L66>)
 
 ```go
 func (c *Config) Validate() error
@@ -316,7 +316,7 @@ func (c *Config) Validate() error
 Validate checks if the config values are valid and auto\-calculates BitWidth.
 
 <a name="ConfigOption"></a>
-## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L25>)
+## type [ConfigOption](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L34>)
 
 ConfigOption is a functional option for configuring Config.
 
@@ -325,7 +325,7 @@ type ConfigOption func(*Config)
 ```
 
 <a name="WithExpectedBitWidth"></a>
-### func [WithExpectedBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L142>)
+### func [WithExpectedBitWidth](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L151>)
 
 ```go
 func WithExpectedBitWidth(bitWidth int) ConfigOption
@@ -334,7 +334,7 @@ func WithExpectedBitWidth(bitWidth int) ConfigOption
 WithExpectedBitWidth sets the expected bit width for preflight assertion. If the calculated BitWidth doesn't match, Validate\(\) will fail. This helps catch breaking changes in phonetic configuration.
 
 <a name="WithPhonetic"></a>
-### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L133>)
+### func [WithPhonetic](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L142>)
 
 ```go
 func WithPhonetic(phonetic *PhonidConfig) ConfigOption
@@ -343,7 +343,7 @@ func WithPhonetic(phonetic *PhonidConfig) ConfigOption
 WithPhonetic sets the phonetic configuration.
 
 <a name="WithRounds"></a>
-### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L106>)
+### func [WithRounds](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L115>)
 
 ```go
 func WithRounds(rounds int) ConfigOption
@@ -352,7 +352,7 @@ func WithRounds(rounds int) ConfigOption
 WithRounds sets the number of Feistel rounds.
 
 <a name="WithSeed"></a>
-### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L116>)
+### func [WithSeed](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L125>)
 
 ```go
 func WithSeed(seed uint64) ConfigOption
@@ -361,7 +361,7 @@ func WithSeed(seed uint64) ConfigOption
 WithSeed sets the seed value.
 
 <a name="WithShuffle"></a>
-### func [WithShuffle](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L126>)
+### func [WithShuffle](<https://github.com/iilei/phonid/blob/master/pkg/config.go#L135>)
 
 ```go
 func WithShuffle(shuffle *ShuffleConfig) ConfigOption
@@ -446,7 +446,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L295>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L282>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (PositiveInt, error)
@@ -455,7 +455,7 @@ func (e *PatternEncoder) Decode(word string) (PositiveInt, error)
 Decode converts a phonetic word back to a number. Returns PositiveInt which can represent both small and large values.
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L268>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L255>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -464,7 +464,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word. Uses optimized int64 arithmetic for small numbers, big.Int for large numbers.
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L316>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L303>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -511,7 +511,7 @@ func NewPhoneticEncoderSkipPreflight(config *PhonidConfig) (*PhoneticEncoder, er
 NewPhoneticEncoderSkipPreflight creates an encoder without preflight validation. Only use this when preflight checks are genuinely unavailable \(e.g., testing scenarios\).
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L231>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L232>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (PositiveInt, error)
@@ -520,7 +520,7 @@ func (e *PhoneticEncoder) Decode(word string) (PositiveInt, error)
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L188>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L199>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
@@ -529,7 +529,7 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word, automatically selecting the best pattern. The number can be either a native int64 or a big.Int, with automatic optimization.
 
 <a name="PhoneticEncoder.GetPatternInfo"></a>
-### func \(\*PhoneticEncoder\) [GetPatternInfo](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L340-L345>)
+### func \(\*PhoneticEncoder\) [GetPatternInfo](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L327-L332>)
 
 ```go
 func (e *PhoneticEncoder) GetPatternInfo() []struct {
@@ -543,7 +543,7 @@ func (e *PhoneticEncoder) GetPatternInfo() []struct {
 GetPatternInfo returns information about all patterns for generating suggestions. Returns a slice with pattern details including true mathematical capacity. Each pattern can encode numbers from 0 to its TrueCapacity\-1. Capacity field is capped at math.MaxInt for compatibility, while TrueCapacity shows the real limit.
 
 <a name="PhoneticEncoder.GetSmallestPatternCapacity"></a>
-### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L329>)
+### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L316>)
 
 ```go
 func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
@@ -757,15 +757,14 @@ type TOMLPhonidConfig struct {
 ```
 
 <a name="TOMLShuffleConfig"></a>
-## type [TOMLShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L70-L74>)
+## type [TOMLShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L71-L74>)
 
-TOMLShuffleConfig represents shuffle configuration.
+TOMLShuffleConfig represents shuffle configuration. BitWidth is calculated automatically from pattern capacity.
 
 ```go
 type TOMLShuffleConfig struct {
-    BitWidth *TomlPositiveInt `toml:"bit_width,omitempty"`
-    Rounds   *TomlPositiveInt `toml:"rounds,omitempty"`
-    Seed     *TomlPositiveInt `toml:"seed,omitempty"`
+    Rounds *TomlPositiveInt `toml:"rounds,omitempty"`
+    Seed   *TomlPositiveInt `toml:"seed,omitempty"`
 }
 ```
 
@@ -855,7 +854,7 @@ const (
 ```
 
 <a name="FormatTOMLWithSuggestions"></a>
-## func [FormatTOMLWithSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L129-L133>)
+## func [FormatTOMLWithSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L128-L132>)
 
 ```go
 func FormatTOMLWithSuggestions(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig, suggestions *AssertionTable) (string, error)
@@ -864,7 +863,7 @@ func FormatTOMLWithSuggestions(encoder *phonid.PhoneticEncoder, config *phonid.P
 FormatTOMLWithSuggestions generates a complete TOML configuration string with the provided suggestions. Similar to SuggestConfig but uses pre\-generated suggestions instead of generating new ones.
 
 <a name="SuggestConfig"></a>
-## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L87>)
+## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L86>)
 
 ```go
 func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig) (string, error)
@@ -934,7 +933,7 @@ func NewGoFormatter() Formatter
 NewGoFormatter creates a new Go code formatter.
 
 <a name="NewTOMLFormatter"></a>
-### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L57>)
+### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L56>)
 
 ```go
 func NewTOMLFormatter() Formatter
@@ -1035,7 +1034,7 @@ const (
 ```
 
 <a name="PhoneticConfig"></a>
-## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L45-L48>)
+## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L44-L47>)
 
 PhoneticConfig represents phonetic configuration in TOML.
 
@@ -1047,20 +1046,19 @@ type PhoneticConfig struct {
 ```
 
 <a name="ShuffleConfig"></a>
-## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L38-L42>)
+## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L38-L41>)
 
-ShuffleConfig represents shuffle configuration in TOML.
+ShuffleConfig represents shuffle configuration in TOML. BitWidth is now auto\-calculated from pattern capacity.
 
 ```go
 type ShuffleConfig struct {
-    BitWidth int `toml:"bit_width"`
-    Rounds   int `toml:"rounds"`
-    Seed     int `toml:"seed"`
+    Rounds int `toml:"rounds"`
+    Seed   int `toml:"seed"`
 }
 ```
 
 <a name="TOMLConfig"></a>
-## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L31-L35>)
+## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L30-L34>)
 
 TOMLConfig represents the full .phonidrc TOML structure.
 
@@ -1073,7 +1071,7 @@ type TOMLConfig struct {
 ```
 
 <a name="TOMLFormatter"></a>
-## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L51-L53>)
+## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L50-L52>)
 
 TOMLFormatter implements the Formatter interface for TOML output.
 
@@ -1084,7 +1082,7 @@ type TOMLFormatter struct {
 ```
 
 <a name="TOMLFormatter.Format"></a>
-### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L69>)
+### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L68>)
 
 ```go
 func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
@@ -1093,7 +1091,7 @@ func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
 Format writes preflight assertions as TOML to the writer.
 
 <a name="TOMLFormatter.Name"></a>
-### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L64>)
+### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L63>)
 
 ```go
 func (f *TOMLFormatter) Name() OutputFormat

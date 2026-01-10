@@ -35,9 +35,7 @@ func TestSuggestConfig(t *testing.T) {
 		if !strings.Contains(result, "[shuffle]") {
 			t.Error("missing shuffle section")
 		}
-		if !strings.Contains(result, "bit_width = 32") {
-			t.Error("missing bit_width in shuffle section")
-		}
+		// bit_width is now auto-calculated and not in user-facing config
 		if !strings.Contains(result, "rounds = 0") {
 			t.Error("missing rounds in shuffle section")
 		}

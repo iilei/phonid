@@ -1,0 +1,14 @@
+# Phonid Configuration for BigInt Testing
+# This config supports uint64 max: 18446744073709551615
+
+# Multiple patterns to support different value ranges
+pattern = ["VCV", "CVCCV", "CVCVCXCVCVC", "CVCVCXCVCVCXCVCVCXCVCVC"]
+
+[placeholders]
+C = "bdfghjklmnprstvz"  # Consonants
+V = "aiou"              # Vowels
+X = "-"                 # Separator
+
+[shuffle]
+rounds = 2              # Feistel rounds
+seed = 0                # Shuffling seed

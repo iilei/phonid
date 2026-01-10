@@ -15,9 +15,8 @@ import (
 
 const (
 	// Default configuration values for TOML generation.
-	defaultBitWidth = 32
-	defaultRounds   = 0
-	defaultSeed     = 0
+	defaultRounds = 0
+	defaultSeed   = 0
 
 	// String processing constants.
 	keyValueParts = 2 // Expected parts when splitting "key = value"
@@ -35,10 +34,10 @@ type (
 	}
 
 	// ShuffleConfig represents shuffle configuration in TOML.
+	// BitWidth is now auto-calculated from pattern capacity.
 	ShuffleConfig struct {
-		BitWidth int `toml:"bit_width"`
-		Rounds   int `toml:"rounds"`
-		Seed     int `toml:"seed"`
+		Rounds int `toml:"rounds"`
+		Seed   int `toml:"seed"`
 	}
 
 	// PhoneticConfig represents phonetic configuration in TOML.
@@ -174,16 +173,12 @@ func buildTOMLConfig(config *phonid.PhonidConfig, assertions AssertionTable) *TO
 
 	// Extract shuffle config from input or use defaults
 	shuffleConfig := ShuffleConfig{
-		BitWidth: defaultBitWidth,
-		Rounds:   defaultRounds,
-		Seed:     defaultSeed,
+		Rounds: defaultRounds,
+		Seed:   defaultSeed,
 	}
 
 	// If config has shuffle settings, use them
 	if config.Shuffle != nil {
-		if config.Shuffle.BitWidth > 0 {
-			shuffleConfig.BitWidth = config.Shuffle.BitWidth
-		}
 		shuffleConfig.Rounds = config.Shuffle.Rounds
 		//#nosec G115 -- Seed is validated by ShuffleConfig.Validate() to be <= MaxSafeSeed (int64 max)
 		shuffleConfig.Seed = int(config.Shuffle.Seed)
