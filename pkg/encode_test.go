@@ -131,49 +131,49 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 		{
 			config:  *configA,
 			name:    "encode zero",
-			number:  PositiveInt(0),
+			number:  NewPositiveInt(0),
 			want:    "bab",
 			wantErr: false,
 		},
 		{
 			config:  *configB,
 			name:    "encode zero",
-			number:  PositiveInt(0),
+			number:  NewPositiveInt(0),
 			want:    "a" + Air + Air + Air + Air, // a🜁🜁🜁🜁
 			wantErr: false,
 		},
 		{
 			config:  *configB,
 			name:    "encode 7999",
-			number:  PositiveInt(7916),
+			number:  NewPositiveInt(7916),
 			want:    "o" + Water + Fire + Regulus + HighVoltageSign, // o🜄🜂🜲⚡
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode 1",
-			number:  PositiveInt(1),
+			number:  NewPositiveInt(1),
 			want:    "baz",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode small number",
-			number:  PositiveInt(5),
+			number:  NewPositiveInt(5),
 			want:    "bok",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode max value for pattern",
-			number:  PositiveInt(26), // 3*3*3 - 1
+			number:  NewPositiveInt(26), // 3*3*3 - 1
 			want:    "kik",
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode number beyond max",
-			number:  PositiveInt(27),
+			number:  NewPositiveInt(27),
 			want:    "",
 			wantErr: true,
 		},
@@ -281,7 +281,11 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 			if tt.wantErr {
 				return
 			}
-			if got != tt.want {
+			gotVal, ok := got.Int64()
+			if !ok {
+				t.Fatalf("too large")
+			}
+			if int(gotVal) != tt.want {
 				t.Errorf("PhoneticEncoder.Decode() = %v, want %v", got, tt.want)
 			}
 		})
@@ -306,12 +310,12 @@ func TestPhoneticEncoder_RoundTrip(t *testing.T) {
 	// Test every valid number in the range
 	maxValue := 27 // 3*3*3
 	for i := range maxValue {
-		num := PositiveInt(i)
+		num := NewPositiveInt(int64(i))
 
 		// Encode
 		word, err := encoder.Encode(num)
 		if err != nil {
-			t.Fatalf("Encode(%d) failed: %v", num, err)
+			t.Fatalf("Encode(%s) failed: %v", num.String(), err)
 		}
 
 		// Decode
@@ -321,8 +325,68 @@ func TestPhoneticEncoder_RoundTrip(t *testing.T) {
 		}
 
 		// Verify round-trip
-		if decoded != int(num) {
-			t.Errorf("Round-trip failed: %d -> %s -> %d", num, word, decoded)
+		if decoded.Cmp(num) != 0 {
+			t.Errorf("Round-trip failed: %s -> %s -> %s", num.String(), word, decoded.String())
 		}
+	}
+}
+
+func TestPhoneticEncoder_LargePatternCapacity(t *testing.T) {
+	// Test pattern with capacity exceeding math.MaxInt
+	// CVCVCXCVCVCXCVCVCXCVCVC has 23 positions:
+	// - 19 C positions (16 choices each) = 16^19
+	// - 3 X positions (1 choice each) = 1^3
+	// - 4 V positions (4 choices each) = 4^4
+	// Total = 16^19 * 4^4 * 1^3 ≈ 2^76 * 2^8 = 2^84 (much larger than math.MaxInt = 2^63-1)
+	largePatternConfig := &PhonidConfig{
+		Patterns: []string{"CVCVCXCVCVCXCVCVCXCVCVC"},
+		Placeholders: PlaceholderMap{
+			Vowel:     RuneSet{'a', 'i', 'o', 'u'},
+			Consonant: RuneSet{'b', 'd', 'f', 'g', 'h', 'j', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z'},
+			CustomX:   RuneSet{'-'},
+		},
+	}
+
+	encoder, err := NewPhoneticEncoderSkipPreflight(largePatternConfig)
+	if err != nil {
+		t.Fatalf("failed to create encoder with large pattern: %v", err)
+	}
+
+	// Test encoding small values (should work fine)
+	testCases := []struct {
+		input    PositiveInt
+		expected string
+	}{
+		{NewPositiveInt(0), "babab-babab-babab-babab"},
+		{NewPositiveInt(1), "babab-babab-babab-babad"},
+		{NewPositiveInt(255), "babab-babab-babab-baguz"},
+		{NewPositiveInt(1000000), "babab-babab-babaz-hanab"},
+	}
+
+	for _, tc := range testCases {
+		result, err := encoder.Encode(tc.input)
+		if err != nil {
+			t.Errorf("Encode(%d) failed: %v", tc.input, err)
+		}
+		if result != tc.expected {
+			t.Errorf("Encode(%d) = %q, want %q", tc.input, result, tc.expected)
+		}
+
+		// Verify round-trip
+		decoded, err := encoder.Decode(result)
+		if err != nil {
+			t.Errorf("Decode(%q) failed: %v", result, err)
+		}
+		if decoded.Cmp(tc.input) != 0 {
+			t.Errorf("Round-trip failed: %s -> %s -> %s", tc.input.String(), result, decoded.String())
+		}
+	}
+
+	// Verify capacity reporting (should report MaxInt since actual capacity > MaxInt)
+	capacity := encoder.GetSmallestPatternCapacity()
+	// math.MaxInt for 64-bit systems
+	const expectedMaxInt = 9223372036854775807
+	if capacity != expectedMaxInt {
+		t.Errorf("GetSmallestPatternCapacity() = %d, want %d (MaxInt)", capacity, expectedMaxInt)
 	}
 }

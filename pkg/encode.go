@@ -3,6 +3,8 @@ package phonid
 import (
 	"errors"
 	"fmt"
+	"math"
+	"math/big"
 	"slices"
 	"strings"
 )
@@ -12,14 +14,15 @@ type (
 	PhoneticEncoder struct {
 		config          *PhonidConfig
 		patternEncoders []*PatternEncoder // ordered by totalCombinations ascending
+		shuffler        *FeistelShuffler  // optional shuffler for bijective number permutation
 	}
 
 	// PatternEncoder represents a single pattern configuration.
 	PatternEncoder struct {
 		pattern           string
 		positions         []Position
-		totalCombinations PositiveInt
-		length            int // Number of positions/characters in the pattern
+		totalCombinations *big.Int // Exact capacity, may exceed int
+		length            int      // Number of positions/characters in the pattern
 	}
 
 	// Position represents one character position in the pattern.
@@ -84,7 +87,7 @@ func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternE
 	}
 
 	positions := make([]Position, 0, len(pattern))
-	totalCombinations := 1
+	totalCombinations := big.NewInt(1)
 
 	// Parse each character in the pattern
 	for i, char := range pattern {
@@ -112,13 +115,16 @@ func buildPatternEncoder(pattern string, placeholders PlaceholderMap) (*PatternE
 		}
 
 		positions = append(positions, position)
-		totalCombinations *= position.base
+
+		// Multiply using big.Int (no overflow possible)
+		baseBig := big.NewInt(int64(position.base))
+		totalCombinations = totalCombinations.Mul(totalCombinations, baseBig)
 	}
 
 	return &PatternEncoder{
 		pattern:           pattern,
 		positions:         positions,
-		totalCombinations: PositiveInt(totalCombinations),
+		totalCombinations: totalCombinations,
 		length:            len(positions),
 	}, nil
 }
@@ -138,7 +144,7 @@ func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 	// Sort by totalCombinations
 	for i := 0; i < len(patternEncoders); i++ {
 		for j := i + 1; j < len(patternEncoders); j++ {
-			if patternEncoders[i].totalCombinations > patternEncoders[j].totalCombinations {
+			if patternEncoders[i].totalCombinations.Cmp(patternEncoders[j].totalCombinations) > 0 {
 				patternEncoders[i], patternEncoders[j] = patternEncoders[j], patternEncoders[i]
 			}
 		}
@@ -146,88 +152,279 @@ func newPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
 
 	// Check for duplicate totalCombinations
 	for i := range len(patternEncoders) - 1 {
-		if patternEncoders[i].totalCombinations == patternEncoders[i+1].totalCombinations {
+		if patternEncoders[i].totalCombinations.Cmp(patternEncoders[i+1].totalCombinations) == 0 {
 			return nil, fmt.Errorf(
-				"duplicate total combinations: patterns '%s' and '%s' both produce %d combinations",
+				"duplicate total combinations: patterns '%s' and '%s' both produce %s combinations",
 				patternEncoders[i].pattern,
 				patternEncoders[i+1].pattern,
-				patternEncoders[i].totalCombinations,
+				patternEncoders[i].totalCombinations.String(),
 			)
+		}
+	}
+
+	// Initialize shuffler if shuffle config is provided
+	var shuffler *FeistelShuffler
+	if config.Shuffle != nil && config.Shuffle.Rounds > 0 {
+		var err error
+		shuffler, err = NewFeistelShuffler(
+			config.Shuffle.BitWidth,
+			config.Shuffle.Rounds,
+			config.Shuffle.Seed,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize shuffler: %w", err)
 		}
 	}
 
 	return &PhoneticEncoder{
 		config:          config,
 		patternEncoders: patternEncoders,
+		shuffler:        shuffler,
 	}, nil
 }
 
 // Encode converts a number to a phonetic word, automatically selecting the best pattern.
+// The number can be either a native int64 or a big.Int, with automatic optimization.
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
-	if number < 0 {
-		return "", fmt.Errorf("number must be non-negative, got %d", number)
+	if err := number.Validate(); err != nil {
+		return "", err
+	}
+
+	// Apply shuffling if configured (requires fitting in uint64)
+	encodedNumber := number
+	if e.shuffler != nil {
+		// Get value as int64 for shuffling
+		val, ok := number.Int64()
+		if !ok {
+			return "", fmt.Errorf("number too large for shuffling (max: %d)", uint64(math.MaxUint64))
+		}
+
+		//nolint:gosec // G115: Intentional conversion - val is validated to be non-negative
+		shuffled, err := e.shuffler.Encode(uint64(val))
+		if err != nil {
+			return "", fmt.Errorf("shuffle failed: %w", err)
+		}
+		//nolint:gosec // G115: Intentional conversion - shuffled is within valid range
+		encodedNumber = NewPositiveInt(int64(shuffled))
 	}
 
 	// Find the smallest pattern that can encode this number
 	for _, pattern := range e.patternEncoders {
-		if number < pattern.totalCombinations {
-			return pattern.Encode(number)
+		if encodedNumber.BigInt().Cmp(pattern.totalCombinations) < 0 {
+			return pattern.Encode(encodedNumber)
 		}
 	}
 
 	// Number too large for any pattern
-	return "", fmt.Errorf("number %d exceeds capacity of largest pattern (max: %d)",
-		number, e.patternEncoders[len(e.patternEncoders)-1].totalCombinations-1)
+	maxCapacity := e.patternEncoders[len(e.patternEncoders)-1].totalCombinations
+	// For display, limit to MaxInt if capacity is larger
+	var displayMax string
+	if maxCapacity.Cmp(big.NewInt(int64(math.MaxInt))) > 0 {
+		displayMax = fmt.Sprintf(">%d", math.MaxInt)
+	} else {
+		displayMax = maxCapacity.String()
+	}
+	return "", fmt.Errorf("number %s exceeds capacity of largest pattern (max capacity: %s)",
+		number.String(), displayMax)
 }
 
-func (e *PhoneticEncoder) Decode(word string) (int, error) {
+func (e *PhoneticEncoder) Decode(word string) (PositiveInt, error) {
 	wordRunes := []rune(word)
 
 	// Try to match pattern by length
 	for _, pattern := range e.patternEncoders {
-		if len(wordRunes) == pattern.length {
-			return pattern.Decode(word)
+		if len(wordRunes) != pattern.length {
+			continue
 		}
+
+		number, err := pattern.Decode(word)
+		if err != nil {
+			return nil, err
+		}
+
+		// Apply unshuffling if configured
+		if e.shuffler == nil {
+			return number, nil
+		}
+
+		val, ok := number.Int64()
+		if !ok {
+			return nil, errors.New("decoded number too large for shuffling")
+		}
+		//nolint:gosec // G115: Intentional conversion - val validated
+		unshuffled, err := e.shuffler.Decode(uint64(val))
+		if err != nil {
+			return nil, fmt.Errorf("unshuffle failed: %w", err)
+		}
+		//nolint:gosec // G115: Intentional conversion - unshuffled within range
+		return NewPositiveInt(int64(unshuffled)), nil
 	}
 
-	return 0, fmt.Errorf("word length %d doesn't match any pattern", len(wordRunes))
+	return nil, fmt.Errorf("word length %d doesn't match any pattern", len(wordRunes))
 }
 
 // Encode converts a number to a phonetic word.
+// Uses optimized int64 arithmetic for small numbers, big.Int for large numbers.
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error) {
-	if number >= e.totalCombinations {
-		return "", fmt.Errorf("number %d exceeds maximum %d", number, e.totalCombinations-1)
+	// Check if number exceeds pattern capacity
+	if number.BigInt().Cmp(e.totalCombinations) >= 0 {
+		// For display, handle capacity > MaxInt
+		var displayMax string
+		maxInt := big.NewInt(int64(math.MaxInt))
+		if e.totalCombinations.Cmp(maxInt) > 0 {
+			displayMax = fmt.Sprintf(">%d", math.MaxInt)
+		} else {
+			// Capacity fits in int, show exact value
+			maxVal := new(big.Int).Sub(e.totalCombinations, big.NewInt(1))
+			displayMax = maxVal.String()
+		}
+		return "", fmt.Errorf("number %s exceeds maximum %s", number.String(), displayMax)
 	}
 
-	var result strings.Builder
-	remaining := int(number)
-
-	// Convert to mixed-radix representation (right-to-left)
-	for i := len(e.positions) - 1; i >= 0; i-- {
-		position := e.positions[i]
-		charIndex := remaining % position.base
-		remaining /= position.base
-
-		result.WriteRune(position.chars[charIndex])
+	// Fast path: use int64 arithmetic if number fits
+	if val, ok := number.Int64(); ok {
+		return e.encodeInt64(val), nil
 	}
 
-	// Reverse the string since we built it backwards
-	word := result.String()
-	return reverseString(word), nil
+	// Slow path: use big.Int arithmetic
+	return e.encodeBigInt(number.BigInt()), nil
 }
 
 // Decode converts a phonetic word back to a number.
-func (e *PatternEncoder) Decode(word string) (int, error) {
+// Returns PositiveInt which can represent both small and large values.
+func (e *PatternEncoder) Decode(word string) (PositiveInt, error) {
 	runes := []rune(word)
 	if len(runes) != len(e.positions) {
-		return 0, fmt.Errorf(
+		return nil, fmt.Errorf(
 			"word length %d doesn't match pattern length %d",
 			len(runes),
 			len(e.positions),
 		)
 	}
 
-	var result int
+	// Check if result might exceed int64
+	needsBigInt := e.totalCombinations.Cmp(big.NewInt(math.MaxInt64)) > 0
+
+	if needsBigInt {
+		return e.decodeBigInt(runes)
+	}
+	return e.decodeInt64(runes)
+}
+
+// MaxValue returns the maximum number that can be encoded.
+// If capacity exceeds math.MaxInt, returns MaxInt.
+func (e *PatternEncoder) MaxValue() int {
+	maxInt := big.NewInt(int64(math.MaxInt))
+	if e.totalCombinations.Cmp(maxInt) > 0 {
+		return math.MaxInt
+	}
+	// totalCombinations fits in int, return exact value - 1
+	maxVal := new(big.Int).Sub(e.totalCombinations, big.NewInt(1))
+	return int(maxVal.Int64())
+}
+
+// GetSmallestPatternCapacity returns the maximum value that can be encoded
+// with the smallest (first) pattern. This is useful for generating preflight suggestions.
+// If the capacity exceeds math.MaxInt, returns MaxInt.
+func (e *PhoneticEncoder) GetSmallestPatternCapacity() int {
+	if len(e.patternEncoders) == 0 {
+		return 0
+	}
+	return e.patternEncoders[0].MaxValue()
+}
+
+// GetPatternInfo returns information about all patterns for generating suggestions.
+// Returns a slice with pattern details including true mathematical capacity.
+// Each pattern can encode numbers from 0 to its TrueCapacity-1.
+// Capacity field is capped at math.MaxInt for compatibility, while TrueCapacity shows the real limit.
+func (e *PhoneticEncoder) GetPatternInfo() []struct {
+	Pattern      string
+	Capacity     int
+	TrueCapacity PositiveInt
+	ExceedsInt64 bool
+} {
+	result := make([]struct {
+		Pattern      string
+		Capacity     int
+		TrueCapacity PositiveInt
+		ExceedsInt64 bool
+	}, 0, len(e.patternEncoders))
+
+	maxInt := big.NewInt(int64(math.MaxInt))
+	for _, pe := range e.patternEncoders {
+		exceedsInt64 := pe.totalCombinations.Cmp(maxInt) > 0
+
+		// Capacity capped at MaxInt for compatibility
+		capacity := math.MaxInt
+		if !exceedsInt64 {
+			capacity = int(pe.totalCombinations.Int64())
+		}
+
+		// TrueCapacity is actual max value (totalCombinations - 1)
+		trueMax := new(big.Int).Sub(pe.totalCombinations, big.NewInt(1))
+		trueCapacity := NewPositiveIntFromBig(trueMax)
+
+		result = append(result, struct {
+			Pattern      string
+			Capacity     int
+			TrueCapacity PositiveInt
+			ExceedsInt64 bool
+		}{
+			Pattern:      pe.pattern,
+			Capacity:     capacity,
+			TrueCapacity: trueCapacity,
+			ExceedsInt64: exceedsInt64,
+		})
+	}
+
+	return result
+}
+
+// encodeInt64 is the fast path for encoding int64 values.
+func (e *PatternEncoder) encodeInt64(number int64) string {
+	var result strings.Builder
+	remaining := number
+
+	// Convert to mixed-radix representation (right-to-left)
+	for i := len(e.positions) - 1; i >= 0; i-- {
+		position := e.positions[i]
+		charIndex := remaining % int64(position.base)
+		remaining /= int64(position.base)
+
+		result.WriteRune(position.chars[charIndex])
+	}
+
+	// Reverse the string since we built it backwards
+	word := result.String()
+	return reverseString(word)
+}
+
+// encodeBigInt is the slow path for encoding arbitrarily large big.Int values.
+func (e *PatternEncoder) encodeBigInt(number *big.Int) string {
+	var result strings.Builder
+	remaining := new(big.Int).Set(number)
+	base := new(big.Int)
+	charIndex := new(big.Int)
+
+	// Convert to mixed-radix representation (right-to-left)
+	for i := len(e.positions) - 1; i >= 0; i-- {
+		position := e.positions[i]
+		base.SetInt64(int64(position.base))
+
+		charIndex.Mod(remaining, base)
+		remaining.Div(remaining, base)
+
+		result.WriteRune(position.chars[charIndex.Int64()])
+	}
+
+	// Reverse the string since we built it backwards
+	word := result.String()
+	return reverseString(word)
+}
+
+// decodeInt64 is the fast path for decoding to int64.
+func (e *PatternEncoder) decodeInt64(runes []rune) (PositiveInt, error) {
+	var result int64
 
 	for i, r := range runes {
 		position := e.positions[i]
@@ -242,7 +439,7 @@ func (e *PatternEncoder) Decode(word string) (int, error) {
 		}
 
 		if charIndex == -1 {
-			return 0, fmt.Errorf(
+			return nil, fmt.Errorf(
 				"character '%c' at position %d is not valid for placeholder '%s'",
 				r,
 				i,
@@ -251,29 +448,59 @@ func (e *PatternEncoder) Decode(word string) (int, error) {
 		}
 
 		// Add to result using positional notation
-		multiplier := int(1)
+		multiplier := int64(1)
 		for j := i + 1; j < len(e.positions); j++ {
-			multiplier *= e.positions[j].base
+			multiplier *= int64(e.positions[j].base)
 		}
 
-		result += charIndex * multiplier
+		result += int64(charIndex) * multiplier
 	}
 
-	return result, nil
+	return NewPositiveInt(result), nil
 }
 
-// MaxValue returns the maximum number that can be encoded.
-func (e *PatternEncoder) MaxValue() int {
-	return int(e.totalCombinations) - 1
-}
+// decodeBigInt is the slow path for decoding to big.Int.
+func (e *PatternEncoder) decodeBigInt(runes []rune) (PositiveInt, error) {
+	result := new(big.Int)
+	multiplier := new(big.Int)
+	charValue := new(big.Int)
+	temp := new(big.Int)
 
-// GetSmallestPatternCapacity returns the maximum value that can be encoded
-// with the smallest (first) pattern. This is useful for generating preflight suggestions.
-func (e *PhoneticEncoder) GetSmallestPatternCapacity() int {
-	if len(e.patternEncoders) == 0 {
-		return 0
+	for i, r := range runes {
+		position := e.positions[i]
+
+		// Find character index in this position's alphabet
+		charIndex := -1
+		for idx, char := range position.chars {
+			if char == r {
+				charIndex = idx
+				break
+			}
+		}
+
+		if charIndex == -1 {
+			return nil, fmt.Errorf(
+				"character '%c' at position %d is not valid for placeholder '%s'",
+				r,
+				i,
+				position.placeholder,
+			)
+		}
+
+		// Calculate multiplier for this position
+		multiplier.SetInt64(1)
+		for j := i + 1; j < len(e.positions); j++ {
+			temp.SetInt64(int64(e.positions[j].base))
+			multiplier.Mul(multiplier, temp)
+		}
+
+		// Add charIndex * multiplier to result
+		charValue.SetInt64(int64(charIndex))
+		temp.Mul(charValue, multiplier)
+		result.Add(result, temp)
 	}
-	return e.patternEncoders[0].MaxValue()
+
+	return NewPositiveIntFromBig(result), nil
 }
 
 // reverseString reverses a string.

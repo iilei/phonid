@@ -1,0 +1,74 @@
+[shuffle]
+  bit_width = 32
+  rounds = 0
+  seed = 0
+
+[phonetic]
+  patterns = ['VCV', 'CVCCV', 'CVCVCXCVCVC', 'CVCVCXCVCVCXCVCVCXCVCVC']
+
+  [phonetic.placeholders]
+    C = 'bdfghjklmnprstvz'
+    V = 'aiou'
+    X = '-'
+
+# Output of 'phonid preflight --suggest'
+#
+# Capacity per word: 255 combinations (0-255)
+#
+# Suggested preflight checks:
+
+[[preflight]]
+  input = '0'           # Lower boundary (VCV)
+  output = 'aba'
+
+[[preflight]]
+  input = '127'         # Mid-range (VCV)
+  output = 'izu'
+
+[[preflight]]
+  input = '255'         # Upper boundary (VCV)
+  output = 'uzu'
+
+[[preflight]]
+  input = '0'           # Lower boundary (CVCCV)
+  output = 'aba'
+
+[[preflight]]
+  input = '32767'       # Mid-range (CVCCV)
+  output = 'luzzu'
+
+[[preflight]]
+  input = '65535'       # Upper boundary (CVCCV)
+  output = 'zuzzu'
+
+[[preflight]]
+  input = '0'           # Lower boundary (CVCVCXCVCVC)
+  output = 'aba'
+
+[[preflight]]
+  input = '2147483647'  # Mid-range (CVCVCXCVCVC)
+  output = 'luzuz-zuzuz'
+
+[[preflight]]
+  input = '4294967295'  # Upper boundary (CVCVCXCVCVC)
+  output = 'zuzuz-zuzuz'
+
+[[preflight]]
+  input = '0'           # Pattern CVCVCXCVCVCXCVCVCXCVCVC capacity: 18_446_744_073_709_551_615 - Lower boundary (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'aba'
+
+[[preflight]]
+  input = '4611686018427387903' # Mid-range of int64 (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'guzuz-zuzuz-zuzuz-zuzuz'
+
+[[preflight]]
+  input = '9223372036854775807' # Upper boundary of int64 (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'luzuz-zuzuz-zuzuz-zuzuz'
+
+[[preflight]]
+  input = '18446744073709551615' # Upper boundary - true capacity (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'zuzuz-zuzuz-zuzuz-zuzuz'
+
+[[preflight]]
+  input = '2130706433'  # localhost IP address (127.0.0.1 = 2130706433)
+  output = 'lusab-babad'

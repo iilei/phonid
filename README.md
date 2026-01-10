@@ -87,22 +87,9 @@ The configuration language allows:
 
 The configuration **does not allow**:
 
-* Variable-length inference
-* Optional or greedy template matching
 * Context-sensitive rules
 * Any transformation that cannot be mathematically reversed
 
-There is no "unsafe" mode.
-
-## Performance Characteristics
-
-Encoding and decoding operate in predictable time:
-
-* Word analysis is linear in word length (max 11 symbols)
-* Template resolution is constant-time lookup
-* Bit packing and unpacking are table-driven
-
-In practice, all operations are effectively constant time.
 
 ## Versioning and Stability
 
@@ -112,6 +99,49 @@ Phonid follows Semantic Versioning (SemVer).
 
 While the major version is `0.x.y`, **breaking changes may occur at any time**.
 Stability guarantees apply only after `v1.0.0`.
+
+## Local Dev
+
+Install GoReleaser
+
+```sh
+go install github.com/goreleaser/goreleaser/v2@latest
+```
+
+### Build
+```sh
+goreleaser build --snapshot --clean --single-target
+```
+
+### Generate preflight checks
+
+```sh
+./dist/phonid*/phonid preflight --suggest >| .phonidrc.tmp && mv .phonidrc.tmp .phonidrc.toml
+```
+
+You may tweak the config as you like and check the results using
+
+```sh
+./dist/phonid*/phonid preflight --suggest
+```
+
+Once you are happy with the resulting ids, persist the preflight-expectation table as follows:
+
+```sh
+./dist/phonid*/phonid preflight --suggest  >| .phonidrc.tmp && mv .phonidrc.tmp .phonidrc.toml
+```
+
+### Encode any number
+
+```sh
+./dist/phonid*/phonid 4711
+```
+
+With explicit config:
+
+```sh
+./dist/phonid*/phonid 4711 --rcfile .phonidrc.toml
+```
 
 ## License
 

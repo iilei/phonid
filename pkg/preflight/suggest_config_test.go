@@ -82,7 +82,7 @@ func TestSuggestConfig(t *testing.T) {
 		if !strings.Contains(result, "# Lower boundary") {
 			t.Error("missing 'Lower boundary' inline comment")
 		}
-		if !strings.Contains(result, "# Upper boundary (single word)") {
+		if !strings.Contains(result, "# Upper boundary") {
 			t.Error("missing 'Upper boundary' inline comment")
 		}
 	})

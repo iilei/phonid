@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
+	"math/big"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
@@ -14,14 +17,44 @@ import (
 const (
 	RcFileName      = ".phonidrc"
 	RcFileOptSuffix = ".toml"
+	decimalBase     = 10 // Base for decimal number parsing
 )
 
 type (
-	// PositiveInt represents a non-negative integer.
-	PositiveInt int
+	// PositiveInt represents a non-negative integer that can be either native int64 or big.Int.
+	// This allows seamless handling of both regular integers and arbitrarily large numbers
+	// with automatic optimization for the common case of small numbers.
+	PositiveInt interface {
+		// Int64 returns the value as int64 if it fits, otherwise returns (0, false)
+		Int64() (int64, bool)
+
+		// BigInt returns the value as *big.Int (always succeeds)
+		BigInt() *big.Int
+
+		// Cmp compares with another PositiveInt (-1 if less, 0 if equal, 1 if greater)
+		Cmp(other PositiveInt) int
+
+		// String returns decimal string representation
+		String() string
+
+		// Sign returns -1, 0, or 1 (should always be >= 0 for PositiveInt)
+		Sign() int
+
+		// Validate checks that the value is non-negative
+		Validate() error
+	}
+
+	// positiveIntNative is the fast-path implementation for values that fit in int64.
+	positiveIntNative int64
+
+	// positiveIntBig is the slow-path implementation for arbitrarily large values.
+	positiveIntBig struct {
+		value *big.Int
+	}
+
 	// TOMLConfig represents the top-level TOML structure.
 	TOMLConfig struct {
-		Base      PositiveInt       `toml:"base,omitempty"`
+		Base      *TomlPositiveInt  `toml:"base,omitempty"`
 		Shuffle   TOMLShuffleConfig `toml:"shuffle,omitempty"`
 		Phonetic  TOMLPhonidConfig  `toml:"phonetic,omitempty"`
 		Preflight []PreflightCheck  `toml:"preflight"` // Required - no omitempty
@@ -29,15 +62,15 @@ type (
 
 	// PreflightCheck represents a single input->output verification.
 	PreflightCheck struct {
-		Input  PositiveInt `toml:"input"`
-		Output string      `toml:"output"`
+		Input  *TomlPositiveInt `toml:"input"`
+		Output string           `toml:"output"`
 	}
 
 	// TOMLShuffleConfig represents shuffle configuration.
 	TOMLShuffleConfig struct {
-		BitWidth PositiveInt `toml:"bit_width,omitempty"`
-		Rounds   PositiveInt `toml:"rounds,omitempty"`
-		Seed     PositiveInt `toml:"seed,omitempty"`
+		BitWidth *TomlPositiveInt `toml:"bit_width,omitempty"`
+		Rounds   *TomlPositiveInt `toml:"rounds,omitempty"`
+		Seed     *TomlPositiveInt `toml:"seed,omitempty"`
 	}
 
 	// TOMLPhonidConfig represents the phonetic configuration.
@@ -45,13 +78,165 @@ type (
 		Patterns     []string          `toml:"patterns,omitempty"`
 		Placeholders map[string]string `toml:"placeholders,omitempty"`
 	}
+
+	// TomlPositiveInt is a wrapper for TOML unmarshaling that stores the actual PositiveInt.
+	TomlPositiveInt struct {
+		Value PositiveInt
+	}
 )
 
-func (p PositiveInt) Validate() error {
-	if p < 0 {
-		return fmt.Errorf("value must be non-negative, got %d", p)
+// ========== positiveIntNative implementation ==========
+
+func (n positiveIntNative) Int64() (int64, bool) {
+	return int64(n), true
+}
+
+func (n positiveIntNative) BigInt() *big.Int {
+	return big.NewInt(int64(n))
+}
+
+func (n positiveIntNative) Cmp(other PositiveInt) int {
+	if v, ok := other.Int64(); ok {
+		a, b := int64(n), v
+		if a < b {
+			return -1
+		} else if a > b {
+			return 1
+		}
+		return 0
+	}
+	// other is big.Int, compare as big.Int
+	return n.BigInt().Cmp(other.BigInt())
+}
+
+func (n positiveIntNative) String() string {
+	return strconv.FormatInt(int64(n), 10)
+}
+
+func (n positiveIntNative) Sign() int {
+	if n < 0 {
+		return -1
+	} else if n > 0 {
+		return 1
+	}
+	return 0
+}
+
+func (n positiveIntNative) Validate() error {
+	if n < 0 {
+		return fmt.Errorf("value must be non-negative, got %d", n)
 	}
 	return nil
+}
+
+// ========== positiveIntBig implementation ==========
+
+func (n *positiveIntBig) Int64() (int64, bool) {
+	if n.value.IsInt64() {
+		return n.value.Int64(), true
+	}
+	return 0, false
+}
+
+func (n *positiveIntBig) BigInt() *big.Int {
+	return new(big.Int).Set(n.value)
+}
+
+func (n *positiveIntBig) Cmp(other PositiveInt) int {
+	return n.value.Cmp(other.BigInt())
+}
+
+func (n *positiveIntBig) String() string {
+	return n.value.String()
+}
+
+func (n *positiveIntBig) Sign() int {
+	return n.value.Sign()
+}
+
+func (n *positiveIntBig) Validate() error {
+	if n.value.Sign() < 0 {
+		return fmt.Errorf("value must be non-negative, got %s", n.value.String())
+	}
+	return nil
+}
+
+// ========== PositiveInt constructors ==========
+
+// NewPositiveInt creates a PositiveInt from an int64.
+// Panics if the value is negative (use with validated input).
+func NewPositiveInt(n int64) PositiveInt {
+	if n < 0 {
+		panic(fmt.Sprintf("PositiveInt must be non-negative, got %d", n))
+	}
+	return positiveIntNative(n)
+}
+
+// NewPositiveIntFromBig creates a PositiveInt from a *big.Int.
+// Automatically optimizes to native int64 if the value fits.
+// Panics if the value is negative (use with validated input).
+func NewPositiveIntFromBig(n *big.Int) PositiveInt {
+	if n.Sign() < 0 {
+		panic("PositiveInt must be non-negative, got " + n.String())
+	}
+
+	// Optimize: use native int64 if it fits
+	if n.IsInt64() {
+		return positiveIntNative(n.Int64())
+	}
+
+	return &positiveIntBig{value: new(big.Int).Set(n)}
+}
+
+// ParsePositiveInt parses a decimal string into a PositiveInt.
+// Automatically uses the most efficient representation.
+func ParsePositiveInt(s string) (PositiveInt, error) {
+	// Try parsing as int64 first (fast path)
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		if n < 0 {
+			return nil, fmt.Errorf("number must be non-negative, got %s", s)
+		}
+		return positiveIntNative(n), nil
+	}
+
+	// Fall back to big.Int
+	bigN := new(big.Int)
+	if _, ok := bigN.SetString(s, decimalBase); !ok {
+		return nil, fmt.Errorf("invalid number: %s", s)
+	}
+
+	if bigN.Sign() < 0 {
+		return nil, fmt.Errorf("number must be non-negative, got %s", s)
+	}
+
+	return NewPositiveIntFromBig(bigN), nil
+}
+
+// ========== TOML unmarshaling support ==========
+
+func (t *TomlPositiveInt) UnmarshalText(data []byte) error {
+	s := string(data)
+	val, err := ParsePositiveInt(s)
+	if err != nil {
+		return err
+	}
+	t.Value = val
+	return nil
+}
+
+func (t *TomlPositiveInt) MarshalText() ([]byte, error) {
+	if t == nil || t.Value == nil {
+		return []byte("0"), nil
+	}
+	return []byte(t.Value.String()), nil
+}
+
+// ToPositiveInt converts the TOML wrapper to PositiveInt.
+func (t *TomlPositiveInt) ToPositiveInt() PositiveInt {
+	if t == nil || t.Value == nil {
+		return NewPositiveInt(0)
+	}
+	return t.Value
 }
 
 // LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation.
@@ -109,9 +294,11 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 	}
 	preflight = tomlConfig.Preflight
 
-	// Validate PositiveInt fields (basic structural validation)
-	if err := tomlConfig.Base.Validate(); err != nil {
-		return nil, preflight, fmt.Errorf("invalid base: %w", err)
+	// Validate Base field if present
+	if tomlConfig.Base != nil {
+		if err := tomlConfig.Base.ToPositiveInt().Validate(); err != nil {
+			return nil, preflight, fmt.Errorf("invalid base: %w", err)
+		}
 	}
 
 	// Convert TOML structure to PhonidConfig
@@ -119,7 +306,56 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 		Patterns: tomlConfig.Phonetic.Patterns,
 	}
 
-	// Convert string-based placeholders to PlaceholderType-based
+	// Helper to convert TomlPositiveInt to int
+	toInt := func(t *TomlPositiveInt) int {
+		if t == nil {
+			return 0
+		}
+		val := t.ToPositiveInt()
+		if v, ok := val.Int64(); ok {
+			return int(v)
+		}
+		// If it doesn't fit in int, this is a configuration error
+		// but we'll let validation catch it later
+		return math.MaxInt
+	}
+
+	// Helper to convert TomlPositiveInt to uint64
+	toUint64 := func(t *TomlPositiveInt) uint64 {
+		if t == nil {
+			return 0
+		}
+		val := t.ToPositiveInt()
+		if v, ok := val.Int64(); ok {
+			//nolint:gosec // G115: Validated non-negative by PositiveInt type
+			return uint64(v)
+		}
+		return math.MaxUint64
+	}
+
+	// Convert shuffle config if present
+	bitWidth := toInt(tomlConfig.Shuffle.BitWidth)
+	rounds := toInt(tomlConfig.Shuffle.Rounds)
+	seed := toUint64(tomlConfig.Shuffle.Seed)
+
+	if bitWidth > 0 || rounds > 0 || seed > 0 {
+		config.Shuffle = &ShuffleConfig{
+			BitWidth: bitWidth,
+			Rounds:   rounds,
+			Seed:     seed,
+		}
+	}
+
+	// Convert placeholders
+	if err := convertPlaceholders(&tomlConfig, config); err != nil {
+		return nil, preflight, err
+	}
+
+	return config, preflight, nil
+}
+
+// convertPlaceholders validates and converts string-based placeholders to PlaceholderType-based.
+func convertPlaceholders(tomlConfig *TOMLConfig, config *PhonidConfig) error {
 	if tomlConfig.Phonetic.Placeholders != nil {
 		config.Placeholders = make(map[PlaceholderType]RuneSet)
 
@@ -127,7 +363,7 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 			// Validate placeholder key - convert to runes first for proper UTF-8 handling
 			keyRunes := []rune(keyStr)
 			if len(keyRunes) != 1 {
-				return nil, preflight, fmt.Errorf(
+				return fmt.Errorf(
 					"placeholder key '%s' must be single character",
 					keyStr,
 				)
@@ -137,7 +373,7 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 
 			// Validate placeholder type is allowed
 			if _, isAllowed := AllowedPlaceholders[placeholderType]; !isAllowed {
-				return nil, preflight, fmt.Errorf(
+				return fmt.Errorf(
 					"placeholder '%c' is not allowed. Valid placeholders: %v",
 					placeholderType,
 					getValidPlaceholderKeys(),
@@ -151,7 +387,7 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 		// Use defaults if no placeholders specified
 		config.Placeholders = DefaultPlaceholders
 	}
-	return config, preflight, nil
+	return nil
 }
 
 // ValidatePhonidRC validates a PhonidConfig loaded from RC file with base encoding.

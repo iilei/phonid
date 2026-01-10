@@ -108,7 +108,6 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 	if capacityInt < 0 {
 		return "", errors.New("encoder capacity cannot be negative")
 	}
-	capacity := uint64(capacityInt)
 
 	// Generate base TOML
 	var buf bytes.Buffer
@@ -119,8 +118,49 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 		return "", fmt.Errorf("failed to encode TOML: %w", err)
 	}
 
+	capacity := uint64(capacityInt)
 	// Post-process to add inline comments
 	result := addInlineComments(buf.String(), assertions, capacity)
+	return result, nil
+}
+
+// FormatTOMLWithSuggestions generates a complete TOML configuration string with the provided suggestions.
+// Similar to SuggestConfig but uses pre-generated suggestions instead of generating new ones.
+func FormatTOMLWithSuggestions(
+	encoder *phonid.PhoneticEncoder,
+	config *phonid.PhonidConfig,
+	suggestions *AssertionTable,
+) (string, error) {
+	if config == nil {
+		config = &phonid.DefaultConfig
+	}
+	if encoder == nil {
+		var err error
+		encoder, err = phonid.NewPhoneticEncoderLenient(config)
+		if err != nil {
+			return "", fmt.Errorf("failed to create default encoder: %w", err)
+		}
+	}
+
+	// Build full config
+	tomlConfig := buildTOMLConfig(config, *suggestions)
+	capacityInt := encoder.GetSmallestPatternCapacity()
+	if capacityInt < 0 {
+		return "", errors.New("encoder capacity cannot be negative")
+	}
+
+	// Generate base TOML
+	var buf bytes.Buffer
+	enc := toml.NewEncoder(&buf)
+	enc.SetIndentTables(true)
+
+	if err := enc.Encode(tomlConfig); err != nil {
+		return "", fmt.Errorf("failed to encode TOML: %w", err)
+	}
+
+	capacity := uint64(capacityInt)
+	// Post-process to add inline comments
+	result := addInlineComments(buf.String(), *suggestions, capacity)
 	return result, nil
 }
 
@@ -183,11 +223,11 @@ func addInlineComments(tomlStr string, assertions AssertionTable, capacity uint6
 
 	// Add header comment before preflight section
 	fmt.Fprintf(&result, "# Output of 'phonid preflight --suggest'\n")
-	fmt.Fprintf(&result, "# Capacity per word: %s combinations (0-%s)\n",
-		formatNumber(capacity), formatNumber(capacity-1))
+	fmt.Fprintf(&result, "#\n")
+	fmt.Fprintf(&result, "# Capacity per word: %s combinations (0-%d)\n", formatCapacity(capacity), capacity)
+
 	fmt.Fprintf(&result, "#\n")
 	fmt.Fprintf(&result, "# Suggested preflight checks:\n\n")
-
 	// Process preflight section with inline comments
 	assertionIdx := 0
 	for i := preflightStart; i < len(lines); i++ {
@@ -222,8 +262,8 @@ func addInlineComments(tomlStr string, assertions AssertionTable, capacity uint6
 	return result.String()
 }
 
-// formatNumber formats a number with underscores as thousands separators.
-func formatNumber(n uint64) string {
+// formatCapacity formats a capacity number with underscores as thousands separators.
+func formatCapacity(n uint64) string {
 	s := strconv.FormatUint(n, 10)
 	var result []rune
 	for i, c := range s {

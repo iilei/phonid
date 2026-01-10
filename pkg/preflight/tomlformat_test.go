@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	p "github.com/iilei/phonid/pkg"
 	"github.com/iilei/phonid/pkg/preflight"
 )
 
@@ -17,8 +18,8 @@ func TestTOMLFormatter_Name(t *testing.T) {
 
 func TestTOMLFormatter_Format(t *testing.T) {
 	assertions := &preflight.AssertionTable{
-		{Input: 0, Output: "bac", Comment: "Lower boundary"},
-		{Input: 10, Output: "dae", Comment: "Mid-range"},
+		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(0)}, Output: "bac", Comment: "Lower boundary"},
+		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(10)}, Output: "dae", Comment: "Mid-range"},
 	}
 
 	formatter := preflight.NewTOMLFormatter()
@@ -32,14 +33,15 @@ func TestTOMLFormatter_Format(t *testing.T) {
 
 	// The Format() method encodes the AssertionTable directly, not as [[preflight]]
 	// It creates array of tables format
-	if !strings.Contains(result, "input = 0") {
+	// Input values are now marshaled as strings via TomlPositiveInt.MarshalText
+	if !strings.Contains(result, "input = '0'") && !strings.Contains(result, "input = \"0\"") {
 		t.Errorf("missing first input value, got:\n%s", result)
 	}
 	// go-toml uses single quotes for strings, both 'bac' and "bac" are valid TOML
 	if !strings.Contains(result, "output = 'bac'") && !strings.Contains(result, "output = \"bac\"") {
 		t.Errorf("missing first output value, got:\n%s", result)
 	}
-	if !strings.Contains(result, "input = 10") {
+	if !strings.Contains(result, "input = '10'") && !strings.Contains(result, "input = \"10\"") {
 		t.Errorf("missing second input value, got:\n%s", result)
 	}
 	if !strings.Contains(result, "output = 'dae'") && !strings.Contains(result, "output = \"dae\"") {

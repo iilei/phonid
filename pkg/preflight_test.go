@@ -35,11 +35,11 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 			args: args{
 				checks: []PreflightCheck{
 					{
-						Input:  PositiveInt(0),
+						Input:  &TomlPositiveInt{Value: NewPositiveInt(0)},
 						Output: "bab",
 					},
 					{
-						Input:  PositiveInt(2),
+						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
 						Output: "baf",
 					},
 				},
@@ -60,11 +60,11 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 			args: args{
 				checks: []PreflightCheck{
 					{
-						Input:  PositiveInt(0),
+						Input:  &TomlPositiveInt{Value: NewPositiveInt(0)},
 						Output: "bab",
 					},
 					{
-						Input:  PositiveInt(2),
+						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
 						Output: "bad",
 					},
 				},

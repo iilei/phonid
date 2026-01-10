@@ -21,14 +21,17 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error {
 	}
 
 	for i, check := range checks {
+		// Convert TOML input to PositiveInt
+		input := check.Input.ToPositiveInt()
+
 		// Test encoding
-		encoded, err := p.Encode(check.Input)
+		encoded, err := p.Encode(input)
 		if err != nil {
-			return fmt.Errorf("preflight[%d]: encode(%d) failed: %w", i, check.Input, err)
+			return fmt.Errorf("preflight[%d]: encode(%s) failed: %w", i, input.String(), err)
 		}
 		if encoded != check.Output {
-			return fmt.Errorf("preflight[%d]: encode(%d) = %q, want %q",
-				i, check.Input, encoded, check.Output)
+			return fmt.Errorf("preflight[%d]: encode(%s) = %q, want %q",
+				i, input.String(), encoded, check.Output)
 		}
 
 		// Test decoding (implicit round-trip)
@@ -37,9 +40,9 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error {
 			return fmt.Errorf("preflight[%d]: decode(%q) failed: %w",
 				i, check.Output, err)
 		}
-		if decoded != int(check.Input) {
-			return fmt.Errorf("preflight[%d]: decode(%q) = %d, want %d",
-				i, check.Output, decoded, check.Input)
+		if decoded.Cmp(input) != 0 {
+			return fmt.Errorf("preflight[%d]: decode(%q) = %s, want %s",
+				i, check.Output, decoded.String(), input.String())
 		}
 	}
 

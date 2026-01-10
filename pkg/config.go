@@ -80,7 +80,7 @@ func (c *Config) Validate() error {
 
 	// Auto-calculate BitWidth from largest pattern's capacity
 	largestPattern := encoder.patternEncoders[len(encoder.patternEncoders)-1]
-	c.Shuffle.BitWidth = calculateRequiredBitWidth(int(largestPattern.totalCombinations))
+	c.Shuffle.BitWidth = calculateRequiredBitWidth(largestPattern.MaxValue() + 1)
 
 	// Preflight assertion: check if BitWidth matches expected value
 	if c.ExpectedBitWidth > 0 && c.Shuffle.BitWidth != c.ExpectedBitWidth {

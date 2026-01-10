@@ -36,15 +36,21 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
   - [func \(fs \*FeistelShuffler\) MaxValue\(\) uint64](<#FeistelShuffler.MaxValue>)
   - [func \(fs \*FeistelShuffler\) Rounds\(\) int](<#FeistelShuffler.Rounds>)
 - [type PatternEncoder](<#PatternEncoder>)
-  - [func \(e \*PatternEncoder\) Decode\(word string\) \(int, error\)](<#PatternEncoder.Decode>)
+  - [func \(e \*PatternEncoder\) Decode\(word string\) \(PositiveInt, error\)](<#PatternEncoder.Decode>)
   - [func \(e \*PatternEncoder\) Encode\(number PositiveInt\) \(string, error\)](<#PatternEncoder.Encode>)
   - [func \(e \*PatternEncoder\) MaxValue\(\) int](<#PatternEncoder.MaxValue>)
 - [type PhoneticEncoder](<#PhoneticEncoder>)
   - [func NewPhoneticEncoder\(config \*PhonidConfig, checks \[\]PreflightCheck\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoder>)
   - [func NewPhoneticEncoderLenient\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderLenient>)
   - [func NewPhoneticEncoderSkipPreflight\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderSkipPreflight>)
-  - [func \(e \*PhoneticEncoder\) Decode\(word string\) \(int, error\)](<#PhoneticEncoder.Decode>)
+  - [func \(e \*PhoneticEncoder\) Decode\(word string\) \(PositiveInt, error\)](<#PhoneticEncoder.Decode>)
   - [func \(e \*PhoneticEncoder\) Encode\(number PositiveInt\) \(string, error\)](<#PhoneticEncoder.Encode>)
+  - [func \(e \*PhoneticEncoder\) GetPatternInfo\(\) \[\]struct \{
+    Pattern      string
+    Capacity     int
+    TrueCapacity PositiveInt
+    ExceedsInt64 bool
+\}](<#PhoneticEncoder.GetPatternInfo>)
   - [func \(e \*PhoneticEncoder\) GetSmallestPatternCapacity\(\) int](<#PhoneticEncoder.GetSmallestPatternCapacity>)
   - [func \(p \*PhoneticEncoder\) ValidatePreflight\(checks \[\]PreflightCheck\) error](<#PhoneticEncoder.ValidatePreflight>)
 - [type PhonidConfig](<#PhonidConfig>)
@@ -53,7 +59,9 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
 - [type PlaceholderType](<#PlaceholderType>)
 - [type Position](<#Position>)
 - [type PositiveInt](<#PositiveInt>)
-  - [func \(p PositiveInt\) Validate\(\) error](<#PositiveInt.Validate>)
+  - [func NewPositiveInt\(n int64\) PositiveInt](<#NewPositiveInt>)
+  - [func NewPositiveIntFromBig\(n \*big.Int\) PositiveInt](<#NewPositiveIntFromBig>)
+  - [func ParsePositiveInt\(s string\) \(PositiveInt, error\)](<#ParsePositiveInt>)
 - [type PreflightCheck](<#PreflightCheck>)
 - [type RuneSet](<#RuneSet>)
   - [func \(rs \*RuneSet\) UnmarshalText\(text \[\]byte\) error](<#RuneSet.UnmarshalText>)
@@ -62,6 +70,10 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
 - [type TOMLConfig](<#TOMLConfig>)
 - [type TOMLPhonidConfig](<#TOMLPhonidConfig>)
 - [type TOMLShuffleConfig](<#TOMLShuffleConfig>)
+- [type TomlPositiveInt](<#TomlPositiveInt>)
+  - [func \(t \*TomlPositiveInt\) MarshalText\(\) \(\[\]byte, error\)](<#TomlPositiveInt.MarshalText>)
+  - [func \(t \*TomlPositiveInt\) ToPositiveInt\(\) PositiveInt](<#TomlPositiveInt.ToPositiveInt>)
+  - [func \(t \*TomlPositiveInt\) UnmarshalText\(data \[\]byte\) error](<#TomlPositiveInt.UnmarshalText>)
 
 
 ## Constants
@@ -138,7 +150,7 @@ var (
     }
 
     // AllowedPatternLengths defines the permitted pattern lengths.
-    AllowedPatternLengths = []int{3, 5, 7, 11, 23}
+    AllowedPatternLengths = []int{3, 5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
 
     // AllowedPlaceholders defines the valid placeholder identifiers.
     AllowedPlaceholders = map[PlaceholderType]string{
@@ -204,7 +216,7 @@ var ErrNoPreflightChecks = errors.New("config must include at least one [[prefli
 ```
 
 <a name="IsValidPhonidRCFilename"></a>
-## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L208>)
+## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L444>)
 
 ```go
 func IsValidPhonidRCFilename(filename string) bool
@@ -213,7 +225,7 @@ func IsValidPhonidRCFilename(filename string) bool
 IsValidPhonidRCFilename checks if filename matches .phonidrc or .\<prefix\>.phonidrc pattern, optionally with a .toml extension.
 
 <a name="LoadPhonidRC"></a>
-## func [LoadPhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L58>)
+## func [LoadPhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L243>)
 
 ```go
 func LoadPhonidRC(fp string) (*PhonidConfig, []PreflightCheck, error)
@@ -222,7 +234,7 @@ func LoadPhonidRC(fp string) (*PhonidConfig, []PreflightCheck, error)
 LoadPhonidRC loads and validates a PhonidConfig from a phonidrc file with strict preflight validation.
 
 <a name="LoadPhonidRCLenient"></a>
-## func [LoadPhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L69>)
+## func [LoadPhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L254>)
 
 ```go
 func LoadPhonidRCLenient(fp string) (*PhonidConfig, []PreflightCheck, error)
@@ -231,7 +243,7 @@ func LoadPhonidRCLenient(fp string) (*PhonidConfig, []PreflightCheck, error)
 LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ParsePhonidRC"></a>
-## func [ParsePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L80>)
+## func [ParsePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L265>)
 
 ```go
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
@@ -240,7 +252,7 @@ func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
 ParsePhonidRC parses TOML content requiring preflight checks. Returns config and preflight checks for validation with NewPhoneticEncoder.
 
 <a name="ParsePhonidRCLenient"></a>
-## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L86>)
+## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L271>)
 
 ```go
 func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, error)
@@ -249,7 +261,7 @@ func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, erro
 ParsePhonidRCLenient parses TOML content without requiring preflight checks. Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ValidatePhonidRC"></a>
-## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L158>)
+## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L394>)
 
 ```go
 func ValidatePhonidRC(config *PhonidConfig) error
@@ -423,7 +435,7 @@ func (fs *FeistelShuffler) Rounds() int
 Rounds returns the number of Feistel rounds.
 
 <a name="PatternEncoder"></a>
-## type [PatternEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L18-L23>)
+## type [PatternEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L21-L26>)
 
 PatternEncoder represents a single pattern configuration.
 
@@ -434,34 +446,34 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L220>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L295>)
 
 ```go
-func (e *PatternEncoder) Decode(word string) (int, error)
+func (e *PatternEncoder) Decode(word string) (PositiveInt, error)
 ```
 
-Decode converts a phonetic word back to a number.
+Decode converts a phonetic word back to a number. Returns PositiveInt which can represent both small and large values.
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L197>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L268>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 ```
 
-Encode converts a number to a phonetic word.
+Encode converts a number to a phonetic word. Uses optimized int64 arithmetic for small numbers, big.Int for large numbers.
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L266>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L316>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
 ```
 
-MaxValue returns the maximum number that can be encoded.
+MaxValue returns the maximum number that can be encoded. If capacity exceeds math.MaxInt, returns MaxInt.
 
 <a name="PhoneticEncoder"></a>
-## type [PhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L12-L15>)
+## type [PhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L14-L18>)
 
 PhoneticEncoder handles encoding/decoding between numbers and phonetic words.
 
@@ -472,7 +484,7 @@ type PhoneticEncoder struct {
 ```
 
 <a name="NewPhoneticEncoder"></a>
-### func [NewPhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L35>)
+### func [NewPhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L38>)
 
 ```go
 func NewPhoneticEncoder(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error)
@@ -481,7 +493,7 @@ func NewPhoneticEncoder(config *PhonidConfig, checks []PreflightCheck) (*Phoneti
 NewPhoneticEncoder creates an encoder with validated config and preflight checks. This is the standard way to create an encoder \- preflight validation is required.
 
 <a name="NewPhoneticEncoderLenient"></a>
-### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L67>)
+### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L70>)
 
 ```go
 func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
@@ -490,7 +502,7 @@ func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
 NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating preflight\-check suggestions even with incomplete configs. If config is nil, uses DefaultConfig \(ProQuint\-compatible encoding\).
 
 <a name="NewPhoneticEncoderSkipPreflight"></a>
-### func [NewPhoneticEncoderSkipPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L50>)
+### func [NewPhoneticEncoderSkipPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L53>)
 
 ```go
 func NewPhoneticEncoderSkipPreflight(config *PhonidConfig) (*PhoneticEncoder, error)
@@ -499,31 +511,45 @@ func NewPhoneticEncoderSkipPreflight(config *PhonidConfig) (*PhoneticEncoder, er
 NewPhoneticEncoderSkipPreflight creates an encoder without preflight validation. Only use this when preflight checks are genuinely unavailable \(e.g., testing scenarios\).
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L183>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L231>)
 
 ```go
-func (e *PhoneticEncoder) Decode(word string) (int, error)
+func (e *PhoneticEncoder) Decode(word string) (PositiveInt, error)
 ```
 
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L166>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L188>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
 ```
 
-Encode converts a number to a phonetic word, automatically selecting the best pattern.
+Encode converts a number to a phonetic word, automatically selecting the best pattern. The number can be either a native int64 or a big.Int, with automatic optimization.
+
+<a name="PhoneticEncoder.GetPatternInfo"></a>
+### func \(\*PhoneticEncoder\) [GetPatternInfo](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L340-L345>)
+
+```go
+func (e *PhoneticEncoder) GetPatternInfo() []struct {
+    Pattern      string
+    Capacity     int
+    TrueCapacity PositiveInt
+    ExceedsInt64 bool
+}
+```
+
+GetPatternInfo returns information about all patterns for generating suggestions. Returns a slice with pattern details including true mathematical capacity. Each pattern can encode numbers from 0 to its TrueCapacity\-1. Capacity field is capped at math.MaxInt for compatibility, while TrueCapacity shows the real limit.
 
 <a name="PhoneticEncoder.GetSmallestPatternCapacity"></a>
-### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L272>)
+### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L329>)
 
 ```go
 func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
 ```
 
-GetSmallestPatternCapacity returns the maximum value that can be encoded with the smallest \(first\) pattern. This is useful for generating preflight suggestions.
+GetSmallestPatternCapacity returns the maximum value that can be encoded with the smallest \(first\) pattern. This is useful for generating preflight suggestions. If the capacity exceeds math.MaxInt, returns MaxInt.
 
 <a name="PhoneticEncoder.ValidatePreflight"></a>
 ### func \(\*PhoneticEncoder\) [ValidatePreflight](<https://github.com/iilei/phonid/blob/master/pkg/preflight.go#L18>)
@@ -588,7 +614,7 @@ type PlaceholderType rune
 ```
 
 <a name="Position"></a>
-## type [Position](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L26-L30>)
+## type [Position](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L29-L33>)
 
 Position represents one character position in the pattern.
 
@@ -599,32 +625,68 @@ type Position struct {
 ```
 
 <a name="PositiveInt"></a>
-## type [PositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L21>)
+## type [PositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L27-L45>)
 
-PositiveInt represents a non\-negative integer.
-
-```go
-type PositiveInt int
-```
-
-<a name="PositiveInt.Validate"></a>
-### func \(PositiveInt\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L50>)
+PositiveInt represents a non\-negative integer that can be either native int64 or big.Int. This allows seamless handling of both regular integers and arbitrarily large numbers with automatic optimization for the common case of small numbers.
 
 ```go
-func (p PositiveInt) Validate() error
+type PositiveInt interface {
+    // Int64 returns the value as int64 if it fits, otherwise returns (0, false)
+    Int64() (int64, bool)
+
+    // BigInt returns the value as *big.Int (always succeeds)
+    BigInt() *big.Int
+
+    // Cmp compares with another PositiveInt (-1 if less, 0 if equal, 1 if greater)
+    Cmp(other PositiveInt) int
+
+    // String returns decimal string representation
+    String() string
+
+    // Sign returns -1, 0, or 1 (should always be >= 0 for PositiveInt)
+    Sign() int
+
+    // Validate checks that the value is non-negative
+    Validate() error
+}
 ```
 
+<a name="NewPositiveInt"></a>
+### func [NewPositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L168>)
 
+```go
+func NewPositiveInt(n int64) PositiveInt
+```
+
+NewPositiveInt creates a PositiveInt from an int64. Panics if the value is negative \(use with validated input\).
+
+<a name="NewPositiveIntFromBig"></a>
+### func [NewPositiveIntFromBig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L178>)
+
+```go
+func NewPositiveIntFromBig(n *big.Int) PositiveInt
+```
+
+NewPositiveIntFromBig creates a PositiveInt from a \*big.Int. Automatically optimizes to native int64 if the value fits. Panics if the value is negative \(use with validated input\).
+
+<a name="ParsePositiveInt"></a>
+### func [ParsePositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L193>)
+
+```go
+func ParsePositiveInt(s string) (PositiveInt, error)
+```
+
+ParsePositiveInt parses a decimal string into a PositiveInt. Automatically uses the most efficient representation.
 
 <a name="PreflightCheck"></a>
-## type [PreflightCheck](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L31-L34>)
+## type [PreflightCheck](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L64-L67>)
 
 PreflightCheck represents a single input\-\>output verification.
 
 ```go
 type PreflightCheck struct {
-    Input  PositiveInt `toml:"input"`
-    Output string      `toml:"output"`
+    Input  *TomlPositiveInt `toml:"input"`
+    Output string           `toml:"output"`
 }
 ```
 
@@ -669,13 +731,13 @@ func (sc *ShuffleConfig) Validate() error
 Validate checks if the shuffle config is valid.
 
 <a name="TOMLConfig"></a>
-## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L23-L28>)
+## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L56-L61>)
 
 TOMLConfig represents the top\-level TOML structure.
 
 ```go
 type TOMLConfig struct {
-    Base      PositiveInt       `toml:"base,omitempty"`
+    Base      *TomlPositiveInt  `toml:"base,omitempty"`
     Shuffle   TOMLShuffleConfig `toml:"shuffle,omitempty"`
     Phonetic  TOMLPhonidConfig  `toml:"phonetic,omitempty"`
     Preflight []PreflightCheck  `toml:"preflight"` // Required - no omitempty
@@ -683,7 +745,7 @@ type TOMLConfig struct {
 ```
 
 <a name="TOMLPhonidConfig"></a>
-## type [TOMLPhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L44-L47>)
+## type [TOMLPhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L77-L80>)
 
 TOMLPhonidConfig represents the phonetic configuration.
 
@@ -695,17 +757,55 @@ type TOMLPhonidConfig struct {
 ```
 
 <a name="TOMLShuffleConfig"></a>
-## type [TOMLShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L37-L41>)
+## type [TOMLShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L70-L74>)
 
 TOMLShuffleConfig represents shuffle configuration.
 
 ```go
 type TOMLShuffleConfig struct {
-    BitWidth PositiveInt `toml:"bit_width,omitempty"`
-    Rounds   PositiveInt `toml:"rounds,omitempty"`
-    Seed     PositiveInt `toml:"seed,omitempty"`
+    BitWidth *TomlPositiveInt `toml:"bit_width,omitempty"`
+    Rounds   *TomlPositiveInt `toml:"rounds,omitempty"`
+    Seed     *TomlPositiveInt `toml:"seed,omitempty"`
 }
 ```
+
+<a name="TomlPositiveInt"></a>
+## type [TomlPositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L83-L85>)
+
+TomlPositiveInt is a wrapper for TOML unmarshaling that stores the actual PositiveInt.
+
+```go
+type TomlPositiveInt struct {
+    Value PositiveInt
+}
+```
+
+<a name="TomlPositiveInt.MarshalText"></a>
+### func \(\*TomlPositiveInt\) [MarshalText](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L227>)
+
+```go
+func (t *TomlPositiveInt) MarshalText() ([]byte, error)
+```
+
+
+
+<a name="TomlPositiveInt.ToPositiveInt"></a>
+### func \(\*TomlPositiveInt\) [ToPositiveInt](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L235>)
+
+```go
+func (t *TomlPositiveInt) ToPositiveInt() PositiveInt
+```
+
+ToPositiveInt converts the TOML wrapper to PositiveInt.
+
+<a name="TomlPositiveInt.UnmarshalText"></a>
+### func \(\*TomlPositiveInt\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L217>)
+
+```go
+func (t *TomlPositiveInt) UnmarshalText(data []byte) error
+```
+
+
 
 # preflight
 
@@ -717,6 +817,8 @@ Package preflight provides preflight check generation and formatting.
 
 ## Index
 
+- [Constants](<#constants>)
+- [func FormatTOMLWithSuggestions\(encoder \*phonid.PhoneticEncoder, config \*phonid.PhonidConfig, suggestions \*AssertionTable\) \(string, error\)](<#FormatTOMLWithSuggestions>)
 - [func SuggestConfig\(encoder \*phonid.PhoneticEncoder, config \*phonid.PhonidConfig\) \(string, error\)](<#SuggestConfig>)
 - [type Assertion](<#Assertion>)
 - [type AssertionTable](<#AssertionTable>)
@@ -738,6 +840,25 @@ Package preflight provides preflight check generation and formatting.
   - [func \(f \*TOMLFormatter\) Name\(\) OutputFormat](<#TOMLFormatter.Name>)
 
 
+## Constants
+
+<a name="LocalhostDecimal"></a>
+
+```go
+const (
+    LocalhostDecimal = 2130706433
+)
+```
+
+<a name="FormatTOMLWithSuggestions"></a>
+## func [FormatTOMLWithSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L129-L133>)
+
+```go
+func FormatTOMLWithSuggestions(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig, suggestions *AssertionTable) (string, error)
+```
+
+FormatTOMLWithSuggestions generates a complete TOML configuration string with the provided suggestions. Similar to SuggestConfig but uses pre\-generated suggestions instead of generating new ones.
+
 <a name="SuggestConfig"></a>
 ## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L87>)
 
@@ -748,20 +869,20 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved. If encoder is nil, creates a default encoder. If config is nil, uses DefaultConfig.
 
 <a name="Assertion"></a>
-## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L17-L21>)
+## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L20-L24>)
 
 Assertion represents a single suggested preflight check.
 
 ```go
 type Assertion struct {
-    Input   phonid.PositiveInt `toml:"input"`
-    Output  string             `toml:"output"`
-    Comment string             `toml:"-"` // e.g., "Lower boundary", "Mid-range", etc.
+    Input   *phonid.TomlPositiveInt `toml:"input"`
+    Output  string                  `toml:"output"`
+    Comment string                  `toml:"-"` // e.g., "Lower boundary", "Mid-range", etc.
 }
 ```
 
 <a name="AssertionTable"></a>
-## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L23>)
+## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L26>)
 
 AssertionTable represents a collection of preflight check assertions.
 
@@ -770,7 +891,7 @@ type AssertionTable []Assertion
 ```
 
 <a name="GenerateSuggestions"></a>
-### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L29>)
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L32>)
 
 ```go
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
@@ -779,13 +900,13 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="GenerateSuggestionsWithCustom"></a>
-### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L37-L41>)
+### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L41-L45>)
 
 ```go
 func GenerateSuggestionsWithCustom(encoder *phonid.PhoneticEncoder, customValues []phonid.PositiveInt, includeBoundaries bool) (AssertionTable, error)
 ```
 
-GenerateSuggestionsWithCustom creates test assertions for boundaries and/or custom values. If includeBoundaries is true, generates lower boundary \(0\), mid\-range \(50%\), and upper boundary checks. Custom values are validated against encoder capacity and added with descriptive comments. If encoder is nil, creates a default encoder using ProQuint configuration.
+GenerateSuggestionsWithCustom creates test assertions for boundaries and/or custom values. If includeBoundaries is true, generates lower boundary, mid\-range, and upper boundary checks for each pattern in the configuration. Custom values are validated against encoder capacity and added with descriptive comments. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="Formatter"></a>
 ## type [Formatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L19-L22>)
