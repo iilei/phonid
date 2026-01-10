@@ -119,7 +119,13 @@ func addLargePatternBoundaries(
 	// Lower boundary with capacity note
 	lowerComment := fmt.Sprintf("Pattern %s capacity: %s - Lower boundary",
 		pattern.Pattern, formatLargeNumber(pattern.TrueCapacity))
-	if err := addPatternBoundary(suggestions, encoder, phonid.NewPositiveInt(0), pattern.Pattern, lowerComment); err != nil {
+	if err := addPatternBoundary(
+		suggestions,
+		encoder,
+		phonid.NewPositiveInt(0),
+		pattern.Pattern,
+		lowerComment,
+	); err != nil {
 		return err
 	}
 
@@ -131,7 +137,13 @@ func addLargePatternBoundaries(
 
 	// Add int64 upper boundary
 	maxInt64Val := phonid.NewPositiveInt(maxInt64)
-	if err := addPatternBoundary(suggestions, encoder, maxInt64Val, pattern.Pattern, "Upper boundary of int64"); err != nil {
+	if err := addPatternBoundary(
+		suggestions,
+		encoder,
+		maxInt64Val,
+		pattern.Pattern,
+		"Upper boundary of int64",
+	); err != nil {
 		return err
 	}
 
@@ -157,7 +169,13 @@ func addStandardPatternBoundaries(
 	},
 ) error {
 	// Lower boundary
-	if err := addPatternBoundary(suggestions, encoder, phonid.NewPositiveInt(0), pattern.Pattern, "Lower boundary"); err != nil {
+	if err := addPatternBoundary(
+		suggestions,
+		encoder,
+		phonid.NewPositiveInt(0),
+		pattern.Pattern,
+		"Lower boundary",
+	); err != nil {
 		return err
 	}
 
@@ -169,7 +187,13 @@ func addStandardPatternBoundaries(
 	// Add mid-range (if maxValue > 0)
 	if maxValue > 0 {
 		midValue := maxValue / midRangePercentage
-		if err := addPatternBoundary(suggestions, encoder, phonid.NewPositiveInt(int64(midValue)), pattern.Pattern, "Mid-range"); err != nil {
+		if err := addPatternBoundary(
+			suggestions,
+			encoder,
+			phonid.NewPositiveInt(int64(midValue)),
+			pattern.Pattern,
+			"Mid-range",
+		); err != nil {
 			return err
 		}
 	}
@@ -205,7 +229,12 @@ func addCustomSuggestions(
 
 	// Add localhost check if it fits
 	if LocalhostDecimal <= maxCapacity {
-		if err := addSuggestion(suggestions, encoder, phonid.NewPositiveInt(LocalhostDecimal), "localhost IP address (127.0.0.1 = 2130706433)"); err != nil {
+		if err := addSuggestion(
+			suggestions,
+			encoder,
+			phonid.NewPositiveInt(LocalhostDecimal),
+			"localhost IP address (127.0.0.1 = 2130706433)",
+		); err != nil {
 			return err
 		}
 	}
