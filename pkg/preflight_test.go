@@ -74,12 +74,12 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p, err := NewPhoneticEncoderWithPreflight(tt.fields.config, tt.args.checks)
+			p, err := NewPhoneticEncoder(tt.fields.config, tt.args.checks)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewPhoneticEncoderWithPreflight() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("NewPhoneticEncoder() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if err == nil && p == nil {
-				t.Error("NewPhoneticEncoderWithPreflight() returned nil encoder with no error")
+				t.Error("NewPhoneticEncoder() returned nil encoder with no error")
 			}
 		})
 	}

@@ -1,4 +1,3 @@
-// Package preflight represents preflight checks and code generation.
 package preflight
 
 import (
@@ -6,6 +5,11 @@ import (
 	"fmt"
 
 	phonid "github.com/iilei/phonid/pkg"
+)
+
+const (
+	// midRangePercentage is the divisor for calculating mid-range value (50%).
+	midRangePercentage = 2
 )
 
 type (
@@ -44,7 +48,13 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 		return nil, err
 	}
 
-	// 2. Upper boundary (single word)
+	// 2. Mid-range (50%)
+	midValue := phonid.PositiveInt(maxValue / midRangePercentage)
+	if err := addSuggestion(&suggestions, encoder, midValue, "Mid-range (50%)"); err != nil {
+		return nil, err
+	}
+
+	// 3. Upper boundary (single word)
 	if err := addSuggestion(&suggestions, encoder, phonid.PositiveInt(maxValue), "Upper boundary (single word)"); err != nil {
 		return nil, err
 	}

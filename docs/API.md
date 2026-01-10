@@ -40,9 +40,9 @@ Package phonid generates phonetic identifiers using configurable patterns and bi
   - [func \(e \*PatternEncoder\) Encode\(number PositiveInt\) \(string, error\)](<#PatternEncoder.Encode>)
   - [func \(e \*PatternEncoder\) MaxValue\(\) int](<#PatternEncoder.MaxValue>)
 - [type PhoneticEncoder](<#PhoneticEncoder>)
-  - [func NewPhoneticEncoder\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoder>)
+  - [func NewPhoneticEncoder\(config \*PhonidConfig, checks \[\]PreflightCheck\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoder>)
   - [func NewPhoneticEncoderLenient\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderLenient>)
-  - [func NewPhoneticEncoderWithPreflight\(config \*PhonidConfig, checks \[\]PreflightCheck\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderWithPreflight>)
+  - [func NewPhoneticEncoderSkipPreflight\(config \*PhonidConfig\) \(\*PhoneticEncoder, error\)](<#NewPhoneticEncoderSkipPreflight>)
   - [func \(e \*PhoneticEncoder\) Decode\(word string\) \(int, error\)](<#PhoneticEncoder.Decode>)
   - [func \(e \*PhoneticEncoder\) Encode\(number PositiveInt\) \(string, error\)](<#PhoneticEncoder.Encode>)
   - [func \(e \*PhoneticEncoder\) GetSmallestPatternCapacity\(\) int](<#PhoneticEncoder.GetSmallestPatternCapacity>)
@@ -93,6 +93,8 @@ const (
     ProquintVowels     = "aiou"
     ProquintConsonants = "bdfghjklmnprstvz"
     ProquintDelimiter  = "-"
+    // ProQuintBitWidth is the bit width for ProQuint encoding (32-bit values).
+    ProQuintBitWidth = 32
 )
 ```
 
@@ -115,6 +117,11 @@ const (
     MinRounds = 0
     // MaxRounds is the maximum number of rounds to shuffle.
     MaxRounds = 12
+    // MinSafeSeed is the minimum safe seed value (implicitly 0 for uint64).
+    MinSafeSeed = 0
+    // MaxSafeSeed is the maximum safe seed value (int64 max) to ensure
+    // safe conversion to int across different architectures.
+    MaxSafeSeed = uint64(math.MaxInt64)
 )
 ```
 
@@ -151,11 +158,20 @@ var (
         CustomX:   []rune(ProquintDelimiter),
     }
 
+    // DefaultShuffleConfig provides sensible defaults for Feistel shuffling
+    // With 0 rounds, maintains ProQuint compatibility (no shuffling, linear order).
+    DefaultShuffleConfig = ShuffleConfig{
+        BitWidth: ProQuintBitWidth,
+        Rounds:   0,
+        Seed:     0,
+    }
+
     // ProQuintConfig provides Proquint-compatible encoding
     // See: https://arxiv.org/html/0901.4016
     ProQuintConfig = PhonidConfig{
         Patterns:     []string{ProQuintPattern},
         Placeholders: ProQuintPlaceholders,
+        Shuffle:      &DefaultShuffleConfig,
     }
 
     // ComplementPlaceholders lists all non-vowel phonetic categories.
@@ -221,7 +237,7 @@ LoadPhonidRCLenient loads a PhonidConfig without requiring preflight checks Used
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error)
 ```
 
-ParsePhonidRC parses TOML content requiring preflight checks. Returns config and preflight checks for validation with NewPhoneticEncoderWithPreflight.
+ParsePhonidRC parses TOML content requiring preflight checks. Returns config and preflight checks for validation with NewPhoneticEncoder.
 
 <a name="ParsePhonidRCLenient"></a>
 ## func [ParsePhonidRCLenient](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L86>)
@@ -342,7 +358,7 @@ func WithShuffle(shuffle *ShuffleConfig) ConfigOption
 WithShuffle sets the shuffle configuration.
 
 <a name="FeistelShuffler"></a>
-## type [FeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L28-L34>)
+## type [FeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L34-L40>)
 
 FeistelShuffler provides bijective integer shuffling using Feistel networks Supports configurable number space size and uses standard Go libraries.
 
@@ -353,7 +369,7 @@ type FeistelShuffler struct {
 ```
 
 <a name="NewFeistelShuffler"></a>
-### func [NewFeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L52>)
+### func [NewFeistelShuffler](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L61>)
 
 ```go
 func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, error)
@@ -362,7 +378,7 @@ func NewFeistelShuffler(bitWidth, rounds int, seed uint64) (*FeistelShuffler, er
 NewFeistelShuffler creates a new shuffler for the given bit width bitWidth: total bits \(8, 16, 32, 64, etc.\) rounds: number of Feistel rounds \(3\-6 recommended. "0" will preserve linear order\) seed: seed value for generating round keys
 
 <a name="FeistelShuffler.BitWidth"></a>
-### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L153>)
+### func \(\*FeistelShuffler\) [BitWidth](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L162>)
 
 ```go
 func (fs *FeistelShuffler) BitWidth() int
@@ -371,7 +387,7 @@ func (fs *FeistelShuffler) BitWidth() int
 BitWidth returns the configured bit width.
 
 <a name="FeistelShuffler.Decode"></a>
-### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L115>)
+### func \(\*FeistelShuffler\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L124>)
 
 ```go
 func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
@@ -380,7 +396,7 @@ func (fs *FeistelShuffler) Decode(encoded uint64) (uint64, error)
 Decode performs bijective reverse shuffling \(inverse of Encode\).
 
 <a name="FeistelShuffler.Encode"></a>
-### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L85>)
+### func \(\*FeistelShuffler\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L94>)
 
 ```go
 func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
@@ -389,7 +405,7 @@ func (fs *FeistelShuffler) Encode(input uint64) (uint64, error)
 Encode performs bijective shuffling of input value.
 
 <a name="FeistelShuffler.MaxValue"></a>
-### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L145>)
+### func \(\*FeistelShuffler\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L154>)
 
 ```go
 func (fs *FeistelShuffler) MaxValue() uint64
@@ -398,7 +414,7 @@ func (fs *FeistelShuffler) MaxValue() uint64
 MaxValue returns the maximum value that can be shuffled.
 
 <a name="FeistelShuffler.Rounds"></a>
-### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L158>)
+### func \(\*FeistelShuffler\) [Rounds](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L167>)
 
 ```go
 func (fs *FeistelShuffler) Rounds() int
@@ -418,7 +434,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L215>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L220>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (int, error)
@@ -427,7 +443,7 @@ func (e *PatternEncoder) Decode(word string) (int, error)
 Decode converts a phonetic word back to a number.
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L192>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L197>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -436,7 +452,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word.
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L261>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L266>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -456,16 +472,16 @@ type PhoneticEncoder struct {
 ```
 
 <a name="NewPhoneticEncoder"></a>
-### func [NewPhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L34>)
+### func [NewPhoneticEncoder](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L35>)
 
 ```go
-func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error)
+func NewPhoneticEncoder(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error)
 ```
 
-NewPhoneticEncoder creates an encoder with a validated config.
+NewPhoneticEncoder creates an encoder with validated config and preflight checks. This is the standard way to create an encoder \- preflight validation is required.
 
 <a name="NewPhoneticEncoderLenient"></a>
-### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L62>)
+### func [NewPhoneticEncoderLenient](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L67>)
 
 ```go
 func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
@@ -473,17 +489,17 @@ func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
 
 NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating preflight\-check suggestions even with incomplete configs. If config is nil, uses DefaultConfig \(ProQuint\-compatible encoding\).
 
-<a name="NewPhoneticEncoderWithPreflight"></a>
-### func [NewPhoneticEncoderWithPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L45>)
+<a name="NewPhoneticEncoderSkipPreflight"></a>
+### func [NewPhoneticEncoderSkipPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L50>)
 
 ```go
-func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error)
+func NewPhoneticEncoderSkipPreflight(config *PhonidConfig) (*PhoneticEncoder, error)
 ```
 
-NewPhoneticEncoderWithPreflight creates an encoder and validates preflight checks. This is the standard way to create an encoder from a config file with preflight tests.
+NewPhoneticEncoderSkipPreflight creates an encoder without preflight validation. Only use this when preflight checks are genuinely unavailable \(e.g., testing scenarios\).
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L178>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L183>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (int, error)
@@ -492,7 +508,7 @@ func (e *PhoneticEncoder) Decode(word string) (int, error)
 
 
 <a name="PhoneticEncoder.Encode"></a>
-### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L161>)
+### func \(\*PhoneticEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L166>)
 
 ```go
 func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
@@ -501,7 +517,7 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word, automatically selecting the best pattern.
 
 <a name="PhoneticEncoder.GetSmallestPatternCapacity"></a>
-### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L267>)
+### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L272>)
 
 ```go
 func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
@@ -519,7 +535,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L115-L118>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L126-L130>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -540,11 +556,12 @@ config := PhonidConfig{
 type PhonidConfig struct {
     Patterns     []string       // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
     Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
+    Shuffle      *ShuffleConfig `toml:"shuffle,omitempty"` // Optional Feistel shuffler configuration
 }
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L128>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L140>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -553,7 +570,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid.
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L97>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L108>)
 
 
 
@@ -562,7 +579,7 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L96>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L107>)
 
 
 
@@ -612,7 +629,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L101>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L112>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -621,7 +638,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L122>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L134>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error
@@ -630,7 +647,7 @@ func (rs *RuneSet) UnmarshalText(text []byte) error
 UnmarshalText implements encoding.TextUnmarshaler for TOML/JSON unmarshaling.
 
 <a name="ShuffleConfig"></a>
-## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L20-L24>)
+## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L26-L30>)
 
 ShuffleConfig holds Feistel shuffler configuration.
 
@@ -643,7 +660,7 @@ type ShuffleConfig struct {
 ```
 
 <a name="ShuffleConfig.Validate"></a>
-### func \(\*ShuffleConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L38>)
+### func \(\*ShuffleConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/shuffle.go#L44>)
 
 ```go
 func (sc *ShuffleConfig) Validate() error
@@ -696,7 +713,7 @@ type TOMLShuffleConfig struct {
 import "github.com/iilei/phonid/pkg/preflight"
 ```
 
-Package preflight represents preflight checks and code generation.
+Package preflight provides preflight check generation and formatting.
 
 ## Index
 
@@ -721,7 +738,7 @@ Package preflight represents preflight checks and code generation.
 
 
 <a name="SuggestConfig"></a>
-## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L89>)
+## func [SuggestConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L87>)
 
 ```go
 func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig) (string, error)
@@ -730,7 +747,7 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved. If encoder is nil, creates a default encoder. If config is nil, uses DefaultConfig.
 
 <a name="Assertion"></a>
-## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L13-L17>)
+## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L17-L21>)
 
 Assertion represents a single suggested preflight check.
 
@@ -743,7 +760,7 @@ type Assertion struct {
 ```
 
 <a name="AssertionTable"></a>
-## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L19>)
+## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L23>)
 
 AssertionTable represents a collection of preflight check assertions.
 
@@ -752,7 +769,7 @@ type AssertionTable []Assertion
 ```
 
 <a name="GenerateSuggestions"></a>
-### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L25>)
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L29>)
 
 ```go
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
@@ -761,7 +778,7 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="Formatter"></a>
-## type [Formatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L18-L21>)
+## type [Formatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L19-L22>)
 
 Formatter handles rendering suggestions in a specific format.
 
@@ -773,7 +790,7 @@ type Formatter interface {
 ```
 
 <a name="NewTOMLFormatter"></a>
-### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L59>)
+### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L57>)
 
 ```go
 func NewTOMLFormatter() Formatter
@@ -782,7 +799,7 @@ func NewTOMLFormatter() Formatter
 NewTOMLFormatter provides toml formatting.
 
 <a name="FormatterRegistry"></a>
-## type [FormatterRegistry](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L24-L26>)
+## type [FormatterRegistry](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L25-L27>)
 
 FormatterRegistry manages available formatters.
 
@@ -793,7 +810,7 @@ type FormatterRegistry struct {
 ```
 
 <a name="NewFormatterRegistry"></a>
-### func [NewFormatterRegistry](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L30>)
+### func [NewFormatterRegistry](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L31>)
 
 ```go
 func NewFormatterRegistry() *FormatterRegistry
@@ -802,7 +819,7 @@ func NewFormatterRegistry() *FormatterRegistry
 NewFormatterRegistry creates a registry with all built\-in formatters.
 
 <a name="FormatterRegistry.AvailableFormats"></a>
-### func \(\*FormatterRegistry\) [AvailableFormats](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L53>)
+### func \(\*FormatterRegistry\) [AvailableFormats](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L54>)
 
 ```go
 func (r *FormatterRegistry) AvailableFormats() []OutputFormat
@@ -811,7 +828,7 @@ func (r *FormatterRegistry) AvailableFormats() []OutputFormat
 AvailableFormats returns a list of all registered format names.
 
 <a name="FormatterRegistry.Get"></a>
-### func \(\*FormatterRegistry\) [Get](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L44>)
+### func \(\*FormatterRegistry\) [Get](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L45>)
 
 ```go
 func (r *FormatterRegistry) Get(format OutputFormat) (Formatter, error)
@@ -820,7 +837,7 @@ func (r *FormatterRegistry) Get(format OutputFormat) (Formatter, error)
 Get retrieves a formatter by name.
 
 <a name="FormatterRegistry.Register"></a>
-### func \(\*FormatterRegistry\) [Register](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L39>)
+### func \(\*FormatterRegistry\) [Register](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L40>)
 
 ```go
 func (r *FormatterRegistry) Register(formatter Formatter)
@@ -829,7 +846,7 @@ func (r *FormatterRegistry) Register(formatter Formatter)
 Register adds a formatter to the registry.
 
 <a name="OutputFormat"></a>
-## type [OutputFormat](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L15>)
+## type [OutputFormat](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L16>)
 
 OutputFormat represents a supported output format.
 
@@ -847,7 +864,7 @@ const (
 ```
 
 <a name="PhoneticConfig"></a>
-## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L47-L50>)
+## type [PhoneticConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L45-L48>)
 
 PhoneticConfig represents phonetic configuration in TOML.
 
@@ -859,7 +876,7 @@ type PhoneticConfig struct {
 ```
 
 <a name="ShuffleConfig"></a>
-## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L40-L44>)
+## type [ShuffleConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L38-L42>)
 
 ShuffleConfig represents shuffle configuration in TOML.
 
@@ -872,13 +889,12 @@ type ShuffleConfig struct {
 ```
 
 <a name="TOMLConfig"></a>
-## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L32-L37>)
+## type [TOMLConfig](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L31-L35>)
 
 TOMLConfig represents the full .phonidrc TOML structure.
 
 ```go
 type TOMLConfig struct {
-    Base      int            `toml:"base"`
     Shuffle   ShuffleConfig  `toml:"shuffle"`
     Phonetic  PhoneticConfig `toml:"phonetic"`
     Preflight []Assertion    `toml:"preflight"`
@@ -886,7 +902,7 @@ type TOMLConfig struct {
 ```
 
 <a name="TOMLFormatter"></a>
-## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L53-L55>)
+## type [TOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L51-L53>)
 
 TOMLFormatter implements the Formatter interface for TOML output.
 
@@ -897,7 +913,7 @@ type TOMLFormatter struct {
 ```
 
 <a name="TOMLFormatter.Format"></a>
-### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L71>)
+### func \(\*TOMLFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L69>)
 
 ```go
 func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
@@ -906,7 +922,7 @@ func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error
 Format writes preflight assertions as TOML to the writer.
 
 <a name="TOMLFormatter.Name"></a>
-### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L66>)
+### func \(\*TOMLFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L64>)
 
 ```go
 func (f *TOMLFormatter) Name() OutputFormat

@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"hash/fnv"
+	"math"
 )
 
 const (
@@ -13,6 +14,11 @@ const (
 	MinRounds = 0
 	// MaxRounds is the maximum number of rounds to shuffle.
 	MaxRounds = 12
+	// MinSafeSeed is the minimum safe seed value (implicitly 0 for uint64).
+	MinSafeSeed = 0
+	// MaxSafeSeed is the maximum safe seed value (int64 max) to ensure
+	// safe conversion to int across different architectures.
+	MaxSafeSeed = uint64(math.MaxInt64)
 )
 
 type (
@@ -41,6 +47,9 @@ func (sc *ShuffleConfig) Validate() error {
 	}
 	if sc.Rounds < MinRounds || sc.Rounds > MaxRounds {
 		return fmt.Errorf("rounds must be between %d and %d, got %d", MinRounds, MaxRounds, sc.Rounds)
+	}
+	if sc.Seed > MaxSafeSeed {
+		return fmt.Errorf("seed must be <= %d (int64 max) for safe conversion, got %d", MaxSafeSeed, sc.Seed)
 	}
 	return nil
 }

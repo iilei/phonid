@@ -90,15 +90,15 @@ func TestNewPhoneticEncoder(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewPhoneticEncoder(tt.args.config)
+			got, err := NewPhoneticEncoderSkipPreflight(tt.args.config)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("NewPhoneticEncoder() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("NewPhoneticEncoderSkipPreflight() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			if tt.wantErr {
 				return
 			}
 			if got == nil {
-				t.Error("NewPhoneticEncoder() = nil, want *PhoneticEncoder")
+				t.Error("NewPhoneticEncoderSkipPreflight() = nil, want *PhoneticEncoder")
 			}
 		})
 	}
@@ -180,7 +180,7 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		encoder, err := NewPhoneticEncoder(&tt.config)
+		encoder, err := NewPhoneticEncoderSkipPreflight(&tt.config)
 		if err != nil {
 			t.Fatalf("failed to create encoder: %v", err)
 		}
@@ -211,7 +211,7 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 	}
 
 	// Create encoder once
-	encoder, err := NewPhoneticEncoder(simpleConfig)
+	encoder, err := NewPhoneticEncoderSkipPreflight(simpleConfig)
 	if err != nil {
 		t.Fatalf("failed to create encoder: %v", err)
 	}
@@ -298,7 +298,7 @@ func TestPhoneticEncoder_RoundTrip(t *testing.T) {
 		},
 	}
 
-	encoder, err := NewPhoneticEncoder(simpleConfig)
+	encoder, err := NewPhoneticEncoderSkipPreflight(simpleConfig)
 	if err != nil {
 		t.Fatalf("failed to create encoder: %v", err)
 	}

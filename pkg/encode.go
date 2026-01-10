@@ -30,20 +30,10 @@ type (
 	}
 )
 
-// NewPhoneticEncoder creates an encoder with a validated config.
-func NewPhoneticEncoder(config *PhonidConfig) (*PhoneticEncoder, error) {
-	// Validate first
-	if err := config.Validate(); err != nil {
-		return nil, fmt.Errorf("invalid config: %w", err)
-	}
-
-	return newPhoneticEncoder(config)
-}
-
-// NewPhoneticEncoderWithPreflight creates an encoder and validates preflight checks.
-// This is the standard way to create an encoder from a config file with preflight tests.
-func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error) {
-	encoder, err := NewPhoneticEncoder(config)
+// NewPhoneticEncoder creates an encoder with validated config and preflight checks.
+// This is the standard way to create an encoder - preflight validation is required.
+func NewPhoneticEncoder(config *PhonidConfig, checks []PreflightCheck) (*PhoneticEncoder, error) {
+	encoder, err := newPhoneticEncoderValidated(config)
 	if err != nil {
 		return nil, err
 	}
@@ -53,6 +43,21 @@ func NewPhoneticEncoderWithPreflight(config *PhonidConfig, checks []PreflightChe
 	}
 
 	return encoder, nil
+}
+
+// NewPhoneticEncoderSkipPreflight creates an encoder without preflight validation.
+// Only use this when preflight checks are genuinely unavailable (e.g., testing scenarios).
+func NewPhoneticEncoderSkipPreflight(config *PhonidConfig) (*PhoneticEncoder, error) {
+	return newPhoneticEncoderValidated(config)
+}
+
+// newPhoneticEncoderValidated creates an encoder with a validated config (internal).
+func newPhoneticEncoderValidated(config *PhonidConfig) (*PhoneticEncoder, error) {
+	if err := config.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
+
+	return newPhoneticEncoder(config)
 }
 
 // NewPhoneticEncoderLenient creates an encoder with minimal validation.

@@ -76,7 +76,7 @@ func LoadPhonidRCLenient(fp string) (*PhonidConfig, []PreflightCheck, error) {
 }
 
 // ParsePhonidRC parses TOML content requiring preflight checks.
-// Returns config and preflight checks for validation with NewPhoneticEncoderWithPreflight.
+// Returns config and preflight checks for validation with NewPhoneticEncoder.
 func ParsePhonidRC(content string) (*PhonidConfig, []PreflightCheck, error) {
 	return parsePhonidRCInternal(content, false)
 }

@@ -1,3 +1,4 @@
+// Package preflight provides preflight check generation and formatting.
 package preflight
 
 import (

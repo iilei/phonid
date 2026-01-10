@@ -31,12 +31,6 @@ func TestSuggestConfig(t *testing.T) {
 	}
 
 	// Test structure
-	t.Run("has base configuration", func(t *testing.T) {
-		if !strings.Contains(result, "base = 36") {
-			t.Error("missing base configuration")
-		}
-	})
-
 	t.Run("has shuffle section", func(t *testing.T) {
 		if !strings.Contains(result, "[shuffle]") {
 			t.Error("missing shuffle section")

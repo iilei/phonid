@@ -69,7 +69,7 @@ func (c *Config) Validate() error {
 	}
 
 	// Create encoder to determine optimal bit width
-	encoder, err := NewPhoneticEncoder(c.Phonetic)
+	encoder, err := NewPhoneticEncoderSkipPreflight(c.Phonetic)
 	if err != nil {
 		return fmt.Errorf("failed to create encoder: %w", err)
 	}

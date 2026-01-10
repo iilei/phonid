@@ -35,6 +35,7 @@ func TestGenerateSuggestions(t *testing.T) {
 			},
 			want: AssertionTable{
 				{Input: 0, Output: "aza", Comment: "Lower boundary"},
+				{Input: 13, Output: "oko", Comment: "Mid-range (50%)"},
 				{Input: 26, Output: "iti", Comment: "Upper boundary (single word)"},
 			},
 			wantErr: false,
@@ -46,6 +47,7 @@ func TestGenerateSuggestions(t *testing.T) {
 			},
 			want: AssertionTable{
 				{Input: 0, Output: "babab-babab", Comment: "Lower boundary"},
+				{Input: 2147483647, Output: "luzuz-zuzuz", Comment: "Mid-range (50%)"},
 				{Input: 4294967295, Output: "zuzuz-zuzuz", Comment: "Upper boundary (single word)"},
 			},
 			wantErr: false,
