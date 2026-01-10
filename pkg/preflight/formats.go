@@ -33,6 +33,7 @@ func NewFormatterRegistry() *FormatterRegistry {
 		formatters: make(map[OutputFormat]Formatter),
 	}
 	registry.Register(NewTOMLFormatter())
+	registry.Register(NewGoFormatter())
 	return registry
 }
 

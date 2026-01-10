@@ -825,12 +825,16 @@ Package preflight provides preflight check generation and formatting.
   - [func GenerateSuggestions\(encoder \*phonid.PhoneticEncoder\) \(AssertionTable, error\)](<#GenerateSuggestions>)
   - [func GenerateSuggestionsWithCustom\(encoder \*phonid.PhoneticEncoder, customValues \[\]phonid.PositiveInt, includeBoundaries bool\) \(AssertionTable, error\)](<#GenerateSuggestionsWithCustom>)
 - [type Formatter](<#Formatter>)
+  - [func NewGoFormatter\(\) Formatter](<#NewGoFormatter>)
   - [func NewTOMLFormatter\(\) Formatter](<#NewTOMLFormatter>)
 - [type FormatterRegistry](<#FormatterRegistry>)
   - [func NewFormatterRegistry\(\) \*FormatterRegistry](<#NewFormatterRegistry>)
   - [func \(r \*FormatterRegistry\) AvailableFormats\(\) \[\]OutputFormat](<#FormatterRegistry.AvailableFormats>)
   - [func \(r \*FormatterRegistry\) Get\(format OutputFormat\) \(Formatter, error\)](<#FormatterRegistry.Get>)
   - [func \(r \*FormatterRegistry\) Register\(formatter Formatter\)](<#FormatterRegistry.Register>)
+- [type GoFormatter](<#GoFormatter>)
+  - [func \(f \*GoFormatter\) Format\(w io.Writer, assertions \*AssertionTable\) error](<#GoFormatter.Format>)
+  - [func \(f \*GoFormatter\) Name\(\) OutputFormat](<#GoFormatter.Name>)
 - [type OutputFormat](<#OutputFormat>)
 - [type PhoneticConfig](<#PhoneticConfig>)
 - [type ShuffleConfig](<#ShuffleConfig>)
@@ -920,6 +924,15 @@ type Formatter interface {
 }
 ```
 
+<a name="NewGoFormatter"></a>
+### func [NewGoFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L14>)
+
+```go
+func NewGoFormatter() Formatter
+```
+
+NewGoFormatter creates a new Go code formatter.
+
 <a name="NewTOMLFormatter"></a>
 ### func [NewTOMLFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/tomlformat.go#L57>)
 
@@ -950,7 +963,7 @@ func NewFormatterRegistry() *FormatterRegistry
 NewFormatterRegistry creates a registry with all built\-in formatters.
 
 <a name="FormatterRegistry.AvailableFormats"></a>
-### func \(\*FormatterRegistry\) [AvailableFormats](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L54>)
+### func \(\*FormatterRegistry\) [AvailableFormats](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L55>)
 
 ```go
 func (r *FormatterRegistry) AvailableFormats() []OutputFormat
@@ -959,7 +972,7 @@ func (r *FormatterRegistry) AvailableFormats() []OutputFormat
 AvailableFormats returns a list of all registered format names.
 
 <a name="FormatterRegistry.Get"></a>
-### func \(\*FormatterRegistry\) [Get](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L45>)
+### func \(\*FormatterRegistry\) [Get](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L46>)
 
 ```go
 func (r *FormatterRegistry) Get(format OutputFormat) (Formatter, error)
@@ -968,13 +981,40 @@ func (r *FormatterRegistry) Get(format OutputFormat) (Formatter, error)
 Get retrieves a formatter by name.
 
 <a name="FormatterRegistry.Register"></a>
-### func \(\*FormatterRegistry\) [Register](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L40>)
+### func \(\*FormatterRegistry\) [Register](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L41>)
 
 ```go
 func (r *FormatterRegistry) Register(formatter Formatter)
 ```
 
 Register adds a formatter to the registry.
+
+<a name="GoFormatter"></a>
+## type [GoFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L11>)
+
+GoFormatter implements the Formatter interface for Go code output.
+
+```go
+type GoFormatter struct{}
+```
+
+<a name="GoFormatter.Format"></a>
+### func \(\*GoFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L24>)
+
+```go
+func (f *GoFormatter) Format(w io.Writer, assertions *AssertionTable) error
+```
+
+Format writes preflight assertions as Go code to the writer.
+
+<a name="GoFormatter.Name"></a>
+### func \(\*GoFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L19>)
+
+```go
+func (f *GoFormatter) Name() OutputFormat
+```
+
+Name returns the format name.
 
 <a name="OutputFormat"></a>
 ## type [OutputFormat](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L16>)
