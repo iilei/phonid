@@ -721,6 +721,7 @@ Package preflight provides preflight check generation and formatting.
 - [type Assertion](<#Assertion>)
 - [type AssertionTable](<#AssertionTable>)
   - [func GenerateSuggestions\(encoder \*phonid.PhoneticEncoder\) \(AssertionTable, error\)](<#GenerateSuggestions>)
+  - [func GenerateSuggestionsWithCustom\(encoder \*phonid.PhoneticEncoder, customValues \[\]phonid.PositiveInt, includeBoundaries bool\) \(AssertionTable, error\)](<#GenerateSuggestionsWithCustom>)
 - [type Formatter](<#Formatter>)
   - [func NewTOMLFormatter\(\) Formatter](<#NewTOMLFormatter>)
 - [type FormatterRegistry](<#FormatterRegistry>)
@@ -776,6 +777,15 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 ```
 
 GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space. If encoder is nil, creates a default encoder using ProQuint configuration.
+
+<a name="GenerateSuggestionsWithCustom"></a>
+### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L37-L41>)
+
+```go
+func GenerateSuggestionsWithCustom(encoder *phonid.PhoneticEncoder, customValues []phonid.PositiveInt, includeBoundaries bool) (AssertionTable, error)
+```
+
+GenerateSuggestionsWithCustom creates test assertions for boundaries and/or custom values. If includeBoundaries is true, generates lower boundary \(0\), mid\-range \(50%\), and upper boundary checks. Custom values are validated against encoder capacity and added with descriptive comments. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="Formatter"></a>
 ## type [Formatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/formats.go#L19-L22>)

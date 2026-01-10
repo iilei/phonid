@@ -27,6 +27,18 @@ type (
 // It generates boundary values and representative test points across the encoding space.
 // If encoder is nil, creates a default encoder using ProQuint configuration.
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error) {
+	return GenerateSuggestionsWithCustom(encoder, nil, true)
+}
+
+// GenerateSuggestionsWithCustom creates test assertions for boundaries and/or custom values.
+// If includeBoundaries is true, generates lower boundary (0), mid-range (50%), and upper boundary checks.
+// Custom values are validated against encoder capacity and added with descriptive comments.
+// If encoder is nil, creates a default encoder using ProQuint configuration.
+func GenerateSuggestionsWithCustom(
+	encoder *phonid.PhoneticEncoder,
+	customValues []phonid.PositiveInt,
+	includeBoundaries bool,
+) (AssertionTable, error) {
 	if encoder == nil {
 		var err error
 		encoder, err = phonid.NewPhoneticEncoderLenient(nil)
@@ -43,20 +55,35 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 
 	suggestions := AssertionTable{}
 
-	// 1. Lower boundary (0)
-	if err := addSuggestion(&suggestions, encoder, 0, "Lower boundary"); err != nil {
-		return nil, err
+	// Add boundary checks if requested
+	if includeBoundaries {
+		// 1. Lower boundary (0)
+		if err := addSuggestion(&suggestions, encoder, 0, "Lower boundary"); err != nil {
+			return nil, err
+		}
+
+		// 2. Mid-range (50%)
+		midValue := phonid.PositiveInt(maxValue / midRangePercentage)
+		if err := addSuggestion(&suggestions, encoder, midValue, "Mid-range (50%)"); err != nil {
+			return nil, err
+		}
+
+		// 3. Upper boundary (single word)
+		if err := addSuggestion(&suggestions, encoder, phonid.PositiveInt(maxValue), "Upper boundary (single word)"); err != nil {
+			return nil, err
+		}
 	}
 
-	// 2. Mid-range (50%)
-	midValue := phonid.PositiveInt(maxValue / midRangePercentage)
-	if err := addSuggestion(&suggestions, encoder, midValue, "Mid-range (50%)"); err != nil {
-		return nil, err
-	}
+	// Add custom value checks
+	for _, value := range customValues {
+		if int(value) > maxValue {
+			return nil, fmt.Errorf("value %d exceeds encoder capacity (max: %d)", value, maxValue)
+		}
 
-	// 3. Upper boundary (single word)
-	if err := addSuggestion(&suggestions, encoder, phonid.PositiveInt(maxValue), "Upper boundary (single word)"); err != nil {
-		return nil, err
+		comment := fmt.Sprintf("Custom check for %d", value)
+		if err := addSuggestion(&suggestions, encoder, value, comment); err != nil {
+			return nil, err
+		}
 	}
 
 	return suggestions, nil
