@@ -105,12 +105,7 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 
 	// Require at least one preflight check in strict mode
 	if len(tomlConfig.Preflight) == 0 && !lenient {
-		return nil, preflight, errors.New("config must include at least one [[preflight]] check\n\n" +
-			"Example:\n" +
-			"  [[preflight]]\n" +
-			"  input = 0\n" +
-			"  output = \"babab\"\n\n" +
-			"Hint: Run 'phonid preflight --suggest' to generate recommended checks")
+		return nil, preflight, ErrNoPreflightChecks
 	}
 	preflight = tomlConfig.Preflight
 

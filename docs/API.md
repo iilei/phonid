@@ -176,8 +176,19 @@ var (
 )
 ```
 
+<a name="ErrNoPreflightChecks"></a>ErrNoPreflightChecks is returned when no preflight checks are provided.
+
+```go
+var ErrNoPreflightChecks = errors.New("config must include at least one [[preflight]] check\n\n" +
+    "Example:\n" +
+    "  [[preflight]]\n" +
+    "  input = 0\n" +
+    "  output = \"babab\"\n\n" +
+    "Hint: Run 'phonid preflight --suggest' to generate recommended checks")
+```
+
 <a name="IsValidPhonidRCFilename"></a>
-## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L213>)
+## func [IsValidPhonidRCFilename](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L208>)
 
 ```go
 func IsValidPhonidRCFilename(filename string) bool
@@ -222,7 +233,7 @@ func ParsePhonidRCLenient(content string) (*PhonidConfig, []PreflightCheck, erro
 ParsePhonidRCLenient parses TOML content without requiring preflight checks. Used exclusively by 'phonid preflight \-\-suggest' command.
 
 <a name="ValidatePhonidRC"></a>
-## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L163>)
+## func [ValidatePhonidRC](<https://github.com/iilei/phonid/blob/master/pkg/rcparse.go#L158>)
 
 ```go
 func ValidatePhonidRC(config *PhonidConfig) error
@@ -460,7 +471,7 @@ NewPhoneticEncoder creates an encoder with a validated config.
 func NewPhoneticEncoderLenient(config *PhonidConfig) (*PhoneticEncoder, error)
 ```
 
-NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating suggestions even with incomplete configs. If config is nil, uses DefaultConfig \(ProQuint\-compatible encoding\).
+NewPhoneticEncoderLenient creates an encoder with minimal validation. Used exclusively by 'phonid preflight \-\-suggest' command to allow generating preflight\-check suggestions even with incomplete configs. If config is nil, uses DefaultConfig \(ProQuint\-compatible encoding\).
 
 <a name="NewPhoneticEncoderWithPreflight"></a>
 ### func [NewPhoneticEncoderWithPreflight](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L45>)
@@ -499,7 +510,7 @@ func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
 GetSmallestPatternCapacity returns the maximum value that can be encoded with the smallest \(first\) pattern. This is useful for generating preflight suggestions.
 
 <a name="PhoneticEncoder.ValidatePreflight"></a>
-### func \(\*PhoneticEncoder\) [ValidatePreflight](<https://github.com/iilei/phonid/blob/master/pkg/preflight.go#L10>)
+### func \(\*PhoneticEncoder\) [ValidatePreflight](<https://github.com/iilei/phonid/blob/master/pkg/preflight.go#L18>)
 
 ```go
 func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error

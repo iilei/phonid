@@ -19,14 +19,6 @@ The result is a system that is playful in output, but intentionally conservative
 
 Phonid represents numbers as **words composed of consonants (C) and vowels (V)** according to explicitly defined word templates.
 
-### 1. Prime-Length Words
-
-Phonid enforces that all pattern lengths must be prime numbers (3, 5, 7, 11, 23).
-
-This design choice, while limiting the available word lengths, **keeps the door open for concatenating phonids indefinitely while preserving unambiguous decoding back to their original components**.
-
-See `AllowedPatternLengths` in API.md#variables.
-
 ### 2. Explicit Word Templates
 
 For each allowed word length, the configuration defines a **finite set of word templates**, such as:
