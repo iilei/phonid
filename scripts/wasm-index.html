@@ -196,9 +196,6 @@
                 <label for="presetSelect">Load Preset:</label>
                 <select id="presetSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                     <option value="">-- Select a preset --</option>
-                    <option value="proquint" selected>ProQuint (Standard)</option>
-                    <option value="tiny">Tiny (Minimal)</option>
-                    <option value="special">Special (Unicode Symbols)</option>
                 </select>
             </div>
         </div>
@@ -284,153 +281,62 @@
     <script>
         let wasmReady = false;
         let lastAppliedConfig = '';
+        const PUBLIC_PRESETS = $PUBLIC_PRESETS_JSON;
         const statusEl = document.getElementById('status');
         const STORAGE_KEY = 'phonid-user-config';
         const STORAGE_KEY_INPUT_NUMBER = 'phonid-input-number';
         const STORAGE_KEY_INPUT_STRING = 'phonid-input-string';
 
-        const PRESET_PROQUINT = `#  ProQuint standard preset (compatible with https://arxiv.org/html/0901.4016)
+        // Store fetched preset configs
+        const PRESETS = {};
 
-[shuffle]
-  rounds = 0
-  seed = 0
+        // Preset base URL (relative path works both locally and deployed)
+        const PRESET_BASE_URL = './public_presets/';
 
-[phonetic]
-  patterns = ['CVCVCXCVCVC', 'CVCVCXCVCVCXCVCVCXCVCVC']
+        // Populate dropdown with preset options (without fetching content)
+        function populatePresetDropdown() {
+            const dropdown = document.getElementById('presetSelect');
 
-  [phonetic.placeholders]
-    C = 'bdfghjklmnprstvz'
-    V = 'aiou'
-    X = '-'
+            for (const filename of PUBLIC_PRESETS) {
+                // Create a readable name
+                const presetName = filename.replace(/^\./, '').replace('.phonidrc.toml', '');
 
-# Output of 'phonid preflight --suggest'
-#
-# Capacity per word: 4_294_967_295 combinations (0-4294967295)
-#
-# Suggested preflight checks:
+                // Add option to dropdown
+                const option = document.createElement('option');
+                option.value = presetName;
+                // upper-case and replace underscore with space
+                option.textContent = (presetName.charAt(0).toUpperCase() + presetName.slice(1)).replaceAll('_', ' ');
+                dropdown.appendChild(option);
+            }
+            console.log(`Populated dropdown with ${PUBLIC_PRESETS.length} preset options`);
+        }
 
-[[preflight]]
-  input = '0'           # Lower boundary (CVCVCXCVCVC)
-  output = 'babab-babab'
+        // Fetch a specific preset by name
+        async function fetchPreset(presetName) {
+            // Return cached if already loaded
+            if (PRESETS[presetName]) {
+                return PRESETS[presetName];
+            }
 
-[[preflight]]
-  input = '2147483647'  # Mid-range (CVCVCXCVCVC)
-  output = 'luzuz-zuzuz'
+            // Find the filename
+            const filename = PUBLIC_PRESETS.find(f => f.replace(/^\./, '').replace('.phonidrc.toml', '') === presetName);
+            if (!filename) {
+                throw new Error(`Preset ${presetName} not found`);
+            }
 
-[[preflight]]
-  input = '4294967295'  # Upper boundary (CVCVCXCVCVC)
-  output = 'zuzuz-zuzuz'
+            const fetchUrl = PRESET_BASE_URL + filename;
+            console.log(`Fetching preset: ${presetName} from ${fetchUrl}`);
 
-[[preflight]]
-  input = '0'           # Pattern CVCVCXCVCVCXCVCVCXCVCVC capacity: 18_446_744_073_709_551_615 - Lower boundary (CVCVCXCVCVCXCVCVCXCVCVC)
-  output = 'babab-babab'
+            const response = await fetch(fetchUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch preset from ${fetchUrl}`);
+            }
 
-[[preflight]]
-  input = '4611686018427387903' # Mid-range of int64 (CVCVCXCVCVCXCVCVCXCVCVC)
-  output = 'guzuz-zuzuz-zuzuz-zuzuz'
-
-[[preflight]]
-  input = '9223372036854775807' # Upper boundary of int64 (CVCVCXCVCVCXCVCVCXCVCVC)
-  output = 'luzuz-zuzuz-zuzuz-zuzuz'
-
-[[preflight]]
-  input = '18446744073709551615' # Upper boundary - true capacity (CVCVCXCVCVCXCVCVCXCVCVC)
-  output = 'zuzuz-zuzuz-zuzuz-zuzuz'
-
-[[preflight]]
-  input = '2130706433'  # localhost IP address (127.0.0.1 = 2130706433)
-  output = 'lusab-babad'
-`;
-
-        // Tiny preset - minimal configuration
-        const PRESET_TINY = `[shuffle]
-  rounds = 6
-  seed = 0
-
-[phonetic]
-  patterns = ['CVCVC']
-
-  [phonetic.placeholders]
-    C = 'bzk'
-    V = 'aio'
-
-# Output of 'phonid preflight --suggest'
-#
-# Capacity per word: 242 combinations (0-242)
-#
-# Suggested preflight checks:
-
-[[preflight]]
-  input = '0'           # Lower boundary (CVCVC)
-  output = 'bokib'
-
-[[preflight]]
-  input = '121'         # Mid-range (CVCVC)
-  output = 'kakak'
-
-[[preflight]]
-  input = '242'         # Upper boundary (CVCVC)
-  output = 'zizok'`;
-
-        // Special preset - Unicode symbols
-        const PRESET_SPECIAL = `# Special Configuration with Unicode Symbols
-# Uses alchemical symbols for a unique encoding
-
-[shuffle]
-  rounds = 0
-  seed = 0
-
-[phonetic]
-  patterns = ['VCCCC']
-
-  [phonetic.placeholders]
-    C = '🜁🜉🜃🜂⚡🜲✨🜄'
-    V = 'aioeu'
-
-# Output of 'phonid preflight --suggest'
-#
-# Capacity per word: 20_479 combinations (0-20479)
-#
-# Suggested preflight checks:
-
-[[preflight]]
-  input = '0'           # Lower boundary (VCCCC)
-  output = 'a🜁🜁🜁🜁'
-
-[[preflight]]
-  input = '10239'       # Mid-range (VCCCC)
-  output = 'o🜂🜄🜄🜄'
-
-[[preflight]]
-  input = '20479'       # Upper boundary (VCCCC)
-  output = 'u🜄🜄🜄🜄'
-
-# *********************************************************************************************
-# Additional Info
-# *********************************************************************************************
-#
-# Example with diacritics (German)
-# V = "aeiouäöü"
-
-# Example with Unicode escape sequences for IPA symbols
-# These are especially useful for special phonetic symbols:
-# S = "\u0283\u0292"   # ʃʒ - Sibilants (sh, zh sounds)
-# F = "\u03B8\u00F0"   # θð - Fricatives (voiceless th, voiced th)
-# N = "\u014B"         # ŋ - Nasals (ng sound)
-
-# You can also type them directly if your editor supports it:
-# S = "ʃʒ"
-# F = "θð"
-# N = "ŋ"
-# *********************************************************************************************
-`;
-
-        // Preset configurations
-        const PRESETS = {
-            proquint: PRESET_PROQUINT,
-            tiny: PRESET_TINY,
-            special: PRESET_SPECIAL
-        };
+            const content = await response.text();
+            PRESETS[presetName] = content; // Cache it
+            console.log(`Loaded preset: ${presetName}`);
+            return content;
+        }
 
         // Function to check if current config matches a preset and update dropdown
         function updatePresetDropdown() {
@@ -459,6 +365,9 @@
                 statusEl.className = 'ready';
                 console.log("WASM loaded successfully");
 
+                // Populate dropdown with preset options
+                populatePresetDropdown();
+
                 // Try to load saved config from localStorage
                 const savedConfig = localStorage.getItem(STORAGE_KEY);
                 if (savedConfig) {
@@ -468,11 +377,17 @@
                     // Check if it matches a preset
                     updatePresetDropdown();
                 } else {
-                    // Load default config if no saved config
-                    console.log("No saved config found, loading default config");
-                    document.getElementById('configText').value = PRESET_PROQUINT;
-                    applyConfig(PRESET_PROQUINT);
-                    updatePresetDropdown();
+                    // Load default proquint preset
+                    fetchPreset('proquint').then(content => {
+                        console.log("No saved config found, loading ProQuint preset");
+                        document.getElementById('configText').value = content;
+                        applyConfig(content);
+                        updatePresetDropdown();
+                    }).catch(err => {
+                        console.error("Failed to load ProQuint preset:", err);
+                        console.log("Using default encoder");
+                        phonidLoadDefaultConfig();
+                    });
                 }
 
                 // Load saved input values
@@ -535,15 +450,17 @@
         });
 
         // Handle preset selection
-        document.getElementById('presetSelect').addEventListener('change', (e) => {
+        document.getElementById('presetSelect').addEventListener('change', async (e) => {
             const presetName = e.target.value;
             if (!presetName) return;
 
-            const presetConfig = PRESETS[presetName];
-            if (presetConfig) {
+            try {
+                const presetConfig = await fetchPreset(presetName);
                 document.getElementById('configText').value = presetConfig;
                 applyConfig(presetConfig);
-                // Dropdown already shows the selected preset, no need to reset
+            } catch (err) {
+                console.error(`Error loading preset ${presetName}:`, err);
+                alert(`Failed to load preset: ${err.message}`);
             }
         });
 

@@ -50,6 +50,22 @@ else
     fi
 fi
 
+# Generate PUBLIC_PRESETS array from public_presets directory
+echo -e "${GREEN}→${NC} Scanning public_presets directory..."
+PUBLIC_PRESETS_JSON=$(
+    find public_presets -name '.*.phonidrc.toml' -type f | \
+    sed 's|^public_presets/||' | \
+    jq -R -s 'split("\n") | map(select(length > 0))'
+)
+export PUBLIC_PRESETS_JSON
+
+preset_count=$(echo "$PUBLIC_PRESETS_JSON" | jq 'length')
+echo -e "${GREEN}→${NC} Found $preset_count preset(s)"
+
+# Copy public_presets directory so that the dist bundle is self-contained
+echo -e "${GREEN}→${NC} Copying public_presets directory..."
+cp -r public_presets "$OUTPUT_DIR/"
+
 # Create a simple HTML file for testing
 echo -e "${GREEN}→${NC} Creating test HTML from template..."
 envsubst < "$(dirname "$0")/wasm-index.html" > "$OUTPUT_DIR/index.html"

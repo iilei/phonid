@@ -1,2 +1,6 @@
 bin
 dist
+
+public_presets/*
+!public_presets/.*.phonidrc.toml
+**\ **
