@@ -142,8 +142,10 @@ Once you are happy with the resulting ids, persist the preflight-expectation tab
 With explicit config:
 
 ```sh
-./dist/phonid*/phonid 4711 --config .phonidrc.toml
+ ./dist/phonid*/phonid  --config ./public_presets/.proquint.phonidrc.toml 1337
 ```
+
+Yields: `babab-bihun`
 
 ## License
 

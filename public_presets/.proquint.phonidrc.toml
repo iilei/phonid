@@ -1,0 +1,81 @@
+# Output of 'phonid preflight --suggest'
+#
+# Capacity per word: 4_294_967_295 combinations (0-4294967295)
+#
+# Pattern Requirements:
+#   - Pattern Length: Must be 5, 7, 11, 23, 29, 31, 37, 41, 43, or 47 characters
+#     (e.g., CVCVC, CVCVCVC)
+#   - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
+#   - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")
+#   - Shuffling: Ensure 128+ combinations for shuffle rounds ≥ 1 (automatically validated)
+#
+# Available Placeholders:
+#   C = Consonants, V = Vowels, L = Liquids (l,m,n,r)
+#   N = Nasals, S = Sibilants, F = Fricatives
+#   X/Y/Z = Custom categories
+#
+# Shuffle Limitations:
+#   Patterns with capacity > 18,446,744,073,709,551,615 (uint64 max) cannot be shuffled.
+#   Shuffling will be automatically disabled for such patterns, and values will be
+#   encoded in sequential order without permutation.
+#
+# *********************************************************************************************
+# Additional Info
+# *********************************************************************************************
+#
+# Example with diacritics (German)
+# V = "aeiouäöü"
+
+# Example with Unicode escape sequences for IPA symbols
+# These are especially useful for special phonetic symbols:
+# S = "\u0283\u0292"   # ʃʒ - Sibilants (sh, zh sounds)
+# F = "\u03B8\u00F0"   # θð - Fricatives (voiceless th, voiced th)
+# N = "\u014B"         # ŋ - Nasals (ng sound)
+
+# You can also type them directly if your editor supports it:
+# S = "ʃʒ"
+# F = "θð"
+# N = "ŋ"
+# *********************************************************************************************
+
+[phonetic]
+  patterns = ['CVCVCXCVCVC', 'CVCVCXCVCVCXCVCVCXCVCVC']
+
+  [phonetic.placeholders]
+    C = 'bdfghjklmnprstvz'
+    V = 'aiou'
+    X = '-'
+
+# Suggested preflight checks:
+
+[[preflight]]
+  input = '0'           # Lower boundary (CVCVCXCVCVC)
+  output = 'babab-babab'
+
+[[preflight]]
+  input = '2147483647'  # Mid-range (CVCVCXCVCVC)
+  output = 'luzuz-zuzuz'
+
+[[preflight]]
+  input = '4294967295'  # Upper boundary (CVCVCXCVCVC)
+  output = 'zuzuz-zuzuz'
+
+[[preflight]]
+  input = '0'           # Pattern CVCVCXCVCVCXCVCVCXCVCVC capacity: 18_446_744_073_709_551_615 - Lower boundary (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'babab-babab'
+
+[[preflight]]
+  input = '4611686018427387903' # Mid-range of int64 (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'guzuz-zuzuz-zuzuz-zuzuz'
+
+[[preflight]]
+  input = '9223372036854775807' # Upper boundary of int64 (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'luzuz-zuzuz-zuzuz-zuzuz'
+
+[[preflight]]
+  input = '18446744073709551615' # Upper boundary - true capacity (CVCVCXCVCVCXCVCVCXCVCVC)
+  output = 'zuzuz-zuzuz-zuzuz-zuzuz'
+
+[[preflight]]
+  input = '2130706433'  # localhost IP address (127.0.0.1 = 2130706433)
+  output = 'lusab-babad'

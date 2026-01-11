@@ -23,7 +23,8 @@ export GIT_SHA
 
 echo -e "${GREEN}→${NC} Using git SHA: $GIT_SHA"
 
-# Create output directory
+# Create clean output directory
+rm -rf "$OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"
 
 # Build WASM
@@ -53,42 +54,6 @@ fi
 echo -e "${GREEN}→${NC} Creating test HTML from template..."
 envsubst < "$(dirname "$0")/wasm-index.html" > "$OUTPUT_DIR/index.html"
 
-# Minify inline JavaScript if terser is available
-if command -v terser &> /dev/null; then
-    echo -e "${GREEN}→${NC} Minifying inline JavaScript..."
-    # Extract and minify JavaScript between <script> tags
-    # Note: This is a basic approach - for production, consider a proper HTML minifier
-    temp_html="$OUTPUT_DIR/index.html.tmp"
-    temp_js="$OUTPUT_DIR/temp.js"
-
-    # Extract JavaScript (between last <script> tags that don't have src attribute)
-    awk '/<script>/{flag=1; next} /<\/script>/{flag=0} flag' "$OUTPUT_DIR/index.html" > "$temp_js"
-
-    if [ -s "$temp_js" ]; then
-        # Minify the extracted JavaScript
-        terser "$temp_js" --compress --mangle --output "$temp_js.min" 2>/dev/null || cp "$temp_js" "$temp_js.min"
-
-        # Replace the JavaScript in HTML with minified version
-        awk -v minjs="$temp_js.min" '
-            /<script>/ && !/<script src=/ {
-                print $0
-                while ((getline line < minjs) > 0) print line
-                close(minjs)
-                # Skip original JS content
-                while (getline && !/<\/script>/) {}
-                print "</script>"
-                next
-            }
-            {print}
-        ' "$OUTPUT_DIR/index.html" > "$temp_html"
-
-        mv "$temp_html" "$OUTPUT_DIR/index.html"
-        rm -f "$temp_js" "$temp_js.min"
-        echo -e "${GREEN}→${NC} JavaScript minified successfully"
-    fi
-else
-    echo -e "${BLUE}→${NC} terser not found - skipping JavaScript minification (install with: npm install -g terser)"
-fi
 
 # Create README for WASM usage
 cat > "$OUTPUT_DIR/README.md" <<'EOF'
