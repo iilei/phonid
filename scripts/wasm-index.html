@@ -10,6 +10,24 @@
             max-width: 800px;
             margin: 40px auto;
             padding: 0 20px;
+            overflow-x: hidden;
+        }
+
+        .beta-ribbon {
+            position: fixed;
+            top: 30px;
+            right: -104px;
+            background: #dc143c;
+            color: white;
+            font-weight: 900;
+            font-size: 21px;
+            letter-spacing: 2px;
+            padding: 10px 120px;
+            transform: rotate(45deg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            text-align: center;
+            text-transform: uppercase;
         }
 
         .container {
@@ -36,6 +54,12 @@
 
         button:hover {
             background: #005a9e;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
 
         #result {
@@ -169,6 +193,8 @@
 </head>
 
 <body>
+    <div class="beta-ribbon">BETA</div>
+
     <h1>Phonid Encoder / Decoder</h1>
 
     <div id="status" class="loading">Loading WASM module...</div>
@@ -212,7 +238,7 @@
                 <span style="font-size: 1.5em;">⚠️</span>
                 Preflight Check Failed
             </h3>
-            <p id="preflightMessage"></p>
+            <code id="preflightMessage"></code>
             <details>
                 <summary style="cursor: pointer; user-select: none; margin: 10px 0;">Show suggested config with valid
                     preflight checks</summary>
@@ -406,6 +432,9 @@
                 if (savedInputString) {
                     document.getElementById('inputString').value = savedInputString;
                 }
+
+                // Initialize button states
+                updateButtonStates();
             })
             .catch((err) => {
                 statusEl.textContent = 'Error loading WASM: ' + err.message;
@@ -430,13 +459,26 @@
             updatePresetDropdown();
         });
 
+        // Function to update button disabled states
+        function updateButtonStates() {
+            const inputNumber = document.getElementById('inputNumber');
+            const inputString = document.getElementById('inputString');
+            const encodeBtn = document.getElementById('encodeBtn');
+            const decodeBtn = document.getElementById('decodeBtn');
+
+            encodeBtn.disabled = !inputNumber.value.trim();
+            decodeBtn.disabled = !inputString.value.trim();
+        }
+
         // Save input values to localStorage on change
         document.getElementById('inputNumber').addEventListener('input', (e) => {
             localStorage.setItem(STORAGE_KEY_INPUT_NUMBER, e.target.value);
+            updateButtonStates();
         });
 
         document.getElementById('inputString').addEventListener('input', (e) => {
             localStorage.setItem(STORAGE_KEY_INPUT_STRING, e.target.value);
+            updateButtonStates();
         });
 
         // Handle file upload
@@ -678,6 +720,7 @@
                     // Auto-populate the decode field with encoded result
                     document.getElementById('inputString').value = result.result;
                 }
+                updateButtonStates();
             });
 
             // Handle decode button
@@ -707,6 +750,7 @@
                     // Auto-populate the encode field with decoded number (supports BigInt)
                     document.getElementById('inputNumber').value = display;
                 }
+                updateButtonStates();
             });
         }
     </script>

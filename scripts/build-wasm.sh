@@ -53,7 +53,7 @@ fi
 # Generate PUBLIC_PRESETS array from public_presets directory
 echo -e "${GREEN}→${NC} Scanning public_presets directory..."
 PUBLIC_PRESETS_JSON=$(
-    find public_presets -name '.*.phonidrc.toml' -type f | \
+    find public_presets -maxdepth 1 -name '.*.phonidrc.toml' -type f | \
     sed 's|^public_presets/||' | \
     jq -R -s 'split("\n") | map(select(length > 0))'
 )
