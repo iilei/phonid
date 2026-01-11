@@ -10,9 +10,26 @@ import (
 
 const (
 	// midRangePercentage is the divisor for calculating mid-range value.
-	midRangePercentage = 2
-	LocalhostDecimal   = 2130706433
-	maxInt64           = math.MaxInt
+	midRangePercentage  = 2
+	LocalhostDecimal    = 2130706433
+	maxInt64            = math.MaxInt
+	ConfigHeaderComment = `
+Pattern Requirements:
+  - Pattern Length: Must be 5, 7, 11, 23, 29, 31, 37, 41, 43, or 47 characters
+    (e.g., CVCVC, CVCVCVC)
+  - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
+  - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")
+  - Shuffling: Ensure 128+ combinations for shuffle rounds ≥ 1 (automatically validated)
+
+Available Placeholders:
+  C = Consonants, V = Vowels, L = Liquids (l,m,n,r)
+  N = Nasals, S = Sibilants, F = Fricatives
+  X/Y/Z = Custom categories
+
+Shuffle Limitations:
+  Patterns with capacity > 18,446,744,073,709,551,615 (uint64 max) cannot be shuffled.
+  Shuffling will be automatically disabled for such patterns, and values will be
+  encoded in sequential order without permutation.`
 )
 
 type (

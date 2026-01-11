@@ -201,23 +201,38 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error) {
 		return "", err
 	}
 
-	// Apply shuffling if configured (requires fitting in uint64)
+	// CRITICAL: Validate input against pattern capacity BEFORE shuffling
+	// This ensures consistent maximum value regardless of shuffle configuration.
+	// Cycle walking in applyShuffle() will keep the shuffled value within this capacity.
+	maxCapacity := e.patternEncoders[len(e.patternEncoders)-1].totalCombinations
+	if number.BigInt().Cmp(maxCapacity) >= 0 {
+		maxValue := new(big.Int).Sub(maxCapacity, big.NewInt(1))
+		var displayMax string
+		if maxValue.Cmp(big.NewInt(int64(math.MaxInt))) > 0 {
+			displayMax = fmt.Sprintf(">%d", math.MaxInt)
+		} else {
+			displayMax = maxValue.String()
+		}
+		return "", fmt.Errorf("number %s exceeds largest pattern capacity (max value: %s)",
+			number.String(), displayMax)
+	}
+
+	// Apply shuffling if configured (uses cycle walking for format-preserving encryption)
 	encodedNumber, err := e.applyShuffle(number)
 	if err != nil {
 		return "", err
 	}
 
-	// Find the smallest pattern that can encode this number
+	// Find the smallest pattern that can encode this shuffled number
+	// After cycle walking, encodedNumber is guaranteed to be < maxCapacity
 	for _, pattern := range e.patternEncoders {
 		if encodedNumber.BigInt().Cmp(pattern.totalCombinations) < 0 {
 			return pattern.Encode(encodedNumber)
 		}
 	}
 
-	// Number too large for any pattern
-	maxCapacity := e.patternEncoders[len(e.patternEncoders)-1].totalCombinations
-	// For display, limit to MaxInt if capacity is larger
-	// Calculate max value (capacity - 1) for error message
+	// This should never be reached due to input validation and cycle walking,
+	// but keep as a safety net for defensive programming
 	maxValue := new(big.Int).Sub(maxCapacity, big.NewInt(1))
 	var displayMax string
 	if maxValue.Cmp(big.NewInt(int64(math.MaxInt))) > 0 {
@@ -368,15 +383,38 @@ func (e *PhoneticEncoder) GetPatternInfo() []struct {
 }
 
 // applyShuffle applies Feistel shuffling to the input number if configured.
-// Returns the shuffled number, or the original if no shuffler is configured.
+// Uses cycle walking (format-preserving encryption) to ensure the output stays
+// within the pattern capacity even when capacity is not a power of 2.
+//
+// Cycle walking works by repeatedly shuffling values that fall outside the valid
+// range until we get a value within range. This maintains bijectivity: each input
+// maps to exactly one output, and the mapping is reversible.
+//
+// Example: Pattern capacity 243, shuffler operates on 8-bit (0-255)
+//   - Input: 241 → Shuffle → 250 (invalid, ≥243) → Shuffle → 180 (valid) ✓
+//   - On decode: 180 → Unshuffle → 250 → Unshuffle → 241 ✓
+//
+// Note: If pattern capacity exceeds uint64, shuffling is not supported.
 func (e *PhoneticEncoder) applyShuffle(number PositiveInt) (PositiveInt, error) {
 	if e.shuffler == nil {
 		return number, nil
 	}
 
+	// Get maximum capacity for cycle walking
+	maxCapacity := e.patternEncoders[len(e.patternEncoders)-1].totalCombinations
+	maxUint64 := new(big.Int).SetUint64(math.MaxUint64)
+
+	// Check if capacity exceeds uint64 range
+	// If so, shuffling is not supported (Feistel networks require uint64 domain)
+	if maxCapacity.Cmp(maxUint64) > 0 {
+		// For very large patterns, we can't use shuffling with cycle walking
+		// Return the input unchanged (as if no shuffler was configured)
+		return number, nil
+	}
+	maxCapacityUint64 := maxCapacity.Uint64()
+
 	// Check if number fits in uint64 for shuffling
 	bigVal := number.BigInt()
-	maxUint64 := new(big.Int).SetUint64(math.MaxUint64)
 
 	if bigVal.Cmp(maxUint64) > 0 {
 		return nil, fmt.Errorf("number too large for shuffling (max: %d)", uint64(math.MaxUint64))
@@ -391,9 +429,33 @@ func (e *PhoneticEncoder) applyShuffle(number PositiveInt) (PositiveInt, error) 
 		val = bigVal.Uint64()
 	}
 
-	shuffled, err := e.shuffler.Encode(val)
-	if err != nil {
-		return nil, fmt.Errorf("shuffle failed: %w", err)
+	// Cycle walking: repeatedly shuffle until we get a value within capacity
+	// This implements format-preserving encryption for non-power-of-2 domains
+	shuffled := val
+	const maxAttempts = 1000 // Prevent infinite loop (typically needs 1-2 iterations)
+
+	for attempt := range maxAttempts {
+		var err error
+		shuffled, err = e.shuffler.Encode(shuffled)
+		if err != nil {
+			return nil, fmt.Errorf("shuffle failed on attempt %d: %w", attempt+1, err)
+		}
+
+		// Check if shuffled value is within pattern capacity
+		if shuffled < maxCapacityUint64 {
+			// Valid value found - we're done
+			break
+		}
+
+		// Value exceeds capacity, use it as input for next shuffle iteration
+		// This is the "cycle walking" - we walk through the cycle until we
+		// land in the valid range [0, maxCapacity)
+	}
+
+	if shuffled >= maxCapacityUint64 {
+		// This should be extremely rare (probability ~ (bitWidth - capacity) / bitWidth)
+		return nil, fmt.Errorf("cycle walking failed to find valid value after %d attempts (input: %d, capacity: %d)",
+			maxAttempts, val, maxCapacityUint64)
 	}
 
 	// Convert shuffled value back to PositiveInt
@@ -404,15 +466,28 @@ func (e *PhoneticEncoder) applyShuffle(number PositiveInt) (PositiveInt, error) 
 }
 
 // applyUnshuffle applies Feistel unshuffling to the decoded number if configured.
-// Returns the unshuffled number, or the original if no shuffler is configured.
+// Uses reverse cycle walking to properly decode values that were cycle-walked during encoding.
+// This is the inverse of applyShuffle and must mirror its cycle walking behavior.
+//
+// Note: If pattern capacity exceeds uint64, returns input unchanged (matching applyShuffle).
 func (e *PhoneticEncoder) applyUnshuffle(number PositiveInt) (PositiveInt, error) {
 	if e.shuffler == nil {
 		return number, nil
 	}
 
+	// Get maximum capacity for cycle walking
+	maxCapacity := e.patternEncoders[len(e.patternEncoders)-1].totalCombinations
+	maxUint64 := new(big.Int).SetUint64(math.MaxUint64)
+
+	// Check if capacity exceeds uint64 range
+	// If so, return input unchanged (matching applyShuffle behavior)
+	if maxCapacity.Cmp(maxUint64) > 0 {
+		return number, nil
+	}
+	maxCapacityUint64 := maxCapacity.Uint64()
+
 	// Check if number fits in uint64 for unshuffling
 	bigVal := number.BigInt()
-	maxUint64 := new(big.Int).SetUint64(math.MaxUint64)
 
 	if bigVal.Cmp(maxUint64) > 0 {
 		return nil, errors.New("decoded number too large for shuffling")
@@ -427,9 +502,31 @@ func (e *PhoneticEncoder) applyUnshuffle(number PositiveInt) (PositiveInt, error
 		val = bigVal.Uint64()
 	}
 
-	unshuffled, err := e.shuffler.Decode(val)
-	if err != nil {
-		return nil, fmt.Errorf("unshuffle failed: %w", err)
+	// Reverse cycle walking: repeatedly unshuffle until we get a value within capacity
+	// This mirrors the forward cycle walking in applyShuffle
+	unshuffled := val
+	const maxAttempts = 1000 // Match forward cycle walking limit
+
+	for attempt := range maxAttempts {
+		var err error
+		unshuffled, err = e.shuffler.Decode(unshuffled)
+		if err != nil {
+			return nil, fmt.Errorf("unshuffle failed on attempt %d: %w", attempt+1, err)
+		}
+
+		// Check if unshuffled value is within pattern capacity
+		if unshuffled < maxCapacityUint64 {
+			// Valid value found - this is our original input
+			break
+		}
+
+		// Value exceeds capacity, continue unshuffling
+		// This reverses the cycle walking from encoding
+	}
+
+	if unshuffled >= maxCapacityUint64 {
+		return nil, fmt.Errorf("reverse cycle walking failed after %d attempts (input: %d, capacity: %d)",
+			maxAttempts, val, maxCapacityUint64)
 	}
 
 	// Convert unshuffled value back to PositiveInt

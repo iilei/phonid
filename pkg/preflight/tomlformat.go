@@ -28,7 +28,7 @@ const (
 type (
 	// TOMLConfig represents the full .phonidrc TOML structure.
 	TOMLConfig struct {
-		Shuffle   ShuffleConfig  `toml:"shuffle"`
+		Shuffle   *ShuffleConfig `toml:"shuffle,omitempty"` // Omitted if capacity > uint64 max
 		Phonetic  PhoneticConfig `toml:"phonetic"`
 		Preflight []Assertion    `toml:"preflight"`
 	}
@@ -101,8 +101,8 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 		return "", fmt.Errorf("failed to generate suggestions: %w", err)
 	}
 
-	// Build full config
-	tomlConfig := buildTOMLConfig(config, assertions)
+	// Build full config (pass encoder for capacity checking)
+	tomlConfig := buildTOMLConfig(config, assertions, encoder)
 	capacityInt := encoder.GetSmallestPatternCapacity()
 	if capacityInt < 0 {
 		return "", errors.New("encoder capacity cannot be negative")
@@ -141,8 +141,8 @@ func FormatTOMLWithSuggestions(
 		}
 	}
 
-	// Build full config
-	tomlConfig := buildTOMLConfig(config, *suggestions)
+	// Build full config (pass encoder for capacity checking)
+	tomlConfig := buildTOMLConfig(config, *suggestions, encoder)
 	capacityInt := encoder.GetSmallestPatternCapacity()
 	if capacityInt < 0 {
 		return "", errors.New("encoder capacity cannot be negative")
@@ -165,23 +165,38 @@ func FormatTOMLWithSuggestions(
 
 // buildTOMLConfig constructs a TOMLConfig from PhonidConfig and assertions.
 // Uses shuffle settings from config if present, otherwise uses defaults.
-func buildTOMLConfig(config *phonid.PhonidConfig, assertions AssertionTable) *TOMLConfig {
+// Omits shuffle config entirely if pattern capacity exceeds uint64 max (shuffling not supported).
+func buildTOMLConfig(
+	config *phonid.PhonidConfig,
+	assertions AssertionTable,
+	encoder *phonid.PhoneticEncoder,
+) *TOMLConfig {
 	placeholders := make(map[string]string)
 	for k, v := range config.Placeholders {
 		placeholders[string(k)] = string(v)
 	}
 
-	// Extract shuffle config from input or use defaults
-	shuffleConfig := ShuffleConfig{
-		Rounds: defaultRounds,
-		Seed:   defaultSeed,
-	}
+	// Check if shuffling is possible (capacity must fit in uint64)
+	var shuffleConfig *ShuffleConfig
+	patterns := encoder.GetPatternInfo()
+	if len(patterns) > 0 {
+		largestPattern := patterns[len(patterns)-1]
+		// Only include shuffle config if capacity fits in uint64 range
+		if !largestPattern.ExceedsInt64 {
+			// Extract shuffle config from input or use defaults
+			shuffleConfig = &ShuffleConfig{
+				Rounds: defaultRounds,
+				Seed:   defaultSeed,
+			}
 
-	// If config has shuffle settings, use them
-	if config.Shuffle != nil {
-		shuffleConfig.Rounds = config.Shuffle.Rounds
-		//#nosec G115 -- Seed is validated by ShuffleConfig.Validate() to be <= MaxSafeSeed (int64 max)
-		shuffleConfig.Seed = int(config.Shuffle.Seed)
+			// If config has shuffle settings, use them
+			if config.Shuffle != nil {
+				shuffleConfig.Rounds = config.Shuffle.Rounds
+				//#nosec G115 -- Seed is validated by ShuffleConfig.Validate() to be <= MaxSafeSeed (int64 max)
+				shuffleConfig.Seed = int(config.Shuffle.Seed)
+			}
+		}
+		// If ExceedsInt64, shuffleConfig remains nil and will be omitted from TOML
 	}
 
 	return &TOMLConfig{
@@ -198,6 +213,22 @@ func buildTOMLConfig(config *phonid.PhonidConfig, assertions AssertionTable) *TO
 func addInlineComments(tomlStr string, assertions AssertionTable, capacity uint64) string {
 	lines := strings.Split(tomlStr, "\n")
 	var result strings.Builder
+
+	// Add header comment at the very top
+	fmt.Fprintf(&result, "# Output of 'phonid preflight --suggest'\n")
+	fmt.Fprintf(&result, "#\n")
+	fmt.Fprintf(&result, "# Capacity per word: %s combinations (0-%d)\n", formatCapacity(capacity), capacity)
+	fmt.Fprintf(&result, "#\n")
+
+	// Add ConfigHeaderComment as TOML comments
+	for line := range strings.SplitSeq(strings.Trim(ConfigHeaderComment, "\n"), "\n") {
+		if line == "" {
+			fmt.Fprintf(&result, "#\n")
+		} else {
+			fmt.Fprintf(&result, "# %s\n", line)
+		}
+	}
+	fmt.Fprintf(&result, "\n")
 
 	// Find where preflight section starts
 	preflightStart := -1
@@ -216,12 +247,6 @@ func addInlineComments(tomlStr string, assertions AssertionTable, capacity uint6
 		}
 	}
 
-	// Add header comment before preflight section
-	fmt.Fprintf(&result, "# Output of 'phonid preflight --suggest'\n")
-	fmt.Fprintf(&result, "#\n")
-	fmt.Fprintf(&result, "# Capacity per word: %s combinations (0-%d)\n", formatCapacity(capacity), capacity)
-
-	fmt.Fprintf(&result, "#\n")
 	fmt.Fprintf(&result, "# Suggested preflight checks:\n\n")
 	// Process preflight section with inline comments
 	assertionIdx := 0

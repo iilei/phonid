@@ -452,7 +452,7 @@ type PatternEncoder struct {
 ```
 
 <a name="PatternEncoder.Decode"></a>
-### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L282>)
+### func \(\*PatternEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L297>)
 
 ```go
 func (e *PatternEncoder) Decode(word string) (PositiveInt, error)
@@ -461,7 +461,7 @@ func (e *PatternEncoder) Decode(word string) (PositiveInt, error)
 Decode converts a phonetic word back to a number. Returns PositiveInt which can represent both small and large values.
 
 <a name="PatternEncoder.Encode"></a>
-### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L255>)
+### func \(\*PatternEncoder\) [Encode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L270>)
 
 ```go
 func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
@@ -470,7 +470,7 @@ func (e *PatternEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word. Uses optimized int64 arithmetic for small numbers, big.Int for large numbers.
 
 <a name="PatternEncoder.MaxValue"></a>
-### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L303>)
+### func \(\*PatternEncoder\) [MaxValue](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L318>)
 
 ```go
 func (e *PatternEncoder) MaxValue() int
@@ -517,7 +517,7 @@ func NewPhoneticEncoderSkipPreflight(config *PhonidConfig) (*PhoneticEncoder, er
 NewPhoneticEncoderSkipPreflight creates an encoder without preflight validation. Only use this when preflight checks are genuinely unavailable \(e.g., testing scenarios\).
 
 <a name="PhoneticEncoder.Decode"></a>
-### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L232>)
+### func \(\*PhoneticEncoder\) [Decode](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L247>)
 
 ```go
 func (e *PhoneticEncoder) Decode(word string) (PositiveInt, error)
@@ -535,7 +535,7 @@ func (e *PhoneticEncoder) Encode(number PositiveInt) (string, error)
 Encode converts a number to a phonetic word, automatically selecting the best pattern. The number can be either a native int64 or a big.Int, with automatic optimization.
 
 <a name="PhoneticEncoder.GetPatternInfo"></a>
-### func \(\*PhoneticEncoder\) [GetPatternInfo](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L327-L332>)
+### func \(\*PhoneticEncoder\) [GetPatternInfo](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L342-L347>)
 
 ```go
 func (e *PhoneticEncoder) GetPatternInfo() []struct {
@@ -549,7 +549,7 @@ func (e *PhoneticEncoder) GetPatternInfo() []struct {
 GetPatternInfo returns information about all patterns for generating suggestions. Returns a slice with pattern details including true mathematical capacity. Each pattern can encode numbers from 0 to its TrueCapacity\-1. Capacity field is capped at math.MaxInt for compatibility, while TrueCapacity shows the real limit.
 
 <a name="PhoneticEncoder.GetSmallestPatternCapacity"></a>
-### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L316>)
+### func \(\*PhoneticEncoder\) [GetSmallestPatternCapacity](<https://github.com/iilei/phonid/blob/master/pkg/encode.go#L331>)
 
 ```go
 func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
@@ -856,6 +856,24 @@ Package preflight provides preflight check generation and formatting.
 ```go
 const (
     LocalhostDecimal = 2130706433
+
+    ConfigHeaderComment = `
+Pattern Requirements:
+  - Pattern Length: Must be 5, 7, 11, 23, 29, 31, 37, 41, 43, or 47 characters
+    (e.g., CVCVC, CVCVCVC)
+  - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
+  - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")
+  - Shuffling: Ensure 128+ combinations for shuffle rounds ≥ 1 (automatically validated)
+
+Available Placeholders:
+  C = Consonants, V = Vowels, L = Liquids (l,m,n,r)
+  N = Nasals, S = Sibilants, F = Fricatives
+  X/Y/Z = Custom categories
+
+Shuffle Limitations:
+  Patterns with capacity > 18,446,744,073,709,551,615 (uint64 max) cannot be shuffled.
+  Shuffling will be automatically disabled for such patterns, and values will be
+  encoded in sequential order without permutation.`
 )
 ```
 
@@ -878,7 +896,7 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved. If encoder is nil, creates a default encoder. If config is nil, uses DefaultConfig.
 
 <a name="Assertion"></a>
-## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L20-L24>)
+## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L37-L41>)
 
 Assertion represents a single suggested preflight check.
 
@@ -891,7 +909,7 @@ type Assertion struct {
 ```
 
 <a name="AssertionTable"></a>
-## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L26>)
+## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L43>)
 
 AssertionTable represents a collection of preflight check assertions.
 
@@ -900,7 +918,7 @@ type AssertionTable []Assertion
 ```
 
 <a name="GenerateSuggestions"></a>
-### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L32>)
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L49>)
 
 ```go
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
@@ -909,7 +927,7 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="GenerateSuggestionsWithCustom"></a>
-### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L41-L45>)
+### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L58-L62>)
 
 ```go
 func GenerateSuggestionsWithCustom(encoder *phonid.PhoneticEncoder, customValues []phonid.PositiveInt, includeBoundaries bool) (AssertionTable, error)
@@ -930,7 +948,7 @@ type Formatter interface {
 ```
 
 <a name="NewGoFormatter"></a>
-### func [NewGoFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L14>)
+### func [NewGoFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L21>)
 
 ```go
 func NewGoFormatter() Formatter
@@ -995,16 +1013,23 @@ func (r *FormatterRegistry) Register(formatter Formatter)
 Register adds a formatter to the registry.
 
 <a name="GoFormatter"></a>
-## type [GoFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L11>)
+## type [GoFormatter](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L18>)
 
-GoFormatter implements the Formatter interface for Go code output.
+GoFormatter implements the Formatter interface for Go code output. Note: This formatter only outputs preflight assertions, not configuration. For full configuration including shuffle settings, use the TOML formatter.
+
+Shuffle Limitations:
+
+```
+Patterns with capacity > 18,446,744,073,709,551,615 (uint64 max) cannot be shuffled.
+When using such patterns, shuffle configuration should be omitted entirely.
+```
 
 ```go
 type GoFormatter struct{}
 ```
 
 <a name="GoFormatter.Format"></a>
-### func \(\*GoFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L24>)
+### func \(\*GoFormatter\) [Format](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L31>)
 
 ```go
 func (f *GoFormatter) Format(w io.Writer, assertions *AssertionTable) error
@@ -1013,7 +1038,7 @@ func (f *GoFormatter) Format(w io.Writer, assertions *AssertionTable) error
 Format writes preflight assertions as Go code to the writer.
 
 <a name="GoFormatter.Name"></a>
-### func \(\*GoFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L19>)
+### func \(\*GoFormatter\) [Name](<https://github.com/iilei/phonid/blob/master/pkg/preflight/goformat.go#L26>)
 
 ```go
 func (f *GoFormatter) Name() OutputFormat
@@ -1070,7 +1095,7 @@ TOMLConfig represents the full .phonidrc TOML structure.
 
 ```go
 type TOMLConfig struct {
-    Shuffle   ShuffleConfig  `toml:"shuffle"`
+    Shuffle   *ShuffleConfig `toml:"shuffle,omitempty"` // Omitted if capacity > uint64 max
     Phonetic  PhoneticConfig `toml:"phonetic"`
     Preflight []Assertion    `toml:"preflight"`
 }

@@ -8,6 +8,13 @@ import (
 )
 
 // GoFormatter implements the Formatter interface for Go code output.
+// Note: This formatter only outputs preflight assertions, not configuration.
+// For full configuration including shuffle settings, use the TOML formatter.
+//
+// Shuffle Limitations:
+//
+//	Patterns with capacity > 18,446,744,073,709,551,615 (uint64 max) cannot be shuffled.
+//	When using such patterns, shuffle configuration should be omitted entirely.
 type GoFormatter struct{}
 
 // NewGoFormatter creates a new Go code formatter.

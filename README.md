@@ -142,7 +142,7 @@ Once you are happy with the resulting ids, persist the preflight-expectation tab
 With explicit config:
 
 ```sh
-./dist/phonid*/phonid 4711 --rcfile .phonidrc.toml
+./dist/phonid*/phonid 4711 --config .phonidrc.toml
 ```
 
 ## License

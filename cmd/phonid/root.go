@@ -26,7 +26,7 @@ phonetic patterns and optional Feistel shuffling.`,
 
 func init() {
 	cobra.OnInitialize(initConfig)
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "rcfile", "", "config file (default: search for .phonidrc)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: search for .phonidrc)")
 	rootCmd.AddCommand(preflightCmd)
 }
 
