@@ -54,7 +54,7 @@ var (
 	}
 
 	// AllowedPatternLengths defines the permitted pattern lengths.
-	AllowedPatternLengths = []int{5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
+	AllowedPatternLengths = []int{5, 7, 11, 13, 23, 29, 31, 37, 41, 43, 47}
 
 	// AllowedPlaceholders defines the valid placeholder identifiers.
 	AllowedPlaceholders = map[PlaceholderType]string{

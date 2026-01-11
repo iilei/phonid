@@ -156,7 +156,7 @@ var (
     }
 
     // AllowedPatternLengths defines the permitted pattern lengths.
-    AllowedPatternLengths = []int{5, 7, 11, 23, 29, 31, 37, 41, 43, 47}
+    AllowedPatternLengths = []int{5, 7, 11, 13, 23, 29, 31, 37, 41, 43, 47}
 
     // AllowedPlaceholders defines the valid placeholder identifiers.
     AllowedPlaceholders = map[PlaceholderType]string{
@@ -558,13 +558,13 @@ func (e *PhoneticEncoder) GetSmallestPatternCapacity() int
 GetSmallestPatternCapacity returns the maximum value that can be encoded with the smallest \(first\) pattern. This is useful for generating preflight suggestions. If the capacity exceeds math.MaxInt, returns MaxInt.
 
 <a name="PhoneticEncoder.ValidatePreflight"></a>
-### func \(\*PhoneticEncoder\) [ValidatePreflight](<https://github.com/iilei/phonid/blob/master/pkg/preflight.go#L18>)
+### func \(\*PhoneticEncoder\) [ValidatePreflight](<https://github.com/iilei/phonid/blob/master/pkg/preflight.go#L37>)
 
 ```go
 func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ```
 
-ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
+ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\). If shuffling is enabled \(rounds \> 0\), also validates that cycle walking can find valid values across the entire capacity range.
 
 <a name="PhonidConfig"></a>
 ## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L132-L136>)
@@ -859,7 +859,7 @@ const (
 
     ConfigHeaderComment = `
 Pattern Requirements:
-  - Pattern Length: Must be 5, 7, 11, 23, 29, 31, 37, 41, 43, or 47 characters
+  - Pattern Length: Must be 5, 7, 11, 13, 23, 29, 31, 37, 41, 43, or 47 characters
     (e.g., CVCVC, CVCVCVC)
   - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
   - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")

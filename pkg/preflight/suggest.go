@@ -15,7 +15,7 @@ const (
 	maxInt64            = math.MaxInt
 	ConfigHeaderComment = `
 Pattern Requirements:
-  - Pattern Length: Must be 5, 7, 11, 23, 29, 31, 37, 41, 43, or 47 characters
+  - Pattern Length: Must be 5, 7, 11, 13, 23, 29, 31, 37, 41, 43, or 47 characters
     (e.g., CVCVC, CVCVCVC)
   - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
   - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")

@@ -1,0 +1,170 @@
+name: Validate Public Presets
+
+on:
+  pull_request:
+    paths:
+      - 'public_presets/**.toml'
+  push:
+    paths:
+      - 'public_presets/**.toml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history to verify signed commits
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build phonid CLI
+        run: |
+          go build -o phonid ./cmd/phonid
+          chmod +x phonid
+
+      - name: Verify file naming convention
+        run: |
+          echo "Checking preset naming conventions..."
+          for file in public_presets/*.toml; do
+            filename=$(basename "$file")
+            if [[ ! "$filename" =~ ^\..*\.phonidrc\.toml$ ]]; then
+              echo "❌ Invalid filename: $filename"
+              echo "   Must match pattern: .*.phonidrc.toml"
+              exit 1
+            fi
+            echo "✓ Valid filename: $filename"
+          done
+
+      - name: Verify commits are signed
+        if: github.event_name == 'pull_request'
+        run: |
+          echo "Verifying commit signatures..."
+          # Get commits in this PR
+          commits=$(git log --pretty=format:"%H" origin/${{ github.base_ref }}..HEAD)
+
+          unsigned_commits=()
+          for commit in $commits; do
+            # Check if commit is signed (GPG or SSH)
+            if ! git verify-commit "$commit" 2>/dev/null && \
+               ! git log --show-signature -1 "$commit" | grep -q "Good signature"; then
+              unsigned_commits+=("$commit")
+            fi
+          done
+
+          if [ ${#unsigned_commits[@]} -gt 0 ]; then
+            echo "❌ Found unsigned commits:"
+            for commit in "${unsigned_commits[@]}"; do
+              echo "   - $commit"
+            done
+            echo ""
+            echo "All commits must be signed. Please sign your commits:"
+            echo "  git commit --amend --no-edit -S  # Sign last commit"
+            echo "  git push --force-with-lease"
+            exit 1
+          fi
+
+          echo "✓ All commits are signed"
+
+      - name: Validate preset configurations
+        run: |
+          echo "Validating preset configurations..."
+          EXIT_CODE=0
+
+          for preset in public_presets/*.toml; do
+            echo ""
+            echo "Validating: $preset"
+            echo "----------------------------------------"
+
+            # Run preflight checks
+            if ! ./phonid preflight --config "$preset"; then
+              echo "❌ Preflight checks failed for: $preset"
+              EXIT_CODE=1
+            else
+              echo "✓ Preflight checks passed for: $preset"
+            fi
+          done
+
+          exit $EXIT_CODE
+
+      - name: Verify config is auto-generated
+        run: |
+          echo "Verifying configurations are auto-generated..."
+          EXIT_CODE=0
+
+          for preset in public_presets/*.toml; do
+            # Check for header comment indicating auto-generation
+            if ! grep -q "Pattern Requirements:" "$preset"; then
+              echo "❌ Missing auto-generated header in: $preset"
+              echo "   Config must be generated using: phonid preflight --suggest"
+              EXIT_CODE=1
+            else
+              echo "✓ Contains auto-generated header: $preset"
+            fi
+
+            # Check for preflight assertions section
+            if ! grep -q "\[\[preflight\]\]" "$preset"; then
+              echo "❌ Missing preflight assertions in: $preset"
+              echo "   Config must include preflight checks"
+              EXIT_CODE=1
+            else
+              echo "✓ Contains preflight assertions: $preset"
+            fi
+          done
+
+          exit $EXIT_CODE
+
+      - name: Test WASM build with new presets
+        run: |
+          echo "Testing WASM build..."
+          ./scripts/build-wasm.sh
+
+          # Verify presets are included in build
+          if [ ! -d "dist/wasm/public_presets" ]; then
+            echo "❌ public_presets not copied to dist/wasm"
+            exit 1
+          fi
+
+          preset_count=$(find dist/wasm/public_presets -name '*.toml' | wc -l)
+          echo "✓ WASM build includes $preset_count preset(s)"
+
+      - name: Comment on PR with validation results
+        if: github.event_name == 'pull_request' && success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Count presets
+            const presets = fs.readdirSync('public_presets')
+              .filter(f => f.endsWith('.phonidrc.toml'));
+
+            const comment = `## Preset Validation Results
+
+            ✅ All validation checks passed!
+
+            **Presets included in this PR:**
+            ${presets.map(p => `- \`${p}\``).join('\n')}
+
+            **Checks performed:**
+            - ✓ File naming conventions
+            - ✓ Signed commits
+            - ✓ Preflight validation
+            - ✓ Auto-generated config format
+            - ✓ WASM build compatibility
+
+            This preset will be publicly available at:
+            \`https://raw.githubusercontent.com/${{ github.repository }}/master/public_presets/[filename]\`
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

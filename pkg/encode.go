@@ -453,9 +453,32 @@ func (e *PhoneticEncoder) applyShuffle(number PositiveInt) (PositiveInt, error) 
 	}
 
 	if shuffled >= maxCapacityUint64 {
-		// This should be extremely rare (probability ~ (bitWidth - capacity) / bitWidth)
-		return nil, fmt.Errorf("cycle walking failed to find valid value after %d attempts (input: %d, capacity: %d)",
-			maxAttempts, val, maxCapacityUint64)
+		// Calculate gap statistics for helpful error message
+		const percentMultiplier = 100.0
+		bitWidth := maxCapacity.BitLen()
+		shufflerCapacity := uint64(1) << bitWidth
+		gapSize := shufflerCapacity - maxCapacityUint64
+		gapPercent := float64(gapSize) * percentMultiplier / float64(shufflerCapacity)
+
+		return nil, fmt.Errorf(
+			"cycle walking failed to find valid value after %d attempts (input: %d, capacity: %d)\n\n"+
+				"This pattern has a %.1f%% gap between capacity (%d) and shuffler domain (%d).\n"+
+				"To fix this issue, you can:\n\n"+
+				"1. Disable shuffling: Set 'rounds = 0' in [shuffle] section\n"+
+				"2. Use power-of-2 character counts:\n"+
+				"   - Change consonants to 2, 4, 8, or 16 characters (e.g., C = 'bptk')\n"+
+				"   - Or use 2, 4, 8 vowels (e.g., V = 'aeio')\n"+
+				"3. Simplify the pattern to reduce capacity:\n"+
+				"   - Use shorter patterns (e.g., 'CVCVCVC' instead of 'CVCVCVCVC')\n"+
+				"   - Reduce variety of placeholders\n\n"+
+				"Example good configuration:\n"+
+				"  [phonetic.placeholders]\n"+
+				"    C = 'bptk'      # 4 chars (power of 2)\n"+
+				"    V = 'aeo'       # 3 chars\n"+
+				"  patterns = ['CVCVCVCVCVC']  # Results in ~5%% gap",
+			maxAttempts, val, maxCapacityUint64,
+			gapPercent, maxCapacityUint64, shufflerCapacity,
+		)
 	}
 
 	// Convert shuffled value back to PositiveInt
