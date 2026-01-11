@@ -214,9 +214,11 @@
 
             <div>
                 <button id="applyConfigBtn" style="margin-left: 10px;">Apply Config</button>
-                <button id="generatePreflightBtn" style="margin-left: 5px; background: #28a745;">Generate Preflight
+                <button id="generatePreflightBtn" style="margin-left: 5px; background: #007acc;">Generate Preflight
                     Checks</button>
-                <button id="clearConfigBtn" style="margin-left: 5px; background: #6c757d;">Clear Saved Config</button>
+                <button id="shareConfigBtn" style="margin-left: 5px; background: #007acc;">Share Config</button>
+                <button id="clearConfigBtn" style="margin-left: 5px; background: #6c757d; visibility: hidden;">Clear
+                    Saved Config</button>
             </div>
             <div style="margin-top: 10px;">
                 <label for="presetSelect">Load Preset:</label>
@@ -388,6 +390,98 @@
             dropdown.value = '';
         }
 
+        // Function to encode config to base64 for URL hash
+        function encodeConfigToHash(configText) {
+            try {
+                return btoa(encodeURIComponent(configText));
+            } catch (e) {
+                console.error('Error encoding config:', e);
+                return null;
+            }
+        }
+
+        // Function to decode config from URL hash
+        function decodeConfigFromHash(hash) {
+            try {
+                // Remove leading # if present
+                const cleanHash = hash.replace(/^#/, '');
+                return decodeURIComponent(atob(cleanHash));
+            } catch (e) {
+                console.error('Error decoding config from hash:', e);
+                return null;
+            }
+        }
+
+        // Function to copy URL with config to clipboard
+        function shareConfig() {
+            const configText = document.getElementById('configText').value.trim();
+            if (!configText) {
+                alert('No config to share. Please enter a config first.');
+                return;
+            }
+
+            const encodedConfig = encodeConfigToHash(configText);
+            if (!encodedConfig) {
+                alert('Failed to encode config for sharing.');
+                return;
+            }
+
+            const shareUrl = window.location.origin + window.location.pathname + '#' + encodedConfig;
+
+            // Check if clipboard API is available (requires HTTPS or localhost)
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                // Copy to clipboard using modern API
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                    alert('Config URL copied to clipboard! Share this URL to let others use your config.');
+                }).catch(err => {
+                    console.error('Failed to copy to clipboard:', err);
+                    fallbackCopyToClipboard(shareUrl);
+                });
+            } else {
+                // Fallback for non-secure contexts or older browsers
+                fallbackCopyToClipboard(shareUrl);
+            }
+        }
+
+        // Fallback clipboard copy method
+        function fallbackCopyToClipboard(text) {
+            // Try using a temporary textarea
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                document.body.removeChild(textarea);
+
+                if (successful) {
+                    alert('Config URL copied to clipboard! Share this URL to let others use your config.');
+                } else {
+                    prompt('Copy this URL to share your config:', text);
+                }
+            } catch (err) {
+                document.body.removeChild(textarea);
+                console.error('Fallback copy failed:', err);
+                prompt('Copy this URL to share your config:', text);
+            }
+        }
+
+        // Check for config in URL hash on page load
+        function loadConfigFromHash() {
+            const hash = window.location.hash;
+            if (hash && hash.length > 1) {
+                const decodedConfig = decodeConfigFromHash(hash);
+                if (decodedConfig) {
+                    console.log('Loading config from URL hash');
+                    return decodedConfig;
+                }
+            }
+            return null;
+        }
+
         // Load WASM
         const go = new Go();
         WebAssembly.instantiateStreaming(fetch("phonid.${GIT_SHA}.wasm"), go.importObject)
@@ -401,26 +495,35 @@
                 // Populate dropdown with preset options
                 populatePresetDropdown();
 
-                // Try to load saved config from localStorage
-                const savedConfig = localStorage.getItem(STORAGE_KEY);
-                if (savedConfig) {
-                    console.log("Loading saved config from localStorage");
-                    document.getElementById('configText').value = savedConfig;
-                    applyConfig(savedConfig);
-                    // Check if it matches a preset
+                // Check for config in URL hash first (takes priority)
+                const hashConfig = loadConfigFromHash();
+                if (hashConfig) {
+                    console.log("Loading config from URL hash (overrides localStorage)");
+                    document.getElementById('configText').value = hashConfig;
+                    applyConfig(hashConfig);
                     updatePresetDropdown();
                 } else {
-                    // Load default proquint preset
-                    fetchPreset('proquint').then(content => {
-                        console.log("No saved config found, loading ProQuint preset");
-                        document.getElementById('configText').value = content;
-                        applyConfig(content);
+                    // Try to load saved config from localStorage
+                    const savedConfig = localStorage.getItem(STORAGE_KEY);
+                    if (savedConfig) {
+                        console.log("Loading saved config from localStorage");
+                        document.getElementById('configText').value = savedConfig;
+                        applyConfig(savedConfig);
+                        // Check if it matches a preset
                         updatePresetDropdown();
-                    }).catch(err => {
-                        console.error("Failed to load ProQuint preset:", err);
-                        console.log("Using default encoder");
-                        phonidLoadDefaultConfig();
-                    });
+                    } else {
+                        // Load default proquint preset
+                        fetchPreset('proquint').then(content => {
+                            console.log("No saved config found, loading ProQuint preset");
+                            document.getElementById('configText').value = content;
+                            applyConfig(content);
+                            updatePresetDropdown();
+                        }).catch(err => {
+                            console.error("Failed to load ProQuint preset:", err);
+                            console.log("Using default encoder");
+                            phonidLoadDefaultConfig();
+                        });
+                    }
                 }
 
                 // Load saved input values
@@ -550,6 +653,9 @@
                 alert('Failed to generate suggestions');
             }
         });
+
+        // Handle share config button
+        document.getElementById('shareConfigBtn').addEventListener('click', shareConfig);
 
         // Handle clear saved config button
         document.getElementById('clearConfigBtn').addEventListener('click', () => {
