@@ -86,26 +86,29 @@ jobs:
           script: |
             const fs = require('fs');
 
-            // Count presets
-            const presets = fs.readdirSync('public_presets')
-              .filter(f => f.endsWith('.phonidrc.toml'));
+            // Get files changed in this PR
+            const { data: files } = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+
+            // Filter for preset files
+            const changedPresets = files
+              .filter(f => f.filename.startsWith('public_presets/') && f.filename.endsWith('.phonidrc.toml'))
+              .map(f => f.filename.split('/').pop()); // Get just the filename
 
             const comment = `## Preset Validation Results
 
             ✅ All validation checks passed!
 
-            **Presets included in this PR:**
-            ${presets.map(p => `- \`${p}\``).join('\n')}
+            **Presets affected by this PR:**
+            ${changedPresets.map(p => `- \`https://raw.githubusercontent.com/${{ github.repository }}/master/public_presets/${p}\``).join('\n')}
 
             **Checks performed:**
             - ✓ File naming conventions
-            - ✓ Signed commits
             - ✓ Preflight validation
-            - ✓ Auto-generated config format
             - ✓ WASM build compatibility
-
-            This preset will be publicly available at:
-            \`https://raw.githubusercontent.com/${{ github.repository }}/master/public_presets/[filename]\`
             `;
 
             github.rest.issues.createComment({
