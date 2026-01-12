@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -54,23 +53,15 @@ type (
 
 	// TOMLConfig represents the top-level TOML structure.
 	TOMLConfig struct {
-		Base      *TomlPositiveInt  `toml:"base,omitempty"`
-		Shuffle   TOMLShuffleConfig `toml:"shuffle,omitempty"`
-		Phonetic  TOMLPhonidConfig  `toml:"phonetic,omitempty"`
-		Preflight []PreflightCheck  `toml:"preflight"` // Required - no omitempty
+		Base      *TomlPositiveInt `toml:"base,omitempty"`
+		Phonetic  TOMLPhonidConfig `toml:"phonetic,omitempty"`
+		Preflight []PreflightCheck `toml:"preflight"` // Required - no omitempty
 	}
 
 	// PreflightCheck represents a single input->output verification.
 	PreflightCheck struct {
 		Input  *TomlPositiveInt `toml:"input"`
 		Output string           `toml:"output"`
-	}
-
-	// TOMLShuffleConfig represents shuffle configuration.
-	// BitWidth is calculated automatically from pattern capacity.
-	TOMLShuffleConfig struct {
-		Rounds *TomlPositiveInt `toml:"rounds,omitempty"`
-		Seed   *TomlPositiveInt `toml:"seed,omitempty"`
 	}
 
 	// TOMLPhonidConfig represents the phonetic configuration.
@@ -304,45 +295,6 @@ func parsePhonidRCInternal(content string, lenient bool) (*PhonidConfig, []Prefl
 	// Convert TOML structure to PhonidConfig
 	config := &PhonidConfig{
 		Patterns: tomlConfig.Phonetic.Patterns,
-	}
-
-	// Helper to convert TomlPositiveInt to int
-	toInt := func(t *TomlPositiveInt) int {
-		if t == nil {
-			return 0
-		}
-		val := t.ToPositiveInt()
-		if v, ok := val.Int64(); ok {
-			return int(v)
-		}
-		// If it doesn't fit in int, this is a configuration error
-		// but we'll let validation catch it later
-		return math.MaxInt
-	}
-
-	// Helper to convert TomlPositiveInt to uint64
-	toUint64 := func(t *TomlPositiveInt) uint64 {
-		if t == nil {
-			return 0
-		}
-		val := t.ToPositiveInt()
-		if v, ok := val.Int64(); ok {
-			//nolint:gosec // G115: Validated non-negative by PositiveInt type
-			return uint64(v)
-		}
-		return math.MaxUint64
-	}
-
-	// Convert shuffle config if present
-	rounds := toInt(tomlConfig.Shuffle.Rounds)
-	seed := toUint64(tomlConfig.Shuffle.Seed)
-
-	if rounds > 0 || seed > 0 {
-		config.Shuffle = &ShuffleConfig{
-			BitWidth: 0, // Will be calculated after patterns are built
-			Rounds:   rounds,
-			Seed:     seed,
-		}
 	}
 
 	// Convert placeholders

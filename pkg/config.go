@@ -3,17 +3,8 @@ package phonid
 import (
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/creasty/defaults"
-)
-
-const (
-	// Standard bit widths for shuffling.
-	bitWidth8  = 8
-	bitWidth16 = 16
-	bitWidth32 = 32
-	bitWidth64 = 64
 )
 
 // Config holds the configuration for phonetic ID generation.
@@ -21,13 +12,6 @@ type (
 	Config struct {
 		// ID format settings
 		Phonetic *PhonidConfig `default:"{}"`
-
-		// Feistel shuffler settings
-		Shuffle *ShuffleConfig `default:"{}"`
-
-		// Optional: Expected BitWidth for preflight assertion
-		// If set, Validate() will fail if calculated BitWidth doesn't match
-		ExpectedBitWidth int
 	}
 
 	// ConfigOption is a functional option for configuring Config.
@@ -62,117 +46,24 @@ func NewConfigWithOptions(opts ...ConfigOption) (*Config, error) {
 	return cfg, nil
 }
 
-// Validate checks if the config values are valid and auto-calculates BitWidth.
+// Validate checks if the config values are valid.
 func (c *Config) Validate() error {
 	// Ensure required fields are initialized
-	if c.Shuffle == nil {
-		return errors.New("shuffle config is required")
-	}
 	if c.Phonetic == nil {
 		return errors.New("phonetic config is required")
 	}
 
-	// Validate phonetic config first
+	// Validate phonetic config
 	if err := c.Phonetic.Validate(); err != nil {
 		return fmt.Errorf("phonetic config invalid: %w", err)
 	}
 
-	// Create encoder to determine optimal bit width
-	encoder, err := NewPhoneticEncoderSkipPreflight(c.Phonetic)
-	if err != nil {
-		return fmt.Errorf("failed to create encoder: %w", err)
-	}
-
-	if len(encoder.patternEncoders) == 0 {
-		return errors.New("no valid patterns configured")
-	}
-
-	// Auto-calculate BitWidth from largest pattern's capacity
-	largestPattern := encoder.patternEncoders[len(encoder.patternEncoders)-1]
-	c.Shuffle.BitWidth = calculateRequiredBitWidth(big.NewInt(int64(largestPattern.MaxValue() + 1)))
-
-	// Preflight assertion: check if BitWidth matches expected value
-	if c.ExpectedBitWidth > 0 && c.Shuffle.BitWidth != c.ExpectedBitWidth {
-		return fmt.Errorf(
-			"preflight assertion failed: calculated BitWidth is %d, but expected %d\n"+
-				"This indicates a breaking change in the phonetic configuration.\n"+
-				"Update ExpectedBitWidth to %d if this change is intentional",
-			c.Shuffle.BitWidth,
-			c.ExpectedBitWidth,
-			c.Shuffle.BitWidth,
-		)
-	}
-
-	// Validate shuffle config after BitWidth is set
-	if err := c.Shuffle.Validate(); err != nil {
-		return fmt.Errorf("shuffle config invalid: %w", err)
-	}
-
 	return nil
-}
-
-// WithRounds sets the number of Feistel rounds.
-func WithRounds(rounds int) ConfigOption {
-	return func(c *Config) {
-		if c.Shuffle == nil {
-			c.Shuffle = &ShuffleConfig{}
-		}
-		c.Shuffle.Rounds = rounds
-	}
-}
-
-// WithSeed sets the seed value.
-func WithSeed(seed uint64) ConfigOption {
-	return func(c *Config) {
-		if c.Shuffle == nil {
-			c.Shuffle = &ShuffleConfig{}
-		}
-		c.Shuffle.Seed = seed
-	}
-}
-
-// WithShuffle sets the shuffle configuration.
-func WithShuffle(shuffle *ShuffleConfig) ConfigOption {
-	return func(c *Config) {
-		c.Shuffle = shuffle
-	}
 }
 
 // WithPhonetic sets the phonetic configuration.
 func WithPhonetic(phonetic *PhonidConfig) ConfigOption {
 	return func(c *Config) {
 		c.Phonetic = phonetic
-	}
-}
-
-// WithExpectedBitWidth sets the expected bit width for preflight assertion.
-// If the calculated BitWidth doesn't match, Validate() will fail.
-// This helps catch breaking changes in phonetic configuration.
-func WithExpectedBitWidth(bitWidth int) ConfigOption {
-	return func(c *Config) {
-		c.ExpectedBitWidth = bitWidth
-	}
-}
-
-// calculateRequiredBitWidth returns the minimum bit width needed to represent totalCombinations.
-// Returns standard bit widths: 8, 16, 32, or 64.
-func calculateRequiredBitWidth(totalCombinations *big.Int) int {
-	if totalCombinations.Sign() <= 0 {
-		return bitWidth8 // Minimum bit width
-	}
-
-	// Count the number of bits needed
-	bitLen := totalCombinations.BitLen()
-
-	// Round up to standard bit widths: 8, 16, 32, 64
-	switch {
-	case bitLen <= bitWidth8:
-		return bitWidth8
-	case bitLen <= bitWidth16:
-		return bitWidth16
-	case bitLen <= bitWidth32:
-		return bitWidth32
-	default:
-		return bitWidth64
 	}
 }

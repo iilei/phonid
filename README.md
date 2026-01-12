@@ -64,18 +64,6 @@ Formally:
 
 > If word lengths are prime, templates are explicit, and templates are pairwise disjoint, then the mapping between numeric space and phonetic space is uniquely decodable.
 
-## Seeded Permutations
-
-Phonid supports **seeded permutations** of symbol order.
-
-A seed is used to deterministically shuffle consonant and vowel alphabets before encoding. This produces project-specific phonetic sequences while preserving reversibility.
-
-* Different seeds yield different word sequences for the same number
-* The numeric space itself is never altered
-* No collisions or gaps are introduced
-
-Without knowledge of the seed, the numeric meaning of a word is non-obvious, while decoding remains exact for authorized users.
-
 ## Configuration Philosophy
 
 Phonid configurations are intentionally constrained.
@@ -85,7 +73,6 @@ The configuration language allows:
 * Defining alphabets (consonants, vowels)
 * Declaring valid word templates per word length
 * Selecting enabled word lengths
-* Choosing a permutation seed
 
 The configuration **does not allow**:
 

@@ -8,7 +8,6 @@ import (
 	"github.com/iilei/phonid/pkg/preflight"
 )
 
-//nolint:gocognit,gocyclo // Comprehensive integration test with multiple subtests
 func TestSuggestConfig(t *testing.T) {
 	placeholderMap := p.PlaceholderMap{
 		p.Vowel:     p.RuneSet{'a', 'e', 'i'},
@@ -31,19 +30,6 @@ func TestSuggestConfig(t *testing.T) {
 	}
 
 	// Test structure
-	t.Run("has shuffle section", func(t *testing.T) {
-		if !strings.Contains(result, "[shuffle]") {
-			t.Error("missing shuffle section")
-		}
-		// bit_width is now auto-calculated and not in user-facing config
-		if !strings.Contains(result, "rounds = 0") {
-			t.Error("missing rounds in shuffle section")
-		}
-		if !strings.Contains(result, "seed = 0") {
-			t.Error("missing seed in shuffle section")
-		}
-	})
-
 	t.Run("has phonetic section", func(t *testing.T) {
 		if !strings.Contains(result, "[phonetic]") {
 			t.Error("missing phonetic section")

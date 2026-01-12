@@ -1,5 +1,4 @@
-// Package phonid generates phonetic identifiers using configurable patterns
-// and bijective shuffling via Feistel networks.
+// Package phonid generates phonetic identifiers using configurable patterns.
 package phonid
 
 import (
@@ -74,20 +73,11 @@ var (
 		CustomX:   []rune(ProquintDelimiter),
 	}
 
-	// DefaultShuffleConfig provides sensible defaults for Feistel shuffling
-	// With 0 rounds, maintains ProQuint compatibility (no shuffling, linear order).
-	DefaultShuffleConfig = ShuffleConfig{
-		BitWidth: ProQuintBitWidth, // ProQuint pattern encodes 32-bit values
-		Rounds:   0,                // 0 rounds preserves linear order (ProQuint-compatible)
-		Seed:     0,                // Default seed (can be customized by users)
-	}
-
 	// ProQuintConfig provides Proquint-compatible encoding
 	// See: https://arxiv.org/html/0901.4016
 	ProQuintConfig = PhonidConfig{
 		Patterns:     []string{ProQuintPattern},
 		Placeholders: ProQuintPlaceholders,
-		Shuffle:      &DefaultShuffleConfig,
 	}
 
 	// ComplementPlaceholders lists all non-vowel phonetic categories.
@@ -132,7 +122,6 @@ type (
 	PhonidConfig struct {
 		Patterns     []string       // e.g., "CVCVC", "CLVCV", "VCCVL" // Each character becomes a placeholder key
 		Placeholders PlaceholderMap // Maps placeholder to character set, e.g., {"C": "bcdfg", "V": "aeiou"}
-		Shuffle      *ShuffleConfig `toml:"shuffle,omitempty"` // Optional Feistel shuffler configuration
 	}
 )
 

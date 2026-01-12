@@ -14,10 +14,6 @@ import (
 )
 
 const (
-	// Default configuration values for TOML generation.
-	defaultRounds = 0
-	defaultSeed   = 0
-
 	// String processing constants.
 	keyValueParts = 2 // Expected parts when splitting "key = value"
 
@@ -28,16 +24,8 @@ const (
 type (
 	// TOMLConfig represents the full .phonidrc TOML structure.
 	TOMLConfig struct {
-		Shuffle   *ShuffleConfig `toml:"shuffle,omitempty"` // Omitted if capacity > uint64 max
 		Phonetic  PhoneticConfig `toml:"phonetic"`
 		Preflight []Assertion    `toml:"preflight"`
-	}
-
-	// ShuffleConfig represents shuffle configuration in TOML.
-	// BitWidth is now auto-calculated from pattern capacity.
-	ShuffleConfig struct {
-		Rounds int `toml:"rounds"`
-		Seed   int `toml:"seed"`
 	}
 
 	// PhoneticConfig represents phonetic configuration in TOML.
@@ -101,8 +89,8 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 		return "", fmt.Errorf("failed to generate suggestions: %w", err)
 	}
 
-	// Build full config (pass encoder for capacity checking)
-	tomlConfig := buildTOMLConfig(config, assertions, encoder)
+	// Build full config
+	tomlConfig := buildTOMLConfig(config, assertions)
 	capacityInt := encoder.GetSmallestPatternCapacity()
 	if capacityInt < 0 {
 		return "", errors.New("encoder capacity cannot be negative")
@@ -141,8 +129,8 @@ func FormatTOMLWithSuggestions(
 		}
 	}
 
-	// Build full config (pass encoder for capacity checking)
-	tomlConfig := buildTOMLConfig(config, *suggestions, encoder)
+	// Build full config
+	tomlConfig := buildTOMLConfig(config, *suggestions)
 	capacityInt := encoder.GetSmallestPatternCapacity()
 	if capacityInt < 0 {
 		return "", errors.New("encoder capacity cannot be negative")
@@ -164,43 +152,16 @@ func FormatTOMLWithSuggestions(
 }
 
 // buildTOMLConfig constructs a TOMLConfig from PhonidConfig and assertions.
-// Uses shuffle settings from config if present, otherwise uses defaults.
-// Omits shuffle config entirely if pattern capacity exceeds uint64 max (shuffling not supported).
 func buildTOMLConfig(
 	config *phonid.PhonidConfig,
 	assertions AssertionTable,
-	encoder *phonid.PhoneticEncoder,
 ) *TOMLConfig {
 	placeholders := make(map[string]string)
 	for k, v := range config.Placeholders {
 		placeholders[string(k)] = string(v)
 	}
 
-	// Check if shuffling is possible (capacity must fit in uint64)
-	var shuffleConfig *ShuffleConfig
-	patterns := encoder.GetPatternInfo()
-	if len(patterns) > 0 {
-		largestPattern := patterns[len(patterns)-1]
-		// Only include shuffle config if capacity fits in uint64 range
-		if !largestPattern.ExceedsInt64 {
-			// Extract shuffle config from input or use defaults
-			shuffleConfig = &ShuffleConfig{
-				Rounds: defaultRounds,
-				Seed:   defaultSeed,
-			}
-
-			// If config has shuffle settings, use them
-			if config.Shuffle != nil {
-				shuffleConfig.Rounds = config.Shuffle.Rounds
-				//#nosec G115 -- Seed is validated by ShuffleConfig.Validate() to be <= MaxSafeSeed (int64 max)
-				shuffleConfig.Seed = int(config.Shuffle.Seed)
-			}
-		}
-		// If ExceedsInt64, shuffleConfig remains nil and will be omitted from TOML
-	}
-
 	return &TOMLConfig{
-		Shuffle: shuffleConfig,
 		Phonetic: PhoneticConfig{
 			Patterns:     config.Patterns,
 			Placeholders: placeholders,
