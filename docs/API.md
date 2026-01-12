@@ -641,6 +641,7 @@ Package preflight provides preflight check generation and formatting.
 - [func FormatTOMLWithSuggestions\(encoder \*phonid.PhoneticEncoder, config \*phonid.PhonidConfig, suggestions \*AssertionTable\) \(string, error\)](<#FormatTOMLWithSuggestions>)
 - [func SuggestConfig\(encoder \*phonid.PhoneticEncoder, config \*phonid.PhonidConfig\) \(string, error\)](<#SuggestConfig>)
 - [type Assertion](<#Assertion>)
+  - [func GetRandom\(encoder \*phonid.PhoneticEncoder\) \(Assertion, error\)](<#GetRandom>)
 - [type AssertionTable](<#AssertionTable>)
   - [func GenerateSuggestions\(encoder \*phonid.PhoneticEncoder\) \(AssertionTable, error\)](<#GenerateSuggestions>)
   - [func GenerateSuggestionsWithCustom\(encoder \*phonid.PhoneticEncoder, customValues \[\]phonid.PositiveInt, includeBoundaries bool\) \(AssertionTable, error\)](<#GenerateSuggestionsWithCustom>)
@@ -704,7 +705,7 @@ func SuggestConfig(encoder *phonid.PhoneticEncoder, config *phonid.PhonidConfig)
 SuggestConfig generates a complete TOML configuration string with preflight suggestions. It includes the base config, shuffle settings, phonetic patterns, and suggested test assertions with inline comments preserved. If encoder is nil, creates a default encoder. If config is nil, uses DefaultConfig.
 
 <a name="Assertion"></a>
-## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L31-L35>)
+## type [Assertion](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L33-L37>)
 
 Assertion represents a single suggested preflight check.
 
@@ -716,8 +717,17 @@ type Assertion struct {
 }
 ```
 
+<a name="GetRandom"></a>
+### func [GetRandom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L325>)
+
+```go
+func GetRandom(encoder *phonid.PhoneticEncoder) (Assertion, error)
+```
+
+GetRandom generates a random assertion within the encoder's capacity. It determines the maximum encodable number from the encoder's patterns and returns an Assertion with a random input and its encoded output. The Comment field is left empty. If encoder is nil, creates a default encoder using ProQuint configuration.
+
 <a name="AssertionTable"></a>
-## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L37>)
+## type [AssertionTable](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L39>)
 
 AssertionTable represents a collection of preflight check assertions.
 
@@ -726,7 +736,7 @@ type AssertionTable []Assertion
 ```
 
 <a name="GenerateSuggestions"></a>
-### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L43>)
+### func [GenerateSuggestions](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L45>)
 
 ```go
 func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error)
@@ -735,7 +745,7 @@ func GenerateSuggestions(encoder *phonid.PhoneticEncoder) (AssertionTable, error
 GenerateSuggestions creates preflight check suggestions for an encoder. It generates boundary values and representative test points across the encoding space. If encoder is nil, creates a default encoder using ProQuint configuration.
 
 <a name="GenerateSuggestionsWithCustom"></a>
-### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L52-L56>)
+### func [GenerateSuggestionsWithCustom](<https://github.com/iilei/phonid/blob/master/pkg/preflight/suggest.go#L54-L58>)
 
 ```go
 func GenerateSuggestionsWithCustom(encoder *phonid.PhoneticEncoder, customValues []phonid.PositiveInt, includeBoundaries bool) (AssertionTable, error)

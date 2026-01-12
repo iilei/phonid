@@ -79,6 +79,29 @@ jobs:
           preset_count=$(find dist/wasm/public_presets -name '*.toml' | wc -l)
           echo "✓ WASM build includes $preset_count preset(s)"
 
+      - name: Generate random examples for changed presets
+        if: github.event_name == 'pull_request'
+        run: |
+          # Build the random examples generator
+          go build -o generate-random-examples .github/scripts/generate-random-examples.go
+
+          # Create output directory
+          mkdir -p /tmp/random-examples
+
+          # Get changed preset files
+          git diff --name-only origin/${{ github.base_ref }}...HEAD | grep '^public_presets/.*\.toml$' > /tmp/changed-presets.txt || true
+
+          # Generate examples for each changed preset
+          if [ -s /tmp/changed-presets.txt ]; then
+            while IFS= read -r preset; do
+              if [ -f "$preset" ]; then
+                preset_name=$(basename "$preset")
+                echo "Generating examples for $preset_name..."
+                ./generate-random-examples "$preset" > "/tmp/random-examples/${preset_name}.md"
+              fi
+            done < /tmp/changed-presets.txt
+          fi
+
       - name: Comment on PR with validation results
         if: github.event_name == 'pull_request' && success()
         uses: actions/github-script@v7
@@ -98,12 +121,27 @@ jobs:
               .filter(f => f.filename.startsWith('public_presets/') && f.filename.endsWith('.phonidrc.toml'))
               .map(f => f.filename.split('/').pop()); // Get just the filename
 
+            // Build random examples section
+            let randomExamplesSection = '';
+            for (const preset of changedPresets) {
+              const exampleFile = `/tmp/random-examples/${preset}.md`;
+              if (fs.existsSync(exampleFile)) {
+                const examples = fs.readFileSync(exampleFile, 'utf8').trim();
+                let presetNameClean = preset.replace(/^\./, '').replace('.phonidrc.toml', '');
+                presetNameClean = (presetNameClean.charAt(0).toUpperCase() + presetNameClean.slice(1)).replaceAll('_', ' ')
+                randomExamplesSection += `\n\n**_${presetNameClean}_**\n\n${examples}\n`;
+              }
+            }
+
             const comment = `## Preset Validation Results
 
             ✅ All validation checks passed!
 
             **Presets affected by this PR:**
-            ${changedPresets.map(p => `- \`https://raw.githubusercontent.com/${{ github.repository }}/master/public_presets/${p}\``).join('\n')}
+            ${changedPresets.map(p => `- \`https://raw.githubusercontent.com/${context.repo.owner}/${context.repo.repo}/master/public_presets/${p}\``).join('\n')}
+
+            **Random Examples**
+            ${randomExamplesSection || '\n*No examples generated*'}
 
             **Checks performed:**
             - ✓ File naming conventions

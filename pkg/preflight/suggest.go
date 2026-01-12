@@ -1,9 +1,11 @@
 package preflight
 
 import (
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 
 	phonid "github.com/iilei/phonid/pkg"
 )
@@ -313,4 +315,77 @@ func addSuggestion(
 	*suggestions = append(*suggestions, assertion)
 
 	return nil
+}
+
+// GetRandom generates a random assertion within the encoder's capacity.
+// It determines the maximum encodable number from the encoder's patterns
+// and returns an Assertion with a random input and its encoded output.
+// The Comment field is left empty.
+// If encoder is nil, creates a default encoder using ProQuint configuration.
+func GetRandom(encoder *phonid.PhoneticEncoder) (Assertion, error) {
+	if encoder == nil {
+		var err error
+		encoder, err = phonid.NewPhoneticEncoderLenient(nil)
+		if err != nil {
+			return Assertion{}, fmt.Errorf("failed to create default encoder: %w", err)
+		}
+	}
+
+	// Get pattern information to determine max capacity
+	patterns := encoder.GetPatternInfo()
+	if len(patterns) == 0 {
+		return Assertion{}, errors.New("encoder has no patterns")
+	}
+
+	// Get the maximum capacity from the last pattern
+	lastPattern := patterns[len(patterns)-1]
+	var maxValue phonid.PositiveInt
+
+	if lastPattern.ExceedsInt64 {
+		// Use true capacity for large patterns
+		maxValue = lastPattern.TrueCapacity
+	} else {
+		// Use int-based capacity - 1 for standard patterns
+		if lastPattern.Capacity <= 0 {
+			return Assertion{}, fmt.Errorf("invalid capacity: %d", lastPattern.Capacity)
+		}
+		maxValue = phonid.NewPositiveInt(int64(lastPattern.Capacity - 1))
+	}
+
+	// Generate random number between 0 and maxValue (inclusive)
+	randomValue, err := generateRandomPositiveInt(maxValue)
+	if err != nil {
+		return Assertion{}, fmt.Errorf("failed to generate random value: %w", err)
+	}
+
+	// Encode the random value
+	output, err := encoder.Encode(randomValue)
+	if err != nil {
+		return Assertion{}, fmt.Errorf("failed to encode random value %s: %w", randomValue.String(), err)
+	}
+
+	return Assertion{
+		Input:   &phonid.TomlPositiveInt{Value: randomValue},
+		Output:  output,
+		Comment: "",
+	}, nil
+}
+
+// generateRandomPositiveInt generates a cryptographically secure random PositiveInt
+// between 0 and maxValue (inclusive).
+func generateRandomPositiveInt(maxValue phonid.PositiveInt) (phonid.PositiveInt, error) {
+	// Convert maxValue to big.Int for crypto/rand
+	maxBigInt := maxValue.BigInt()
+
+	// crypto/rand.Int generates [0, maxValue), so we need to add 1 to include maxValue
+	maxPlusOne := new(big.Int).Add(maxBigInt, big.NewInt(1))
+
+	// Generate random big.Int
+	randomBig, err := rand.Int(rand.Reader, maxPlusOne)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate random number: %w", err)
+	}
+
+	// Convert back to PositiveInt
+	return phonid.NewPositiveIntFromBig(randomBig), nil
 }
