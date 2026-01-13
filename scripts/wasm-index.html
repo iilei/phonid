@@ -291,6 +291,7 @@
         <input type="text" id="inputNumber" value="242" style="width: 300px;"
             placeholder="Enter any integer (supports BigInt)">
         <button id="encodeBtn">Encode</button>
+        <button id="randomBtn" style="background: #007acc;">🎱 Random Example</button>
         <div style="margin-top: 10px;">
             <strong>Result:</strong> <span id="result">-</span>
         </div>
@@ -577,6 +578,37 @@
         document.getElementById('inputString').addEventListener('input', (e) => {
             localStorage.setItem(STORAGE_KEY_INPUT_STRING, e.target.value);
             updateButtonStates();
+        });
+        // Handle random button
+        document.getElementById('randomBtn').addEventListener('click', () => {
+            const resultEl = document.getElementById('result');
+
+            if (!wasmReady) {
+                resultEl.textContent = 'WASM not ready';
+                resultEl.className = 'error';
+                return;
+            }
+
+            const random = phonidGetRandom();
+
+            if (random.error) {
+                resultEl.textContent = random.error;
+                resultEl.className = 'error';
+            } else {
+                // Populate input field with the random number
+                document.getElementById('inputNumber').value = random.numberStr;
+                localStorage.setItem(STORAGE_KEY_INPUT_NUMBER, random.numberStr);
+
+                // Show the encoding result
+                resultEl.textContent = random.encoding;
+                resultEl.className = '';
+
+                // Auto-fill decode field with the encoded result
+                document.getElementById('inputString').value = random.encoding;
+                localStorage.setItem(STORAGE_KEY_INPUT_STRING, random.encoding);
+
+                updateButtonStates();
+            }
         });
 
         // Handle file upload

@@ -205,6 +205,39 @@ func loadDefaultConfig(this js.Value, args []js.Value) interface{} {
 	}
 }
 
+// getRandom generates a random number/encoding pair
+func getRandom(this js.Value, args []js.Value) interface{} {
+	if encoder == nil {
+		return map[string]interface{}{
+			"error": "encoder not initialized - load config first",
+		}
+	}
+
+	assertion, err := preflight.GetRandom(encoder)
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("failed to generate random: %v", err),
+		}
+	}
+
+	// Try to return as int64 if it fits, otherwise as string
+	if num, ok := assertion.Input.Value.Int64(); ok {
+		return map[string]interface{}{
+			"number":      num,
+			"numberStr":   assertion.Input.Value.String(),
+			"encoding":    assertion.Output,
+			"fitsInInt64": true,
+		}
+	}
+
+	return map[string]interface{}{
+		"number":      assertion.Input.Value.String(),
+		"numberStr":   assertion.Input.Value.String(),
+		"encoding":    assertion.Output,
+		"fitsInInt64": false,
+	}
+}
+
 func main() {
 	c := make(chan struct{})
 
@@ -214,6 +247,7 @@ func main() {
 	js.Global().Set("phonidDecode", js.FuncOf(decode))
 	js.Global().Set("phonidGenerateSuggestions", js.FuncOf(generateSuggestions))
 	js.Global().Set("phonidGetVersion", js.FuncOf(getVersion))
+	js.Global().Set("phonidGetRandom", js.FuncOf(getRandom))
 	js.Global().Set("phonidLoadDefaultConfig", js.FuncOf(loadDefaultConfig))
 
 	// Signal that WASM is ready
@@ -225,6 +259,7 @@ func main() {
 	fmt.Println("  - phonidEncode(number)")
 	fmt.Println("  - phonidDecode(string)")
 	fmt.Println("  - phonidGenerateSuggestions()")
+	fmt.Println("  - phonidGetRandom()")
 	fmt.Println("  - phonidGetVersion()")
 
 	<-c // Keep the program running
