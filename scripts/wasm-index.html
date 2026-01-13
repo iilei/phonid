@@ -263,7 +263,28 @@
             </div>
         </div>
     </div>
-
+    <div class="container">
+        <h3>Usage</h3>
+        <p>
+            Try different presets, fiddle around with pattern configs.
+        </p>
+        <h4>Config Requirements:</h4>
+        <code><pre>
+# - Pattern Length: Must be 5, 7, 11, 13, 23, 29, 31, 37, 41, 43, or 47 characters
+# (e.g., CVCVC, CVCVCVC)
+# - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
+# - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")
+#
+# Available Placeholders:
+# C = Consonants, V = Vowels, L = Liquids (l,m,n,r)
+# N = Nasals, S = Sibilants, F = Fricatives
+# X/Y/Z = Custom categories
+</pre></code>
+        <p>
+            Learn more about configuration options and implementation details in the <a
+                href="https://github.com/iilei/phonid/blob/master/README.md">project documentation and source code</a>.
+        </p>
+    </div>
     <div class="container">
         <h2>Encode Number</h2>
         <label>Enter number:</label>
@@ -285,30 +306,6 @@
         </div>
     </div>
 
-    <div class="container">
-
-        <h3>Usage</h3>
-        <p>
-            Try different presets, fiddle around with pattern configs.
-        </p>
-        <h4>Pattern Requirements:</h4>
-        <ul>
-            <li><strong>Pattern Length:</strong> Must be 5, 7, 11, 23, 29, 31, 37, 41, 43, or 47 characters (e.g.,
-                CVCVC, CVCVCVC)</li>
-            <li><strong>Vowels (V):</strong> Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels</li>
-            <li><strong>Consonants (C):</strong> Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")</li>
-        </ul>
-        <h4>Available Placeholders:</h4>
-        <p>
-            <strong>C</strong> = Consonants, <strong>V</strong> = Vowels, <strong>L</strong> = Liquids (l,m,n,r),
-            <strong>N</strong> = Nasals, <strong>S</strong> = Sibilants, <strong>F</strong> = Fricatives,
-            <strong>X/Y/Z</strong> = Custom categories
-        </p>
-        <p>
-            Learn more about configuration options and implementation details in the <a
-                href="https://github.com/iilei/phonid/blob/master/README.md">project documentation and source code</a>.
-        </p>
-    </div>
 
     <script src="wasm_exec.${GIT_SHA}.js"></script>
     <script>
