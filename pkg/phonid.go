@@ -12,14 +12,24 @@ import (
 )
 
 const (
-	// MinCharsForVowelShort is minimum vowels for short patterns (length 5).
-	// With 3 consonants and 3 vowels: 3³×3² = 243 combinations (> 128).
-	MinCharsForVowelShort = 3
+	// MinPatternLength is the minimum allowed pattern length.
+	MinPatternLength = 3
+	// MaxPatternLength is the maximum allowed pattern length.
+	MaxPatternLength = 127
+
+	// MinCharsForVowelShort is minimum vowels for short patterns (length 3-4).
+	// With 3 consonants and 2 vowels: 3^2 * 2^2 = 36 combinations (length 4), 3^2 * 2^1 = 18 (length 3).
+	MinCharsForVowelShort = 2
+	// MinCharsForVowelMedium is minimum vowels for medium patterns (length 5-6).
+	// With 3 consonants and 3 vowels: 3^3 * 3^2 = 243 combinations (length 5).
+	MinCharsForVowelMedium = 3
 	// MinCharsForVowelLong is minimum vowels for longer patterns (length >= 7).
-	// With 3 consonants and 2 vowels: 3⁴×2³ = 648 combinations (> 128).
+	// With 3 consonants and 2 vowels: 3^4 * 2^3 = 648 combinations (> 128).
 	MinCharsForVowelLong = 2
-	// MinPatternLengthForShortVowels is the pattern length that requires MinCharsForVowelShort.
-	MinPatternLengthForShortVowels = 5
+	// MinPatternLengthForMediumVowels is the pattern length that requires MinCharsForVowelMedium.
+	MinPatternLengthForMediumVowels = 5
+	// MinPatternLengthForLongVowels is the pattern length that requires MinCharsForVowelLong.
+	MinPatternLengthForLongVowels = 7
 	// MinCharsForComplement placeholder type minimal set of runes.
 	MinCharsForComplement = 3 // At least one non-vowel category (C, L, N, S, or F) must have this many
 
@@ -52,7 +62,10 @@ var (
 		'A': true, 'E': true, 'I': true, 'O': true, 'U': true, 'Y': true,
 	}
 
-	// AllowedPatternLengths defines the permitted pattern lengths.
+	// AllowedPatternLengths is deprecated. Pattern lengths are now validated as: MinPatternLength <= length <= MaxPatternLength.
+	// This array is kept for reference only and shows the previously restricted prime-number lengths.
+	//
+	// Deprecated: Use isAllowedLength() function instead. Prime-number constraint has been removed.
 	AllowedPatternLengths = []int{5, 7, 11, 13, 23, 29, 31, 37, 41, 43, 47}
 
 	// AllowedPlaceholders defines the valid placeholder identifiers.
@@ -161,9 +174,10 @@ func (pc *PhonidConfig) Validate() error {
 		}
 		if !isAllowedLength(patternLen) {
 			return fmt.Errorf(
-				"pattern length %d is not allowed (must be one of %v)",
+				"pattern length %d is not allowed (must be between %d and %d)",
 				patternLen,
-				AllowedPatternLengths,
+				MinPatternLength,
+				MaxPatternLength,
 			)
 		}
 
@@ -259,16 +273,22 @@ func validateVowelSet(placeholder PlaceholderType, chars RuneSet) error {
 }
 
 // validateMinimumSize checks minimum character requirements for placeholders.
-// Vowel minimums depend on pattern length to ensure shuffle capacity >= 128:
-//   - Length 5: needs 3 vowels (with 3 consonants: 3³×3² = 243)
-//   - Length 7+: needs 2 vowels (with 3 consonants: 3⁴×2³ = 648)
+// Vowel minimums depend on pattern length to ensure sufficient shuffle capacity:
+//   - Length 3-4: needs 2 vowels (with 3 consonants: 18-36 combinations)
+//   - Length 5-6: needs 3 vowels (with 3 consonants: 243 combinations)
+//   - Length 7+:  needs 2 vowels (with 3 consonants: 3^4 * 2^3 = 648 combinations)
 func validateMinimumSize(placeholder PlaceholderType, chars RuneSet, patternLength int) error {
 	if placeholder != Vowel {
 		return nil
 	}
 
-	minVowels := MinCharsForVowelLong // Default for length >= 7
-	if patternLength == MinPatternLengthForShortVowels {
+	var minVowels int
+	switch {
+	case patternLength >= MinPatternLengthForLongVowels:
+		minVowels = MinCharsForVowelLong
+	case patternLength >= MinPatternLengthForMediumVowels:
+		minVowels = MinCharsForVowelMedium
+	default: // Length 3-4
 		minVowels = MinCharsForVowelShort
 	}
 
@@ -376,9 +396,9 @@ func hasOverlap(a, b []rune) bool {
 	return false
 }
 
-// isAllowedLength checks if a length is in the allowed lengths list.
+// isAllowedLength checks if a length is within the allowed range.
 func isAllowedLength(length int) bool {
-	return slices.Contains(AllowedPatternLengths, length)
+	return length >= MinPatternLength && length <= MaxPatternLength
 }
 
 // isVowelBase checks if a rune is a vowel, stripping diacritics

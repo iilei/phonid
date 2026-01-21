@@ -32,10 +32,15 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 		pattern string
 		wantErr bool
 	}{
+		// Valid lengths: 3 and above
+		{"length 3", "CVC", false},
+		{"length 4", "CCVC", false},
 		{"length 5", "CVCVC", false},
-		{"length 6", "CVVCVC", true},
 		{"length 11", "CVCVCVCVCVC", false},
-		{"length 12", "CVCVCVCVCVCV", true},
+		// Invalid: length 2 is too short
+		{"length 2", "CV", true},
+		// Note: length 6 is now valid (previously restricted to primes only)
+		{"length 6", "CVVCVC", false},
 	}
 
 	for _, tt := range tests {
@@ -71,17 +76,32 @@ func TestPhoneticConfigValidate_UndefinedPlaceholder(t *testing.T) {
 }
 
 func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
+	// Length 5 requires 3 vowels
 	pc := &PhonidConfig{
 		Patterns: []string{"CVCVC"},
 		Placeholders: map[PlaceholderType]RuneSet{
-			Vowel:     RuneSet("a"),  // Only 1 vowel, need at least 2
+			Vowel:     RuneSet("a"),  // Only 1 vowel, need at least 3 for length 5
 			Consonant: RuneSet("bd"), // 2 consonants is OK
 		},
 	}
 
 	err := pc.Validate()
 	if err == nil {
-		t.Error("expected error for insufficient vowels")
+		t.Error("expected error for insufficient vowels in length 5")
+	}
+
+	// Length 3 requires 2 vowels
+	pc2 := &PhonidConfig{
+		Patterns: []string{"CVC"},
+		Placeholders: map[PlaceholderType]RuneSet{
+			Vowel:     RuneSet("a"),  // Only 1 vowel, need at least 2 for length 3
+			Consonant: RuneSet("bd"), // 2 consonants is OK
+		},
+	}
+
+	err = pc2.Validate()
+	if err == nil {
+		t.Error("expected error for insufficient vowels in length 3")
 	}
 }
 
@@ -373,5 +393,53 @@ func TestPhoneticConfigValidate_InvalidVowelWithDiacritic(t *testing.T) {
 	err := pc.Validate()
 	if err == nil {
 		t.Error("expected error for invalid vowel 'n-tilde'")
+	}
+}
+
+func TestPhoneticConfigValidate_ShortPatternLength3(t *testing.T) {
+	// Length 3 (CVC) requires 2 vowels minimum
+	pc := &PhonidConfig{
+		Patterns: []string{"CVC"},
+		Placeholders: map[PlaceholderType]RuneSet{
+			Vowel:     RuneSet("ae"),
+			Consonant: RuneSet("bdk"),
+		},
+	}
+
+	err := pc.Validate()
+	if err != nil {
+		t.Errorf("expected length 3 pattern to be valid, got error: %v", err)
+	}
+}
+
+func TestPhoneticConfigValidate_ShortPatternLength4(t *testing.T) {
+	// Length 4 (CCVC) requires 2 vowels minimum
+	pc := &PhonidConfig{
+		Patterns: []string{"CCVC"},
+		Placeholders: map[PlaceholderType]RuneSet{
+			Vowel:     RuneSet("ai"),
+			Consonant: RuneSet("bdkt"),
+		},
+	}
+
+	err := pc.Validate()
+	if err != nil {
+		t.Errorf("expected length 4 pattern to be valid, got error: %v", err)
+	}
+}
+
+func TestPhoneticConfigValidate_NonPrimePatternLength(t *testing.T) {
+	// Non-prime lengths like 6 should now be allowed (previously restricted to primes)
+	pc := &PhonidConfig{
+		Patterns: []string{"CVCCVC"},
+		Placeholders: map[PlaceholderType]RuneSet{
+			Vowel:     RuneSet("aei"),
+			Consonant: RuneSet("bdkt"),
+		},
+	}
+
+	err := pc.Validate()
+	if err != nil {
+		t.Errorf("expected non-prime length 6 to be valid, got error: %v", err)
 	}
 }

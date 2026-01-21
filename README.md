@@ -23,7 +23,7 @@ Phonid represents numbers as **words composed of consonants (C) and vowels (V)**
 
 ### 2. Explicit Word Templates
 
-For each allowed word length, the configuration defines a **finite set of word templates**, such as:
+For each pattern, the configuration defines a **finite set of word templates**, such as:
 
 * Length 3: `CVC`, `CVV`
 * Length 5: `CVCCV`, `CVCVC`
