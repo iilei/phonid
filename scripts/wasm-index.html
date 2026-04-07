@@ -272,6 +272,7 @@
         <code><pre>
 # - Pattern Length: Must be 3+ characters
 # (e.g., CVCVC, CVCVCVC)
+    # - Encode input: decimal integer or hex with 0x/0X prefix
 # - Vowels (V): Length 5 needs ≥3 vowels; length 7+ needs ≥2 vowels
 # - Consonants (C): Need ≥3 characters (e.g., "bzk" or "bdfghjklmnprstvz")
 #
@@ -287,9 +288,8 @@
     </div>
     <div class="container">
         <h2>Encode Number</h2>
-        <label>Enter number:</label>
-        <input type="text" id="inputNumber" value="242" style="width: 300px;"
-            placeholder="Enter any integer (supports BigInt)">
+        <label>Enter decimal or 0x-prefixed hex (supports BigInt)</label>
+        <input type="text" id="inputNumber" value="242" style="width: 300px;">
         <button id="encodeBtn">Encode</button>
         <button id="randomBtn" style="background: #007acc;">🎱 Random Example</button>
         <div style="margin-top: 10px;">
@@ -314,7 +314,7 @@
         let lastAppliedConfig = '';
         const PUBLIC_PRESETS = $PUBLIC_PRESETS_JSON;
         const statusEl = document.getElementById('status');
-        const STORAGE_KEY = 'phonid-user-config';
+        const STORAGE_KEY = 'phonid-user-config-${GIT_SHA}';
         const STORAGE_KEY_INPUT_NUMBER = 'phonid-input-number';
         const STORAGE_KEY_INPUT_STRING = 'phonid-input-string';
 
@@ -569,6 +569,39 @@
             decodeBtn.disabled = !inputString.value.trim();
         }
 
+        // Parse number input for encode operations.
+        // Supports:
+        //  - decimal integers (optionally with separators/spaces that get stripped)
+        //  - hexadecimal prefixed with 0x/0X
+        function parseNumberInputForEncode(inputVal) {
+            const trimmed = inputVal.trim();
+            if (!trimmed) {
+                throw new Error('Invalid number');
+            }
+
+            if (/^0[xX][0-9a-fA-F]+$/.test(trimmed)) {
+                // Normalize hex into decimal string so WASM encode path can parse it.
+                return BigInt(trimmed).toString();
+            }
+
+            if (/^0[xX]$/.test(trimmed)) {
+                throw new Error('Hex value must contain digits after 0x prefix');
+            }
+
+            // Keep existing permissive decimal behavior.
+            const cleanVal = trimmed.replace(/[^0-9-]/g, '');
+            if (cleanVal.length > 15 || cleanVal.includes('n')) {
+                return cleanVal.replace(/n$/, '');
+            }
+
+            const parsed = parseInt(cleanVal, 10);
+            if (isNaN(parsed)) {
+                throw new Error('Invalid number');
+            }
+
+            return parsed;
+        }
+
         // Save input values to localStorage on change
         document.getElementById('inputNumber').addEventListener('input', (e) => {
             localStorage.setItem(STORAGE_KEY_INPUT_NUMBER, e.target.value);
@@ -756,8 +789,7 @@
             const currentNumber = document.getElementById('inputNumber').value.trim();
             if (currentNumber) {
                 try {
-                    const cleanVal = currentNumber.replace(/[^0-9-]/g, '');
-                    const num = cleanVal.length > 15 ? cleanVal : parseInt(cleanVal);
+                    const num = parseNumberInputForEncode(currentNumber);
                     const encodeResult = phonidEncode(num);
                     if (encodeResult.result) {
                         document.getElementById('result').textContent = encodeResult.result;
@@ -821,21 +853,10 @@
                     return;
                 }
 
-                // Try to parse as BigInt for large numbers, otherwise use regular number
+                // Parse decimal and 0x-prefixed hex values for WASM encode.
                 let num;
                 try {
-                    // Remove any non-digit characters except leading minus
-                    const cleanVal = inputVal.replace(/[^0-9-]/g, '');
-
-                    // Try BigInt first for very large numbers
-                    if (cleanVal.length > 15 || cleanVal.includes('n')) {
-                        num = cleanVal.replace(/n$/, ''); // Remove trailing 'n' if present
-                    } else {
-                        num = parseInt(cleanVal);
-                        if (isNaN(num)) {
-                            throw new Error("Invalid number");
-                        }
-                    }
+                    num = parseNumberInputForEncode(inputVal);
                 } catch (e) {
                     alert("Invalid number format: " + e.message);
                     return;

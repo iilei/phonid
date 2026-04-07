@@ -43,11 +43,18 @@ const (
 	CustomY   PlaceholderType = 'Y'
 	CustomZ   PlaceholderType = 'Z'
 
+	// ProQuintPatternShort in accordance with ProQuint-compatible configuration
+	// Based on the Proquint specification: https://arxiv.org/html/0901.4016
+	// Provides a pre-configured encoder that generates identifiers compatible with
+	// the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
+	ProQuintPatternShort = "CVCVC"
+
 	// ProQuintPattern in accordance with ProQuint-compatible configuration
 	// Based on the Proquint specification: https://arxiv.org/html/0901.4016
 	// Provides a pre-configured encoder that generates identifiers compatible with
 	// the original Proquint library, using the pattern CVCVC-CVCVC to encode 32-bit values.
-	ProQuintPattern    = "CVCVCXCVCVC"
+	ProQuintPattern = "CVCVCXCVCVC"
+
 	ProquintVowels     = "aiou"
 	ProquintConsonants = "bdfghjklmnprstvz"
 	ProquintDelimiter  = "-"
@@ -105,7 +112,7 @@ var (
 	// DefaultPlaceholders provides sensible defaults for common phonetic categories.
 	DefaultPlaceholders = ProQuintPlaceholders
 
-	DefaultPatterns = []string{ProQuintPattern}
+	DefaultPatterns = []string{ProQuintPatternShort, ProQuintPattern}
 
 	DefaultConfig = ProQuintConfig
 )
