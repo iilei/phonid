@@ -41,20 +41,22 @@ builds:
 
 archives:
   - id: unix-archives
-    builds:
+    ids:
       - phonid-unix
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format: tar.gz
+    formats:
+      - tar.gz
     files:
       - README.md
       - LICENSE
       - example.phonidrc
 
   - id: windows-archives
-    builds:
+    ids:
       - phonid-windows
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
-    format: zip
+    formats:
+      - zip
     files:
       - README.md
       - LICENSE
