@@ -41,6 +41,12 @@ func init() {
 }
 
 func preflightCommand(cmd *cobra.Command, args []string) error {
+	if presetName != "" {
+		return errors.New(
+			"--preset is not supported with preflight; use preflight for validating/suggesting config files",
+		)
+	}
+
 	if !suggestFlag {
 		return errors.New("only --suggest mode is currently supported")
 	}

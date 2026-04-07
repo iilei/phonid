@@ -86,3 +86,73 @@ func TestEncodeCommand_MissingHexDigits(t *testing.T) {
 		t.Fatalf("stdout = %q, want empty", got)
 	}
 }
+
+func TestEncodeCommand_PresetProquintMatchesStandard(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"--preset", "proquint", "100"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("rootCmd.Execute() error = %v", err)
+	}
+
+	if got := strings.TrimSpace(stdout.String()); got != "babab-badoh" {
+		t.Fatalf("encode output = %q, want %q", got, "babab-badoh")
+	}
+}
+
+func TestEncodeCommand_PresetProquintTinyRejectsOverflow(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"--preset", "proquint-tiny", "70000"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("rootCmd.Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "exceeds largest pattern capacity") {
+		t.Fatalf("error = %q, want capacity context", err)
+	}
+	if got := strings.TrimSpace(stdout.String()); got != "" {
+		t.Fatalf("stdout = %q, want empty", got)
+	}
+}
+
+func TestEncodeCommand_InvalidPreset(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"--preset", "unknown-preset", "1337"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("rootCmd.Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "unknown preset") {
+		t.Fatalf("error = %q, want unknown preset context", err)
+	}
+	if got := strings.TrimSpace(stdout.String()); got != "" {
+		t.Fatalf("stdout = %q, want empty", got)
+	}
+}
+
+func TestEncodeCommand_ConfigAndPresetMutuallyExclusive(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	configPath := "my-config"
+	rootCmd.SetArgs([]string{"--config", configPath, "--preset", "proquint", "1337"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("rootCmd.Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "config") || !strings.Contains(err.Error(), "preset") {
+		t.Fatalf("error = %q, want config/preset exclusivity context", err)
+	}
+	if got := strings.TrimSpace(stdout.String()); got != "" {
+		t.Fatalf("stdout = %q, want empty", got)
+	}
+}

@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"io"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -29,7 +31,11 @@ func TestDecodeCommand_WithExplicitConfig(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	configPath := "/home/iilei/code/phonid/public_presets/.proquint.phonidrc.toml"
+	_, thisFile, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("failed to determine test file path")
+	}
+	configPath := filepath.Join(filepath.Dir(thisFile), "..", "..", "public_presets", ".proquint.phonidrc.toml")
 	rootCmd.SetArgs([]string{"--config", configPath, "decode", "babab-bihun"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
@@ -68,4 +74,12 @@ func resetCLIState(t *testing.T) {
 	rootCmd.SilenceErrors = true
 	rootCmd.SilenceUsage = true
 	cfgFile = ""
+	presetName = ""
+
+	if f := rootCmd.PersistentFlags().Lookup("config"); f != nil {
+		f.Changed = false
+	}
+	if f := rootCmd.PersistentFlags().Lookup("preset"); f != nil {
+		f.Changed = false
+	}
 }

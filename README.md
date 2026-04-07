@@ -139,6 +139,12 @@ With explicit config:
 
 ```
 
+With built-in preset:
+
+```sh
+./dist/phonid*/phonid --preset proquint 1337
+```
+
 Yields: `babab-bihun`
 
 ### Decode any phonid string
@@ -170,6 +176,16 @@ Without `0x` prefix, input is treated as text and hashed with SHA-256 before mod
 ```sh
 ./dist/phonid*/phonid digest "hello world"
 ```
+
+With tiny built-in preset:
+
+```sh
+./dist/phonid*/phonid --preset proquint-tiny digest "hello world"
+```
+
+`proquint-tiny` uses canonical ProQuint alphabets (`C=16`, `V=4`) with a single `CVCVC` pattern.
+
+Note: `--preset` is mutually exclusive with `--config`, and is not supported with `preflight`.
 
 ## Public Presets
 

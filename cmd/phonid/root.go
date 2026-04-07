@@ -14,11 +14,16 @@ import (
 	phonid "github.com/iilei/phonid/pkg"
 )
 
-const cliHexBase = 16
+const (
+	cliHexBase         = 16
+	presetProQuint     = "proquint"
+	presetProQuintTiny = "proquint-tiny"
+)
 
 var (
-	cfgFile string
-	rootCmd = &cobra.Command{
+	cfgFile    string
+	presetName string
+	rootCmd    = &cobra.Command{
 		Use:   "phonid [number]",
 		Short: "Phonetic identifier generator",
 		Long: `Phonid generates pronounceable identifiers from numbers using configurable
@@ -31,12 +36,19 @@ phonetic patterns and optional Feistel shuffling.`,
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: search for .phonidrc)")
+	rootCmd.PersistentFlags().StringVar(&presetName, "preset", "", "built-in preset: proquint, proquint-tiny")
+	rootCmd.MarkFlagsMutuallyExclusive("config", "preset")
 	rootCmd.AddCommand(decodeCmd)
 	rootCmd.AddCommand(digestCmd)
 	rootCmd.AddCommand(preflightCmd)
 }
 
 func initConfig() {
+	if presetName != "" {
+		// Presets are loaded in-memory and do not use filesystem config lookup.
+		return
+	}
+
 	if cfgFile != "" {
 		// Use config file from flag
 		viper.SetConfigFile(cfgFile)
@@ -94,6 +106,10 @@ func encodeCommand(cmd *cobra.Command, args []string) error {
 }
 
 func loadConfig() (*phonid.PhonidConfig, []phonid.PreflightCheck, error) {
+	if presetName != "" {
+		return loadPresetConfig(presetName)
+	}
+
 	configFile := viper.ConfigFileUsed()
 	if configFile == "" {
 		// No config file found, use defaults with no preflight checks
@@ -106,6 +122,17 @@ func loadConfig() (*phonid.PhonidConfig, []phonid.PreflightCheck, error) {
 		return nil, nil, err
 	}
 	return phonid.LoadPhonidRC(absPath)
+}
+
+func loadPresetConfig(name string) (*phonid.PhonidConfig, []phonid.PreflightCheck, error) {
+	switch name {
+	case presetProQuint:
+		return &phonid.ProQuintConfig, []phonid.PreflightCheck{}, nil
+	case presetProQuintTiny:
+		return &phonid.ProQuintTinyConfig, []phonid.PreflightCheck{}, nil
+	default:
+		return nil, nil, fmt.Errorf("unknown preset %q (supported: %s, %s)", name, presetProQuint, presetProQuintTiny)
+	}
 }
 
 func newCLIEncoder(config *phonid.PhonidConfig, checks []phonid.PreflightCheck) (*phonid.PhoneticEncoder, error) {

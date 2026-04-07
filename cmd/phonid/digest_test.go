@@ -80,3 +80,22 @@ func TestDigestCommand_InvalidHexInput(t *testing.T) {
 		t.Fatalf("stdout = %q, want empty", got)
 	}
 }
+
+func TestDigestCommand_PresetProquintTinyUsesShortPattern(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"--preset", "proquint-tiny", "digest", "0x186A"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("rootCmd.Execute() error = %v", err)
+	}
+
+	got := strings.TrimSpace(stdout.String())
+	if strings.Contains(got, "-") {
+		t.Fatalf("digest output = %q, want short CVCVC form without delimiter", got)
+	}
+	if len(got) != 5 {
+		t.Fatalf("digest output length = %d, want 5 for CVCVC", len(got))
+	}
+}

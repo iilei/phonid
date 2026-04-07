@@ -100,6 +100,12 @@ var (
 		Placeholders: ProQuintPlaceholders,
 	}
 
+	// ProQuintTinyConfig keeps canonical ProQuint alphabets but uses a single short pattern.
+	ProQuintTinyConfig = PhonidConfig{
+		Patterns:     []string{ProQuintPatternShort},
+		Placeholders: ProQuintPlaceholders,
+	}
+
 	// ComplementPlaceholders lists all non-vowel phonetic categories.
 	ComplementPlaceholders = []PlaceholderType{
 		Consonant,
