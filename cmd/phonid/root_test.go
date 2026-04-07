@@ -41,13 +41,13 @@ func TestEncodeCommand_AcceptsUppercaseHexPrefix(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"0X539"})
+	rootCmd.SetArgs([]string{"0X532"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
 	}
 
-	if got := strings.TrimSpace(stdout.String()); got != "babab-bihun" {
-		t.Fatalf("encode output = %q, want %q", got, "babab-bihun")
+	if got := strings.TrimSpace(stdout.String()); got != "babab-bihuf" {
+		t.Fatalf("encode output = %q, want %q", got, "babab-bihuf")
 	}
 }
 

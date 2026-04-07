@@ -155,6 +155,22 @@ With explicit config:
 ./dist/phonid*/phonid --config ./public_presets/.proquint.phonidrc.toml decode babab-bihun
 ```
 
+### Generate a one-way digest
+
+Digest output is intentionally non-reversible and may collide.
+
+If input is prefixed with 0x or 0X, it is parsed as a hexadecimal integer and reduced modulo the active capacity.
+
+```sh
+./dist/phonid*/phonid digest 0x10FA9EB
+```
+
+Without `0x` prefix, input is treated as text and hashed with SHA-256 before modulo reduction:
+
+```sh
+./dist/phonid*/phonid digest "hello world"
+```
+
 ## Public Presets
 
 Phonid includes community-contributed public presets for common use cases. These are available in the [WASM demo](https://iilei.github.io/phonid/) and can be used directly:
