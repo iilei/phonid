@@ -3,7 +3,11 @@
 package main
 
 import (
+	"crypto/sha256"
+	"errors"
 	"fmt"
+	"math/big"
+	"strings"
 	"syscall/js"
 
 	phonid "github.com/iilei/phonid/pkg"
@@ -14,6 +18,8 @@ var (
 	encoder       *phonid.PhoneticEncoder
 	currentConfig *phonid.PhonidConfig
 )
+
+const wasmHexBase = 16
 
 // loadConfig accepts TOML content as string and initializes the encoder
 func loadConfig(this js.Value, args []js.Value) interface{} {
@@ -151,6 +157,81 @@ func decode(this js.Value, args []js.Value) interface{} {
 	}
 }
 
+// digest generates a one-way phonetic digest from text or 0x-prefixed hex input.
+func digest(this js.Value, args []js.Value) interface{} {
+	if encoder == nil {
+		return map[string]interface{}{
+			"error": "encoder not initialized - load config first",
+		}
+	}
+
+	if len(args) != 1 {
+		return map[string]interface{}{
+			"error": "expected 1 argument: value-or-text to digest",
+		}
+	}
+
+	inputValue, err := digestInputToBigInt(args[0].String())
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("invalid digest input: %v", err),
+		}
+	}
+
+	modBase, err := digestModuloBase(encoder)
+	if err != nil {
+		return map[string]interface{}{
+			"error": err.Error(),
+		}
+	}
+
+	reduced := new(big.Int).Mod(inputValue, modBase)
+	result, err := encoder.Encode(phonid.NewPositiveIntFromBig(reduced))
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("failed to generate digest: %v", err),
+		}
+	}
+
+	return map[string]interface{}{
+		"result": result,
+	}
+}
+
+func digestInputToBigInt(input string) (*big.Int, error) {
+	if strings.HasPrefix(input, "0x") || strings.HasPrefix(input, "0X") {
+		hexDigits := input[2:]
+		if hexDigits == "" {
+			return nil, errors.New("hex value is empty")
+		}
+
+		parsed := new(big.Int)
+		if _, ok := parsed.SetString(hexDigits, wasmHexBase); !ok {
+			return nil, fmt.Errorf("invalid hexadecimal value: %s", input)
+		}
+
+		return parsed, nil
+	}
+
+	hash := sha256.Sum256([]byte(input))
+	return new(big.Int).SetBytes(hash[:]), nil
+}
+
+func digestModuloBase(enc *phonid.PhoneticEncoder) (*big.Int, error) {
+	info := enc.GetPatternInfo()
+	if len(info) == 0 {
+		return nil, errors.New("failed to generate digest: no patterns available")
+	}
+
+	largest := info[len(info)-1]
+	base := new(big.Int).Add(largest.TrueCapacity.BigInt(), big.NewInt(1))
+	if base.Sign() <= 0 {
+		return nil, errors.New("failed to generate digest: invalid pattern capacity")
+	}
+
+	return base, nil
+}
+
 // generateSuggestions creates preflight check suggestions
 func generateSuggestions(this js.Value, args []js.Value) interface{} {
 	if encoder == nil {
@@ -245,6 +326,7 @@ func main() {
 	js.Global().Set("phonidLoadConfig", js.FuncOf(loadConfig))
 	js.Global().Set("phonidEncode", js.FuncOf(encode))
 	js.Global().Set("phonidDecode", js.FuncOf(decode))
+	js.Global().Set("phonidDigest", js.FuncOf(digest))
 	js.Global().Set("phonidGenerateSuggestions", js.FuncOf(generateSuggestions))
 	js.Global().Set("phonidGetVersion", js.FuncOf(getVersion))
 	js.Global().Set("phonidGetRandom", js.FuncOf(getRandom))
@@ -258,6 +340,7 @@ func main() {
 	fmt.Println("  - phonidLoadDefaultConfig()")
 	fmt.Println("  - phonidEncode(number)")
 	fmt.Println("  - phonidDecode(string)")
+	fmt.Println("  - phonidDigest(valueOrText)")
 	fmt.Println("  - phonidGenerateSuggestions()")
 	fmt.Println("  - phonidGetRandom()")
 	fmt.Println("  - phonidGetVersion()")

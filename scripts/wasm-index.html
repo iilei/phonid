@@ -307,6 +307,19 @@
         </div>
     </div>
 
+    <div class="container">
+        <h2>Digest (One-Way)</h2>
+        <label>Enter text or 0x-prefixed hex:</label>
+        <input type="text" id="inputDigest" placeholder="hello world or 0x10FA9EB" style="width: 300px;">
+        <button id="digestBtn">Digest</button>
+        <div style="margin-top: 10px; font-size: 0.95em; color: #555;">
+            One-way mapping: not reversible and may collide.
+        </div>
+        <div style="margin-top: 10px;">
+            <strong>Result:</strong> <span id="digestResult">-</span>
+        </div>
+    </div>
+
 
     <script src="wasm_exec.${GIT_SHA}.js"></script>
     <script>
@@ -317,6 +330,7 @@
         const STORAGE_KEY = 'phonid-user-config-${GIT_SHA}';
         const STORAGE_KEY_INPUT_NUMBER = 'phonid-input-number';
         const STORAGE_KEY_INPUT_STRING = 'phonid-input-string';
+        const STORAGE_KEY_INPUT_DIGEST = 'phonid-input-digest';
 
         // Store fetched preset configs
         const PRESETS = {};
@@ -525,11 +539,15 @@
                 // Load saved input values
                 const savedInputNumber = localStorage.getItem(STORAGE_KEY_INPUT_NUMBER);
                 const savedInputString = localStorage.getItem(STORAGE_KEY_INPUT_STRING);
+                const savedInputDigest = localStorage.getItem(STORAGE_KEY_INPUT_DIGEST);
                 if (savedInputNumber) {
                     document.getElementById('inputNumber').value = savedInputNumber;
                 }
                 if (savedInputString) {
                     document.getElementById('inputString').value = savedInputString;
+                }
+                if (savedInputDigest) {
+                    document.getElementById('inputDigest').value = savedInputDigest;
                 }
 
                 // Initialize button states
@@ -562,11 +580,14 @@
         function updateButtonStates() {
             const inputNumber = document.getElementById('inputNumber');
             const inputString = document.getElementById('inputString');
+            const inputDigest = document.getElementById('inputDigest');
             const encodeBtn = document.getElementById('encodeBtn');
             const decodeBtn = document.getElementById('decodeBtn');
+            const digestBtn = document.getElementById('digestBtn');
 
             encodeBtn.disabled = !inputNumber.value.trim();
             decodeBtn.disabled = !inputString.value.trim();
+            digestBtn.disabled = !inputDigest.value.trim();
         }
 
         // Parse number input for encode operations.
@@ -610,6 +631,11 @@
 
         document.getElementById('inputString').addEventListener('input', (e) => {
             localStorage.setItem(STORAGE_KEY_INPUT_STRING, e.target.value);
+            updateButtonStates();
+        });
+
+        document.getElementById('inputDigest').addEventListener('input', (e) => {
+            localStorage.setItem(STORAGE_KEY_INPUT_DIGEST, e.target.value);
             updateButtonStates();
         });
         // Handle random button
@@ -784,6 +810,8 @@
             document.getElementById('result').className = '';
             document.getElementById('decodeResult').textContent = '-';
             document.getElementById('decodeResult').className = '';
+            document.getElementById('digestResult').textContent = '-';
+            document.getElementById('digestResult').className = '';
 
             // Optionally recalculate with current values
             const currentNumber = document.getElementById('inputNumber').value.trim();
@@ -807,6 +835,14 @@
                 if (decodeResult.result !== undefined) {
                     const display = decodeResult.fitsInInt64 ? decodeResult.result : decodeResult.resultStr;
                     document.getElementById('decodeResult').textContent = display;
+                }
+            }
+
+            const currentDigestInput = document.getElementById('inputDigest').value.trim();
+            if (currentDigestInput) {
+                const digestResult = phonidDigest(currentDigestInput);
+                if (digestResult.result) {
+                    document.getElementById('digestResult').textContent = digestResult.result;
                 }
             }
 
@@ -903,6 +939,31 @@
 
                     // Auto-populate the encode field with decoded number (supports BigInt)
                     document.getElementById('inputNumber').value = display;
+                }
+                updateButtonStates();
+            });
+
+            // Handle digest button
+            document.getElementById('digestBtn').addEventListener('click', () => {
+                if (!wasmReady) {
+                    alert("WASM not ready yet");
+                    return;
+                }
+
+                const digestInput = document.getElementById('inputDigest').value.trim();
+                if (!digestInput) {
+                    alert("Please enter text or 0x-prefixed hex to digest");
+                    return;
+                }
+
+                const result = phonidDigest(digestInput);
+
+                if (result.error) {
+                    document.getElementById('digestResult').textContent = "Error: " + result.error;
+                    document.getElementById('digestResult').className = 'error';
+                } else {
+                    document.getElementById('digestResult').textContent = result.result;
+                    document.getElementById('digestResult').className = '';
                 }
                 updateButtonStates();
             });
