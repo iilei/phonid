@@ -3,14 +3,18 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/big"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	phonid "github.com/iilei/phonid/pkg"
 )
+
+const cliHexBase = 16
 
 var (
 	cfgFile string
@@ -60,7 +64,7 @@ func encodeCommand(cmd *cobra.Command, args []string) error {
 
 	// Parse input number (supports arbitrarily large numbers)
 	numStr := args[0]
-	number, err := phonid.ParsePositiveInt(numStr)
+	number, err := parseCLIPositiveInt(numStr)
 	if err != nil {
 		return fmt.Errorf("invalid number: %s (must be non-negative integer)", numStr)
 	}
@@ -109,4 +113,22 @@ func newCLIEncoder(config *phonid.PhonidConfig, checks []phonid.PreflightCheck) 
 	}
 
 	return phonid.NewPhoneticEncoder(config, checks)
+}
+
+func parseCLIPositiveInt(input string) (phonid.PositiveInt, error) {
+	if !strings.HasPrefix(input, "0x") && !strings.HasPrefix(input, "0X") {
+		return phonid.ParsePositiveInt(input)
+	}
+
+	hexDigits := input[2:]
+	if hexDigits == "" {
+		return nil, fmt.Errorf("invalid number: %s", input)
+	}
+
+	value := new(big.Int)
+	if _, ok := value.SetString(hexDigits, cliHexBase); !ok {
+		return nil, fmt.Errorf("invalid number: %s", input)
+	}
+
+	return phonid.NewPositiveIntFromBig(value), nil
 }

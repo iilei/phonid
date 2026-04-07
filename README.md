@@ -126,6 +126,12 @@ Once you are happy with the resulting ids, persist the preflight-expectation tab
 ./dist/phonid*/phonid 4711
 ```
 
+Hex input is accepted automatically when prefixed with `0x` or `0X`:
+
+```sh
+./dist/phonid*/phonid 0x539
+```
+
 With explicit config:
 
 ```sh
