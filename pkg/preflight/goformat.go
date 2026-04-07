@@ -55,17 +55,15 @@ func (f *GoFormatter) Format(w io.Writer, assertions *AssertionTable) error {
 		// Input field
 		if assertion.Input != nil {
 			inputStr := assertion.Input.Value.String()
-			sb.WriteString(
-				fmt.Sprintf("\t\t\tInput:  &pkg.TomlPositiveInt{Value: pkg.NewPositiveInt(%s)},\n", inputStr),
-			)
+			fmt.Fprintf(&sb, "\t\t\tInput:  &pkg.TomlPositiveInt{Value: pkg.NewPositiveInt(%s)},\n", inputStr)
 		}
 
 		// Output field
-		sb.WriteString(fmt.Sprintf("\t\t\tOutput: %q,\n", assertion.Output))
+		fmt.Fprintf(&sb, "\t\t\tOutput: %q,\n", assertion.Output)
 
 		// Comment field (if present)
 		if assertion.Comment != "" {
-			sb.WriteString(fmt.Sprintf("\t\t\tComment: %q,\n", assertion.Comment))
+			fmt.Fprintf(&sb, "\t\t\tComment: %q,\n", assertion.Comment)
 		}
 
 		sb.WriteString("\t\t},\n")
