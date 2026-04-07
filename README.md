@@ -135,6 +135,20 @@ With explicit config:
 
 Yields: `babab-bihun`
 
+### Decode any phonid string
+
+```sh
+./dist/phonid*/phonid decode babab-bihun
+```
+
+Yields: `1337`
+
+With explicit config:
+
+```sh
+./dist/phonid*/phonid --config ./public_presets/.proquint.phonidrc.toml decode babab-bihun
+```
+
 ## Public Presets
 
 Phonid includes community-contributed public presets for common use cases. These are available in the [WASM demo](https://iilei.github.io/phonid/) and can be used directly:

@@ -27,6 +27,7 @@ phonetic patterns and optional Feistel shuffling.`,
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: search for .phonidrc)")
+	rootCmd.AddCommand(decodeCmd)
 	rootCmd.AddCommand(preflightCmd)
 }
 
@@ -70,8 +71,9 @@ func encodeCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Create encoder with preflight validation
-	encoder, err := phonid.NewPhoneticEncoder(config, checks)
+	// Use strict preflight validation for explicit config files, but allow
+	// the built-in default config to work even when no preflight table exists.
+	encoder, err := newCLIEncoder(config, checks)
 	if err != nil {
 		return fmt.Errorf("failed to create encoder: %w", err)
 	}
@@ -82,7 +84,7 @@ func encodeCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to encode %s: %w", number.String(), err)
 	}
 
-	fmt.Println(result)
+	_, _ = fmt.Fprintln(cmd.OutOrStdout(), result)
 	return nil
 }
 
@@ -99,4 +101,12 @@ func loadConfig() (*phonid.PhonidConfig, []phonid.PreflightCheck, error) {
 		return nil, nil, err
 	}
 	return phonid.LoadPhonidRC(absPath)
+}
+
+func newCLIEncoder(config *phonid.PhonidConfig, checks []phonid.PreflightCheck) (*phonid.PhoneticEncoder, error) {
+	if viper.ConfigFileUsed() == "" {
+		return phonid.NewPhoneticEncoderSkipPreflight(config)
+	}
+
+	return phonid.NewPhoneticEncoder(config, checks)
 }
