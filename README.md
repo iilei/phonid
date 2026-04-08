@@ -148,7 +148,7 @@ Convert text to SHA-256 hex externally, then encode with the SHA-256-compatible 
 
 ```sh
 HEX=$(python3 -c 'import hashlib; print("0x" + hashlib.sha256(b"hello world").hexdigest())')
-./dist/phonid*/phonid --preset proquint-sha256 "$HEX"
+./dist/phonid-unix_linux_amd64_v1/phonid  --preset proquint-sha256 $HEX
 ```
 
 `proquint-tiny` uses canonical ProQuint alphabets (`C=16`, `V=4`) with a single `CVCVC` pattern.
