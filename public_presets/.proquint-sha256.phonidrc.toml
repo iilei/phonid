@@ -1,0 +1,13 @@
+[phonetic]
+  patterns = ['CVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVCXCVCVC']
+
+  [phonetic.placeholders]
+    C = 'bdfghjklmnprstvz'
+    V = 'aiou'
+    X = '-'
+
+# Suggested preflight checks:
+
+[[preflight]]
+  input = '28852105539445366877964448497722252299143518117199161105822405947883537306571'
+  output = 'guzan-ripan-hikit-lavaz-mufam-pavoh-mopon-vasuj-hamad-kotup-hadif-vabad-popoj-girus-pitam-dazar'

@@ -18,6 +18,7 @@ const (
 	cliHexBase         = 16
 	presetProQuint     = "proquint"
 	presetProQuintTiny = "proquint-tiny"
+	presetProQuintSHA  = "proquint-sha256"
 )
 
 var (
@@ -36,10 +37,10 @@ phonetic patterns and optional Feistel shuffling.`,
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default: search for .phonidrc)")
-	rootCmd.PersistentFlags().StringVar(&presetName, "preset", "", "built-in preset: proquint, proquint-tiny")
+	rootCmd.PersistentFlags().
+		StringVar(&presetName, "preset", "", "built-in preset: proquint, proquint-tiny, proquint-sha256")
 	rootCmd.MarkFlagsMutuallyExclusive("config", "preset")
 	rootCmd.AddCommand(decodeCmd)
-	rootCmd.AddCommand(digestCmd)
 	rootCmd.AddCommand(preflightCmd)
 }
 
@@ -130,8 +131,16 @@ func loadPresetConfig(name string) (*phonid.PhonidConfig, []phonid.PreflightChec
 		return &phonid.ProQuintConfig, []phonid.PreflightCheck{}, nil
 	case presetProQuintTiny:
 		return &phonid.ProQuintTinyConfig, []phonid.PreflightCheck{}, nil
+	case presetProQuintSHA:
+		return &phonid.ProQuintSHA256Config, []phonid.PreflightCheck{}, nil
 	default:
-		return nil, nil, fmt.Errorf("unknown preset %q (supported: %s, %s)", name, presetProQuint, presetProQuintTiny)
+		return nil, nil, fmt.Errorf(
+			"unknown preset %q (supported: %s, %s, %s)",
+			name,
+			presetProQuint,
+			presetProQuintTiny,
+			presetProQuintSHA,
+		)
 	}
 }
 

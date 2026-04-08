@@ -58,8 +58,15 @@ const (
 	ProquintVowels     = "aiou"
 	ProquintConsonants = "bdfghjklmnprstvz"
 	ProquintDelimiter  = "-"
+	// ProQuintBlockBitWidth is the entropy contributed by one CVCVC block
+	// with canonical ProQuint alphabets (16 consonants, 4 vowels).
+	ProQuintBlockBitWidth = 16
 	// ProQuintBitWidth is the bit width for ProQuint encoding (32-bit values).
 	ProQuintBitWidth = 32
+	// ProQuintSHA256BitWidth is the bit width for the SHA-256-compatible ProQuint preset.
+	ProQuintSHA256BitWidth = 256
+	// ProQuintSHA256Blocks is the number of CVCVC blocks required for 256 bits.
+	ProQuintSHA256Blocks = ProQuintSHA256BitWidth / ProQuintBlockBitWidth
 )
 
 var (
@@ -103,6 +110,16 @@ var (
 	// ProQuintTinyConfig keeps canonical ProQuint alphabets but uses a single short pattern.
 	ProQuintTinyConfig = PhonidConfig{
 		Patterns:     []string{ProQuintPatternShort},
+		Placeholders: ProQuintPlaceholders,
+	}
+
+	// ProQuintSHA256Pattern encodes exactly 256 bits with 16 CVCVC blocks.
+	// Capacity: (16^3 * 4^2)^16 = 2^256.
+	ProQuintSHA256Pattern = strings.TrimSuffix(strings.Repeat(ProQuintPatternShort+"X", ProQuintSHA256Blocks), "X")
+
+	// ProQuintSHA256Config uses canonical ProQuint alphabets with exact SHA-256 capacity.
+	ProQuintSHA256Config = PhonidConfig{
+		Patterns:     []string{ProQuintSHA256Pattern},
 		Placeholders: ProQuintPlaceholders,
 	}
 

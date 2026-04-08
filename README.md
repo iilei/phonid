@@ -107,16 +107,11 @@ goreleaser build --snapshot --clean --single-target
 ./dist/phonid*/phonid 4711
 ```
 
-4. Decode:
+
+5. Encode a SHA-256 value (exact 256-bit preset):
 
 ```sh
-./dist/phonid*/phonid decode babab-bihun
-```
-
-5. Digest:
-
-```sh
-./dist/phonid*/phonid digest "hello world"
+./dist/phonid*/phonid --preset proquint-sha256 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 ```
 
 If you tweak the config, re-run preflight to validate and refresh expectations:
@@ -149,29 +144,25 @@ Decode with config file:
 ./dist/phonid*/phonid --config ./public_presets/.proquint.phonidrc.toml decode babab-bihun
 ```
 
-Digest is one-way (non-reversible and may collide).
-
-Hex integer input:
+Convert text to SHA-256 hex externally, then encode with the SHA-256-compatible preset:
 
 ```sh
-./dist/phonid*/phonid digest 0x10FA9EB
-```
-
-Text input (SHA-256 before modulo reduction):
-
-```sh
-./dist/phonid*/phonid digest "hello world"
-```
-
-With tiny built-in preset:
-
-```sh
-./dist/phonid*/phonid --preset proquint-tiny digest "hello world"
+HEX=$(python3 -c 'import hashlib; print("0x" + hashlib.sha256(b"hello world").hexdigest())')
+./dist/phonid*/phonid --preset proquint-sha256 "$HEX"
 ```
 
 `proquint-tiny` uses canonical ProQuint alphabets (`C=16`, `V=4`) with a single `CVCVC` pattern.
 
+`proquint-sha256` uses 16 `CVCVC` blocks and 15 delimiters to encode exactly 256 bits.
+
 Note: `--preset` is mutually exclusive with `--config`, and is not supported with `preflight`.
+
+
+4. Decode:
+
+```sh
+./dist/phonid*/phonid decode babab-bihun
+```
 
 ## Public Presets
 
@@ -186,6 +177,7 @@ phonid --config .phonidrc.toml 12345
 Available presets include:
 - **ProQuint** - Standard ProQuint-compatible encoding
 - **Tiny** - Minimal character sets for short codes
+- **ProQuint SHA-256** - Exact 256-bit reversible encoding space
 - **Special** - Unicode-based encoding with special characters
 
 See [public_presets/README.md](public_presets/README.md) for details.

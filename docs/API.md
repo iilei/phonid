@@ -114,8 +114,15 @@ const (
     ProquintVowels     = "aiou"
     ProquintConsonants = "bdfghjklmnprstvz"
     ProquintDelimiter  = "-"
+    // ProQuintBlockBitWidth is the entropy contributed by one CVCVC block
+    // with canonical ProQuint alphabets (16 consonants, 4 vowels).
+    ProQuintBlockBitWidth = 16
     // ProQuintBitWidth is the bit width for ProQuint encoding (32-bit values).
     ProQuintBitWidth = 32
+    // ProQuintSHA256BitWidth is the bit width for the SHA-256-compatible ProQuint preset.
+    ProQuintSHA256BitWidth = 256
+    // ProQuintSHA256Blocks is the number of CVCVC blocks required for 256 bits.
+    ProQuintSHA256Blocks = ProQuintSHA256BitWidth / ProQuintBlockBitWidth
 )
 ```
 
@@ -174,6 +181,16 @@ var (
     // ProQuintTinyConfig keeps canonical ProQuint alphabets but uses a single short pattern.
     ProQuintTinyConfig = PhonidConfig{
         Patterns:     []string{ProQuintPatternShort},
+        Placeholders: ProQuintPlaceholders,
+    }
+
+    // ProQuintSHA256Pattern encodes exactly 256 bits with 16 CVCVC blocks.
+    // Capacity: (16^3 * 4^2)^16 = 2^256.
+    ProQuintSHA256Pattern = strings.TrimSuffix(strings.Repeat(ProQuintPatternShort+"X", ProQuintSHA256Blocks), "X")
+
+    // ProQuintSHA256Config uses canonical ProQuint alphabets with exact SHA-256 capacity.
+    ProQuintSHA256Config = PhonidConfig{
+        Patterns:     []string{ProQuintSHA256Pattern},
         Placeholders: ProQuintPlaceholders,
     }
 
@@ -444,7 +461,7 @@ func (p *PhoneticEncoder) ValidatePreflight(checks []PreflightCheck) error
 ValidatePreflight checks if preflight tests pass for this encoder Performs bidirectional validation: encoding \(int\-\>string\) and decoding \(string\-\>int\).
 
 <a name="PhonidConfig"></a>
-## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L148-L151>)
+## type [PhonidConfig](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L165-L168>)
 
 PhonidConfig holds phonetic pattern configuration.
 
@@ -469,7 +486,7 @@ type PhonidConfig struct {
 ```
 
 <a name="PhonidConfig.Validate"></a>
-### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L161>)
+### func \(\*PhonidConfig\) [Validate](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L178>)
 
 ```go
 func (pc *PhonidConfig) Validate() error
@@ -478,7 +495,7 @@ func (pc *PhonidConfig) Validate() error
 Validate checks if the phonetic config is valid.
 
 <a name="PlaceholderMap"></a>
-## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L130>)
+## type [PlaceholderMap](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L147>)
 
 
 
@@ -487,7 +504,7 @@ type PlaceholderMap map[PlaceholderType]RuneSet
 ```
 
 <a name="PlaceholderType"></a>
-## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L129>)
+## type [PlaceholderType](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L146>)
 
 
 
@@ -573,7 +590,7 @@ type PreflightCheck struct {
 ```
 
 <a name="RuneSet"></a>
-## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L134>)
+## type [RuneSet](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L151>)
 
 RuneSet is a slice of runes that can be unmarshaled from a string. This allows TOML configs to use simple strings like C = "bcdfg" instead of arrays.
 
@@ -582,7 +599,7 @@ type RuneSet []rune
 ```
 
 <a name="RuneSet.UnmarshalText"></a>
-### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L155>)
+### func \(\*RuneSet\) [UnmarshalText](<https://github.com/iilei/phonid/blob/master/pkg/phonid.go#L172>)
 
 ```go
 func (rs *RuneSet) UnmarshalText(text []byte) error

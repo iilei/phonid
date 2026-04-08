@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"math/big"
 	"strings"
 	"testing"
 )
@@ -132,6 +133,59 @@ func TestEncodeCommand_InvalidPreset(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "unknown preset") {
 		t.Fatalf("error = %q, want unknown preset context", err)
+	}
+	if got := strings.TrimSpace(stdout.String()); got != "" {
+		t.Fatalf("stdout = %q, want empty", got)
+	}
+}
+
+func TestEncodeCommand_PresetProquintSHA256RoundTripMaxValue(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	maxHex := "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+	rootCmd.SetArgs([]string{"--preset", "proquint-sha256", maxHex})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("rootCmd.Execute() error = %v", err)
+	}
+
+	encoded := strings.TrimSpace(stdout.String())
+	if encoded == "" {
+		t.Fatal("encode output is empty")
+	}
+	if strings.Count(encoded, "-") != 15 {
+		t.Fatalf("encoded separator count = %d, want 15", strings.Count(encoded, "-"))
+	}
+
+	decodedOut := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(decodedOut)
+	rootCmd.SetArgs([]string{"--preset", "proquint-sha256", "decode", encoded})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("decode round-trip error = %v", err)
+	}
+
+	decoded := strings.TrimSpace(decodedOut.String())
+	want := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(1)).String()
+	if decoded != want {
+		t.Fatalf("decoded value = %q, want %q", decoded, want)
+	}
+}
+
+func TestEncodeCommand_PresetProquintSHA256RejectsOverflow(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	overflow := new(big.Int).Lsh(big.NewInt(1), 256).String()
+	rootCmd.SetArgs([]string{"--preset", "proquint-sha256", overflow})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("rootCmd.Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "exceeds largest pattern capacity") {
+		t.Fatalf("error = %q, want capacity context", err)
 	}
 	if got := strings.TrimSpace(stdout.String()); got != "" {
 		t.Fatalf("stdout = %q, want empty", got)
