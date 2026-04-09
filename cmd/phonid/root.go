@@ -6,7 +6,6 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -15,7 +14,6 @@ import (
 )
 
 const (
-	cliHexBase         = 16
 	presetProQuint     = "proquint"
 	presetProQuintTiny = "proquint-tiny"
 	presetProQuintSHA  = "proquint-sha256"
@@ -153,17 +151,10 @@ func newCLIEncoder(config *phonid.PhonidConfig, checks []phonid.PreflightCheck) 
 }
 
 func parseCLIPositiveInt(input string) (phonid.PositiveInt, error) {
-	if !strings.HasPrefix(input, "0x") && !strings.HasPrefix(input, "0X") {
-		return phonid.ParsePositiveInt(input)
-	}
-
-	hexDigits := input[2:]
-	if hexDigits == "" {
-		return nil, fmt.Errorf("invalid number: %s", input)
-	}
-
-	value := new(big.Int)
-	if _, ok := value.SetString(hexDigits, cliHexBase); !ok {
+	// Auto-detect base from common prefixes: 0x (hex), 0b (binary), 0o (octal).
+	// Without a prefix, values are parsed as decimal.
+	value, ok := new(big.Int).SetString(input, 0)
+	if !ok || value.Sign() < 0 {
 		return nil, fmt.Errorf("invalid number: %s", input)
 	}
 

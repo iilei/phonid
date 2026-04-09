@@ -52,6 +52,36 @@ func TestEncodeCommand_AcceptsUppercaseHexPrefix(t *testing.T) {
 	}
 }
 
+func TestEncodeCommand_AcceptsLowercaseBinaryPrefix(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"0o2471"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("rootCmd.Execute() error = %v", err)
+	}
+
+	if got := strings.TrimSpace(stdout.String()); got != "babab-bihun" {
+		t.Fatalf("encode output = %q, want %q", got, "babab-bihun")
+	}
+}
+
+func TestEncodeCommand_AcceptsLowercaseOctalPrefix(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"0o52"})
+	if err := rootCmd.Execute(); err != nil {
+		t.Fatalf("rootCmd.Execute() error = %v", err)
+	}
+
+	if got := strings.TrimSpace(stdout.String()); got != "babab-babop" {
+		t.Fatalf("encode output = %q, want %q", got, "babab-babop")
+	}
+}
+
 func TestEncodeCommand_InvalidHexInput(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	resetCLIState(t)
@@ -81,6 +111,42 @@ func TestEncodeCommand_MissingHexDigits(t *testing.T) {
 		t.Fatal("rootCmd.Execute() error = nil, want error")
 	}
 	if !strings.Contains(err.Error(), "invalid number: 0x") {
+		t.Fatalf("error = %q, want invalid number context", err)
+	}
+	if got := strings.TrimSpace(stdout.String()); got != "" {
+		t.Fatalf("stdout = %q, want empty", got)
+	}
+}
+
+func TestEncodeCommand_InvalidBinaryInput(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"0b102"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("rootCmd.Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "invalid number: 0b102") {
+		t.Fatalf("error = %q, want invalid number context", err)
+	}
+	if got := strings.TrimSpace(stdout.String()); got != "" {
+		t.Fatalf("stdout = %q, want empty", got)
+	}
+}
+
+func TestEncodeCommand_InvalidOctalInput(t *testing.T) {
+	stdout := &bytes.Buffer{}
+	resetCLIState(t)
+	rootCmd.SetOut(stdout)
+
+	rootCmd.SetArgs([]string{"0o89"})
+	err := rootCmd.Execute()
+	if err == nil {
+		t.Fatal("rootCmd.Execute() error = nil, want error")
+	}
+	if !strings.Contains(err.Error(), "invalid number: 0o89") {
 		t.Fatalf("error = %q, want invalid number context", err)
 	}
 	if got := strings.TrimSpace(stdout.String()); got != "" {

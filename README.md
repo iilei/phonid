@@ -132,7 +132,7 @@ With config file:
 ./dist/phonid*/phonid --config ./public_presets/.proquint.phonidrc.toml 1337
 ```
 
-Hex input is accepted with `0x` / `0X`:
+Prefixed base input is accepted with `0x` / `0X` (hex), `0b` / `0B` (binary), and `0o` / `0O` (octal):
 
 ```sh
 ./dist/phonid*/phonid 0x539
