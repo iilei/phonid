@@ -1,275 +1,334 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+    <head>
+        <meta charset="utf-8" />
+        <title>Phonid Encoder / Decoder</title>
+        <style>
+            body {
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                max-width: 800px;
+                margin: 40px auto;
+                padding: 0 20px;
+                overflow-x: hidden;
+            }
 
-<head>
-    <meta charset="utf-8" />
-    <title>Phonid Encoder / Decoder</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            max-width: 800px;
-            margin: 40px auto;
-            padding: 0 20px;
-            overflow-x: hidden;
-        }
+            .beta-ribbon {
+                position: fixed;
+                top: 30px;
+                right: -104px;
+                background: #dc143c;
+                color: white;
+                font-weight: 900;
+                font-size: 21px;
+                letter-spacing: 2px;
+                padding: 10px 120px;
+                transform: rotate(45deg);
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+                z-index: 9999;
+                text-align: center;
+                text-transform: uppercase;
+            }
 
-        .beta-ribbon {
-            position: fixed;
-            top: 30px;
-            right: -104px;
-            background: #dc143c;
-            color: white;
-            font-weight: 900;
-            font-size: 21px;
-            letter-spacing: 2px;
-            padding: 10px 120px;
-            transform: rotate(45deg);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            z-index: 9999;
-            text-align: center;
-            text-transform: uppercase;
-        }
+            .container {
+                background: #f5f5f5;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+            }
 
-        .container {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
+            input,
+            button {
+                padding: 8px 12px;
+                margin: 5px;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+            }
 
-        input,
-        button {
-            padding: 8px 12px;
-            margin: 5px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
+            button {
+                background: #007acc;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
 
-        button {
-            background: #007acc;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+            button:hover {
+                background: #005a9e;
+            }
 
-        button:hover {
-            background: #005a9e;
-        }
+            button:disabled {
+                background: #ccc;
+                cursor: not-allowed;
+                opacity: 0.6;
+            }
 
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            opacity: 0.6;
-        }
+            #result {
+                font-size: 1.2em;
+                color: #007acc;
+                font-weight: bold;
+            }
 
-        #result {
-            font-size: 1.2em;
-            color: #007acc;
-            font-weight: bold;
-        }
+            .error {
+                color: #d73a49;
+            }
 
-        .error {
-            color: #d73a49;
-        }
+            #status {
+                padding: 10px;
+                border-radius: 4px;
+                margin: 10px 0;
+            }
 
-        #status {
-            padding: 10px;
-            border-radius: 4px;
-            margin: 10px 0;
-        }
+            .loading {
+                background: #fff3cd;
+                color: #856404;
+            }
 
-        .loading {
-            background: #fff3cd;
-            color: #856404;
-        }
+            .ready {
+                background: #d4edda;
+                color: #155724;
+            }
 
-        .ready {
-            background: #d4edda;
-            color: #155724;
-        }
+            .config-status {
+                margin-left: 10px;
+                font-size: 0.9em;
+                font-weight: 500;
+            }
 
-        .config-status {
-            margin-left: 10px;
-            font-size: 0.9em;
-            font-weight: 500;
-        }
+            .config-modified {
+                color: #856404;
+            }
 
-        .config-modified {
-            color: #856404;
-        }
+            .config-applied {
+                color: #155724;
+            }
 
-        .config-applied {
-            color: #155724;
-        }
+            .preflight-warning {
+                display: none;
+                background: #fff3cd;
+                border: 2px solid #ffc107;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 15px 0;
+            }
 
-        .preflight-warning {
-            display: none;
-            background: #fff3cd;
-            border: 2px solid #ffc107;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-        }
+            .preflight-warning.show {
+                display: block;
+            }
 
-        .preflight-warning.show {
-            display: block;
-        }
+            .preflight-warning h3 {
+                margin-top: 0;
+                color: #856404;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
 
-        .preflight-warning h3 {
-            margin-top: 0;
-            color: #856404;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+            .suggestion-modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+            }
 
-        .suggestion-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1000;
-            align-items: center;
-            justify-content: center;
-        }
+            .suggestion-modal.show {
+                display: flex;
+            }
 
-        .suggestion-modal.show {
-            display: flex;
-        }
+            .suggestion-modal-content {
+                background: white;
+                padding: 30px;
+                border-radius: 8px;
+                max-width: 700px;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            }
 
-        .suggestion-modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            max-width: 700px;
-            max-height: 80vh;
-            overflow-y: auto;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
+            .suggestion-modal-content h3 {
+                margin-top: 0;
+                color: #28a745;
+            }
 
-        .suggestion-modal-content h3 {
-            margin-top: 0;
-            color: #28a745;
-        }
+            .suggestion-modal-content pre {
+                background: #f5f5f5;
+                padding: 15px;
+                border-radius: 4px;
+                overflow-x: auto;
+                max-height: 400px;
+            }
 
-        .suggestion-modal-content pre {
-            background: #f5f5f5;
-            padding: 15px;
-            border-radius: 4px;
-            overflow-x: auto;
-            max-height: 400px;
-        }
+            .modal-buttons {
+                display: flex;
+                gap: 10px;
+                margin-top: 20px;
+                justify-content: flex-end;
+            }
 
-        .modal-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-            justify-content: flex-end;
-        }
+            .preflight-warning pre {
+                background: #fff;
+                padding: 10px;
+                border-radius: 4px;
+                overflow-x: auto;
+                font-size: 11px;
+                line-height: 1.4;
+                max-height: 300px;
+                overflow-y: auto;
+            }
 
-        .preflight-warning pre {
-            background: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-            font-size: 11px;
-            line-height: 1.4;
-            max-height: 300px;
-            overflow-y: auto;
-        }
+            .preflight-warning button {
+                background: #856404;
+                margin-top: 10px;
+            }
 
-        .preflight-warning button {
-            background: #856404;
-            margin-top: 10px;
-        }
+            .preflight-warning button:hover {
+                background: #664d03;
+            }
+        </style>
+    </head>
 
-        .preflight-warning button:hover {
-            background: #664d03;
-        }
-    </style>
-</head>
+    <body>
+        <div class="beta-ribbon">V1</div>
 
-<body>
-    <div class="beta-ribbon">BETA</div>
+        <h1>Phonid Encoder / Decoder</h1>
 
-    <h1>Phonid Encoder / Decoder</h1>
+        <div id="status" class="loading">Loading WASM module...</div>
 
-    <div id="status" class="loading">Loading WASM module...</div>
+        <div class="container">
+            <h2>Configuration</h2>
+            <label>Upload Config (TOML):</label>
+            <input type="file" id="configFile" accept=".toml" />
 
-    <div class="container">
-        <h2>Configuration</h2>
-        <label>Upload Config (TOML):</label>
-        <input type="file" id="configFile" accept=".toml">
+            <div style="margin-top: 15px">
+                <label for="configText">Config (TOML):</label>
 
-        <div style="margin-top: 15px;">
-            <label for="configText">Config (TOML):</label>
+                <span id="configStatus" class="config-status"></span>
+                <textarea
+                    id="configText"
+                    rows="15"
+                    style="
+                        width: 100%;
+                        margin-top: 5px;
+                        font-family: monospace;
+                        font-size: 12px;
+                    "
+                    placeholder="Upload a TOML config file or paste your config here..."
+                ></textarea>
 
-            <span id="configStatus" class="config-status"></span>
-            <textarea id="configText" rows="15"
-                style="width: 100%; margin-top: 5px; font-family: monospace; font-size: 12px;"
-                placeholder="Upload a TOML config file or paste your config here..."></textarea>
-
-            <div>
-                <button id="applyConfigBtn" style="margin-left: 10px;">Apply Config</button>
-                <button id="generatePreflightBtn" style="margin-left: 5px; background: #007acc;">Generate Preflight
-                    Checks</button>
-                <button id="shareConfigBtn" style="margin-left: 5px; background: #007acc;">Share Config</button>
-                <button id="clearConfigBtn" style="margin-left: 5px; background: #6c757d; visibility: hidden;">Clear
-                    Saved Config</button>
+                <div>
+                    <button id="applyConfigBtn" style="margin-left: 10px">
+                        Apply Config
+                    </button>
+                    <button
+                        id="generatePreflightBtn"
+                        style="margin-left: 5px; background: #007acc"
+                    >
+                        Generate Preflight Checks
+                    </button>
+                    <button
+                        id="shareConfigBtn"
+                        style="margin-left: 5px; background: #007acc"
+                    >
+                        Share Config
+                    </button>
+                    <button
+                        id="clearConfigBtn"
+                        style="
+                            margin-left: 5px;
+                            background: #6c757d;
+                            visibility: hidden;
+                        "
+                    >
+                        Clear Saved Config
+                    </button>
+                </div>
+                <div style="margin-top: 10px">
+                    <label for="presetSelect">Load Preset:</label>
+                    <select
+                        id="presetSelect"
+                        style="
+                            padding: 8px;
+                            border-radius: 4px;
+                            border: 1px solid #ccc;
+                        "
+                    >
+                        <option value="">-- Select a preset --</option>
+                    </select>
+                </div>
+                <p style="margin-top: 15px; font-size: 0.95em; color: #555">
+                    If you'd like to share your own ID-creation logic publicly,
+                    create a merge request and file a ticket to
+                    <a
+                        href="https://github.com/iilei/phonid/issues/new?template=public-preset-contribution.md&title=Add%20my-preset%20public%20preset&labels=preset-contribution"
+                        target="_blank"
+                        style="
+                            color: #007acc;
+                            text-decoration: none;
+                            font-weight: 500;
+                        "
+                    >
+                        Submit your preset.
+                    </a>
+                </p>
             </div>
-            <div style="margin-top: 10px;">
-                <label for="presetSelect">Load Preset:</label>
-                <select id="presetSelect" style="padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                    <option value="">-- Select a preset --</option>
-                </select>
+
+            <div id="preflightWarning" class="preflight-warning">
+                <h3>
+                    <span style="font-size: 1.5em">⚠️</span>
+                    Preflight Check Failed
+                </h3>
+                <code id="preflightMessage"></code>
+                <details>
+                    <summary
+                        style="
+                            cursor: pointer;
+                            user-select: none;
+                            margin: 10px 0;
+                        "
+                    >
+                        Show suggested config with valid preflight checks
+                    </summary>
+                    <pre id="suggestedConfig"></pre>
+                </details>
+                <button id="applySuggestedBtn">Apply Suggested Config</button>
             </div>
-            <p style="margin-top: 15px; font-size: 0.95em; color: #555;">
-                If you'd like to share your own ID-creation logic publicly, create a merge request and file a ticket to
-                <a href="https://github.com/iilei/phonid/issues/new?template=public-preset-contribution.md&title=Add%20my-preset%20public%20preset&labels=preset-contribution"
-                    target="_blank" style="color: #007acc; text-decoration: none; font-weight: 500;">
-                    Submit your preset.
-                </a>
-            </p>
         </div>
 
-        <div id="preflightWarning" class="preflight-warning">
-            <h3>
-                <span style="font-size: 1.5em;">⚠️</span>
-                Preflight Check Failed
-            </h3>
-            <code id="preflightMessage"></code>
-            <details>
-                <summary style="cursor: pointer; user-select: none; margin: 10px 0;">Show suggested config with valid
-                    preflight checks</summary>
-                <pre id="suggestedConfig"></pre>
-            </details>
-            <button id="applySuggestedBtn">Apply Suggested Config</button>
-        </div>
-    </div>
-
-    <!-- Suggestion Modal -->
-    <div id="suggestionModal" class="suggestion-modal">
-        <div class="suggestion-modal-content">
-            <h3>✨ Generated Config with Preflight Checks</h3>
-            <p>This config includes automatically generated preflight checks based on your current patterns and
-                placeholders.</p>
-            <pre id="modalSuggestedConfig"></pre>
-            <div class="modal-buttons">
-                <button id="cancelModalBtn" style="background: #6c757d;">Cancel</button>
-                <button id="applyModalConfigBtn" style="background: #28a745;">Apply Config</button>
+        <!-- Suggestion Modal -->
+        <div id="suggestionModal" class="suggestion-modal">
+            <div class="suggestion-modal-content">
+                <h3>✨ Generated Config with Preflight Checks</h3>
+                <p>
+                    This config includes automatically generated preflight
+                    checks based on your current patterns and placeholders.
+                </p>
+                <pre id="modalSuggestedConfig"></pre>
+                <div class="modal-buttons">
+                    <button id="cancelModalBtn" style="background: #6c757d">
+                        Cancel
+                    </button>
+                    <button
+                        id="applyModalConfigBtn"
+                        style="background: #28a745"
+                    >
+                        Apply Config
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="container">
-        <h3>Usage</h3>
-        <p>
-            Try different presets, fiddle around with pattern configs.
-        </p>
-        <h4>Config Requirements:</h4>
-        <code><pre>
+        <div class="container">
+            <h3>Usage</h3>
+            <p>Try different presets, fiddle around with pattern configs.</p>
+            <h4>Config Requirements:</h4>
+            <code>
+                <pre>
 # - Pattern Length: Must be 3+ characters
 # (e.g., CVCVC, CVCVCVC)
     # - Encode input: decimal integer or hex with 0x/0X prefix
@@ -280,631 +339,812 @@
 # C = Consonants, V = Vowels, L = Liquids (l,m,n,r)
 # N = Nasals, S = Sibilants, F = Fricatives
 # X/Y/Z = Custom categories
-</pre></code>
-        <p>
-            Learn more about configuration options and implementation details in the <a
-                href="https://github.com/iilei/phonid/blob/master/README.md">project documentation and source code</a>.
-        </p>
-    </div>
-    <div class="container">
-        <h2>Encode Number</h2>
-        <label>Enter decimal or 0x-prefixed hex (supports BigInt)</label>
-        <input type="text" id="inputNumber" value="242" style="width: 300px;">
-        <button id="encodeBtn">Encode</button>
-        <button id="randomBtn" style="background: #007acc;">🎱 Random Example</button>
-        <div style="margin-top: 10px;">
-            <strong>Result:</strong> <span id="result">-</span>
+</pre
+                >
+            </code>
+            <p>
+                Learn more about configuration options and implementation
+                details in the
+                <a href="https://github.com/iilei/phonid/blob/master/README.md"
+                    >project documentation and source code</a
+                >.
+            </p>
         </div>
-    </div>
-
-    <div class="container">
-        <h2>Decode String</h2>
-        <label>Enter string:</label>
-        <input type="text" id="inputString" placeholder="encoded string" style="width: 200px;">
-        <button id="decodeBtn">Decode</button>
-        <div style="margin-top: 10px;">
-            <strong>Result:</strong> <span id="decodeResult">-</span>
+        <div class="container">
+            <h2>Encode Number</h2>
+            <label>Enter decimal or 0x-prefixed hex (supports BigInt)</label>
+            <input
+                type="text"
+                id="inputNumber"
+                value="242"
+                style="width: 300px"
+            />
+            <button id="encodeBtn">Encode</button>
+            <button id="randomBtn" style="background: #007acc">
+                🎱 Random Example
+            </button>
+            <div style="margin-top: 10px">
+                <strong>Result:</strong> <span id="result">-</span>
+            </div>
         </div>
-    </div>
 
+        <div class="container">
+            <h2>Decode String</h2>
+            <label>Enter string:</label>
+            <input
+                type="text"
+                id="inputString"
+                placeholder="encoded string"
+                style="width: 200px"
+            />
+            <button id="decodeBtn">Decode</button>
+            <div style="margin-top: 10px">
+                <strong>Result:</strong> <span id="decodeResult">-</span>
+            </div>
+        </div>
 
-    <script src="wasm_exec.${GIT_SHA}.js"></script>
-    <script>
-        let wasmReady = false;
-        let lastAppliedConfig = '';
-        const PUBLIC_PRESETS = $PUBLIC_PRESETS_JSON;
-        const statusEl = document.getElementById('status');
-        const STORAGE_KEY = 'phonid-user-config-${GIT_SHA}';
-        const STORAGE_KEY_INPUT_NUMBER = 'phonid-input-number';
-        const STORAGE_KEY_INPUT_STRING = 'phonid-input-string';
+        <script src="wasm_exec.${GIT_SHA}.js"></script>
+        <script>
+            let wasmReady = false;
+            let lastAppliedConfig = "";
+            const PUBLIC_PRESETS = $PUBLIC_PRESETS_JSON;
+            const statusEl = document.getElementById("status");
+            const STORAGE_KEY = "phonid-user-config-${GIT_SHA}";
+            const STORAGE_KEY_INPUT_NUMBER = "phonid-input-number";
+            const STORAGE_KEY_INPUT_STRING = "phonid-input-string";
 
-        // Store fetched preset configs
-        const PRESETS = {};
+            // Store fetched preset configs
+            const PRESETS = {};
 
-        // Preset base URL (relative path works both locally and deployed)
-        const PRESET_BASE_URL = './public_presets/';
+            // Preset base URL (relative path works both locally and deployed)
+            const PRESET_BASE_URL = "./public_presets/";
 
-        // Populate dropdown with preset options (without fetching content)
-        function populatePresetDropdown() {
-            const dropdown = document.getElementById('presetSelect');
+            // Populate dropdown with preset options (without fetching content)
+            function populatePresetDropdown() {
+                const dropdown = document.getElementById("presetSelect");
 
-            for (const filename of PUBLIC_PRESETS) {
-                // Create a readable name
-                const presetName = filename.replace(/^\./, '').replace('.phonidrc.toml', '');
+                for (const filename of PUBLIC_PRESETS) {
+                    // Create a readable name
+                    const presetName = filename
+                        .replace(/^\./, "")
+                        .replace(".phonidrc.toml", "");
 
-                // Add option to dropdown
-                const option = document.createElement('option');
-                option.value = presetName;
-                // upper-case and replace underscore with space
-                option.textContent = (presetName.charAt(0).toUpperCase() + presetName.slice(1)).replaceAll('_', ' ');
-                dropdown.appendChild(option);
-            }
-            console.log(`Populated dropdown with ${PUBLIC_PRESETS.length} preset options`);
-        }
-
-        // Fetch a specific preset by name
-        async function fetchPreset(presetName) {
-            // Return cached if already loaded
-            if (PRESETS[presetName]) {
-                return PRESETS[presetName];
-            }
-
-            // Find the filename
-            const filename = PUBLIC_PRESETS.find(f => f.replace(/^\./, '').replace('.phonidrc.toml', '') === presetName);
-            if (!filename) {
-                throw new Error(`Preset ${presetName} not found`);
-            }
-
-            const fetchUrl = PRESET_BASE_URL + filename;
-            console.log(`Fetching preset: ${presetName} from ${fetchUrl}`);
-
-            const response = await fetch(fetchUrl);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch preset from ${fetchUrl}`);
+                    // Add option to dropdown
+                    const option = document.createElement("option");
+                    option.value = presetName;
+                    // upper-case and replace underscore with space
+                    option.textContent = (
+                        presetName.charAt(0).toUpperCase() + presetName.slice(1)
+                    ).replaceAll("_", " ");
+                    dropdown.appendChild(option);
+                }
+                console.log(
+                    `Populated dropdown with ${PUBLIC_PRESETS.length} preset options`,
+                );
             }
 
-            const content = await response.text();
-            PRESETS[presetName] = content; // Cache it
-            console.log(`Loaded preset: ${presetName}`);
-            return content;
-        }
+            // Fetch a specific preset by name
+            async function fetchPreset(presetName) {
+                // Return cached if already loaded
+                if (PRESETS[presetName]) {
+                    return PRESETS[presetName];
+                }
 
-        // Function to check if current config matches a preset and update dropdown
-        function updatePresetDropdown() {
-            const currentConfig = document.getElementById('configText').value.trim();
-            const dropdown = document.getElementById('presetSelect');
+                // Find the filename
+                const filename = PUBLIC_PRESETS.find(
+                    (f) =>
+                        f.replace(/^\./, "").replace(".phonidrc.toml", "") ===
+                        presetName,
+                );
+                if (!filename) {
+                    throw new Error(`Preset ${presetName} not found`);
+                }
 
-            // Check if current config matches any preset
-            for (const [name, presetConfig] of Object.entries(PRESETS)) {
-                if (currentConfig === presetConfig.trim()) {
-                    dropdown.value = name;
+                const fetchUrl = PRESET_BASE_URL + filename;
+                console.log(`Fetching preset: ${presetName} from ${fetchUrl}`);
+
+                const response = await fetch(fetchUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch preset from ${fetchUrl}`);
+                }
+
+                const content = await response.text();
+                PRESETS[presetName] = content; // Cache it
+                console.log(`Loaded preset: ${presetName}`);
+                return content;
+            }
+
+            // Function to check if current config matches a preset and update dropdown
+            function updatePresetDropdown() {
+                const currentConfig = document
+                    .getElementById("configText")
+                    .value.trim();
+                const dropdown = document.getElementById("presetSelect");
+
+                // Check if current config matches any preset
+                for (const [name, presetConfig] of Object.entries(PRESETS)) {
+                    if (currentConfig === presetConfig.trim()) {
+                        dropdown.value = name;
+                        return;
+                    }
+                }
+
+                // No match found, reset to default option
+                dropdown.value = "";
+            }
+
+            // Function to encode config to base64 for URL hash
+            function encodeConfigToHash(configText) {
+                try {
+                    return btoa(encodeURIComponent(configText));
+                } catch (e) {
+                    console.error("Error encoding config:", e);
+                    return null;
+                }
+            }
+
+            // Function to decode config from URL hash
+            function decodeConfigFromHash(hash) {
+                try {
+                    // Remove leading # if present
+                    const cleanHash = hash.replace(/^#/, "");
+                    return decodeURIComponent(atob(cleanHash));
+                } catch (e) {
+                    console.error("Error decoding config from hash:", e);
+                    return null;
+                }
+            }
+
+            // Function to copy URL with config to clipboard
+            function shareConfig() {
+                const configText = document
+                    .getElementById("configText")
+                    .value.trim();
+                if (!configText) {
+                    alert("No config to share. Please enter a config first.");
                     return;
                 }
-            }
 
-            // No match found, reset to default option
-            dropdown.value = '';
-        }
+                const encodedConfig = encodeConfigToHash(configText);
+                if (!encodedConfig) {
+                    alert("Failed to encode config for sharing.");
+                    return;
+                }
 
-        // Function to encode config to base64 for URL hash
-        function encodeConfigToHash(configText) {
-            try {
-                return btoa(encodeURIComponent(configText));
-            } catch (e) {
-                console.error('Error encoding config:', e);
-                return null;
-            }
-        }
+                const shareUrl =
+                    window.location.origin +
+                    window.location.pathname +
+                    "#" +
+                    encodedConfig;
 
-        // Function to decode config from URL hash
-        function decodeConfigFromHash(hash) {
-            try {
-                // Remove leading # if present
-                const cleanHash = hash.replace(/^#/, '');
-                return decodeURIComponent(atob(cleanHash));
-            } catch (e) {
-                console.error('Error decoding config from hash:', e);
-                return null;
-            }
-        }
-
-        // Function to copy URL with config to clipboard
-        function shareConfig() {
-            const configText = document.getElementById('configText').value.trim();
-            if (!configText) {
-                alert('No config to share. Please enter a config first.');
-                return;
-            }
-
-            const encodedConfig = encodeConfigToHash(configText);
-            if (!encodedConfig) {
-                alert('Failed to encode config for sharing.');
-                return;
-            }
-
-            const shareUrl = window.location.origin + window.location.pathname + '#' + encodedConfig;
-
-            // Check if clipboard API is available (requires HTTPS or localhost)
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                // Copy to clipboard using modern API
-                navigator.clipboard.writeText(shareUrl).then(() => {
-                    alert('Config URL copied to clipboard! Share this URL to let others use your config.');
-                }).catch(err => {
-                    console.error('Failed to copy to clipboard:', err);
+                // Check if clipboard API is available (requires HTTPS or localhost)
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    // Copy to clipboard using modern API
+                    navigator.clipboard
+                        .writeText(shareUrl)
+                        .then(() => {
+                            alert(
+                                "Config URL copied to clipboard! Share this URL to let others use your config.",
+                            );
+                        })
+                        .catch((err) => {
+                            console.error("Failed to copy to clipboard:", err);
+                            fallbackCopyToClipboard(shareUrl);
+                        });
+                } else {
+                    // Fallback for non-secure contexts or older browsers
                     fallbackCopyToClipboard(shareUrl);
-                });
-            } else {
-                // Fallback for non-secure contexts or older browsers
-                fallbackCopyToClipboard(shareUrl);
-            }
-        }
-
-        // Fallback clipboard copy method
-        function fallbackCopyToClipboard(text) {
-            // Try using a temporary textarea
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-
-            try {
-                const successful = document.execCommand('copy');
-                document.body.removeChild(textarea);
-
-                if (successful) {
-                    alert('Config URL copied to clipboard! Share this URL to let others use your config.');
-                } else {
-                    prompt('Copy this URL to share your config:', text);
-                }
-            } catch (err) {
-                document.body.removeChild(textarea);
-                console.error('Fallback copy failed:', err);
-                prompt('Copy this URL to share your config:', text);
-            }
-        }
-
-        // Check for config in URL hash on page load
-        function loadConfigFromHash() {
-            const hash = window.location.hash;
-            if (hash && hash.length > 1) {
-                const decodedConfig = decodeConfigFromHash(hash);
-                if (decodedConfig) {
-                    console.log('Loading config from URL hash');
-                    return decodedConfig;
                 }
             }
-            return null;
-        }
 
-        // Load WASM
-        const go = new Go();
-        WebAssembly.instantiateStreaming(fetch("phonid.${GIT_SHA}.wasm"), go.importObject)
-            .then((result) => {
-                go.run(result.instance);
-                wasmReady = true;
-                statusEl.textContent = 'WASM module loaded - Ready to use!';
-                statusEl.className = 'ready';
-                console.log("WASM loaded successfully");
+            // Fallback clipboard copy method
+            function fallbackCopyToClipboard(text) {
+                // Try using a temporary textarea
+                const textarea = document.createElement("textarea");
+                textarea.value = text;
+                textarea.style.position = "fixed";
+                textarea.style.opacity = "0";
+                document.body.appendChild(textarea);
+                textarea.select();
 
-                // Populate dropdown with preset options
-                populatePresetDropdown();
+                try {
+                    const successful = document.execCommand("copy");
+                    document.body.removeChild(textarea);
 
-                // Check for config in URL hash first (takes priority)
-                const hashConfig = loadConfigFromHash();
-                if (hashConfig) {
-                    console.log("Loading config from URL hash (overrides localStorage)");
-                    document.getElementById('configText').value = hashConfig;
-                    applyConfig(hashConfig);
-                    updatePresetDropdown();
-                } else {
-                    // Try to load saved config from localStorage
-                    const savedConfig = localStorage.getItem(STORAGE_KEY);
-                    if (savedConfig) {
-                        console.log("Loading saved config from localStorage");
-                        document.getElementById('configText').value = savedConfig;
-                        applyConfig(savedConfig);
-                        // Check if it matches a preset
+                    if (successful) {
+                        alert(
+                            "Config URL copied to clipboard! Share this URL to let others use your config.",
+                        );
+                    } else {
+                        prompt("Copy this URL to share your config:", text);
+                    }
+                } catch (err) {
+                    document.body.removeChild(textarea);
+                    console.error("Fallback copy failed:", err);
+                    prompt("Copy this URL to share your config:", text);
+                }
+            }
+
+            // Check for config in URL hash on page load
+            function loadConfigFromHash() {
+                const hash = window.location.hash;
+                if (hash && hash.length > 1) {
+                    const decodedConfig = decodeConfigFromHash(hash);
+                    if (decodedConfig) {
+                        console.log("Loading config from URL hash");
+                        return decodedConfig;
+                    }
+                }
+                return null;
+            }
+
+            // Load WASM
+            const go = new Go();
+            WebAssembly.instantiateStreaming(
+                fetch("phonid.${GIT_SHA}.wasm"),
+                go.importObject,
+            )
+                .then((result) => {
+                    go.run(result.instance);
+                    wasmReady = true;
+                    statusEl.textContent = "WASM module loaded - Ready to use!";
+                    statusEl.className = "ready";
+                    console.log("WASM loaded successfully");
+
+                    // Populate dropdown with preset options
+                    populatePresetDropdown();
+
+                    // Check for config in URL hash first (takes priority)
+                    const hashConfig = loadConfigFromHash();
+                    if (hashConfig) {
+                        console.log(
+                            "Loading config from URL hash (overrides localStorage)",
+                        );
+                        document.getElementById("configText").value =
+                            hashConfig;
+                        applyConfig(hashConfig);
                         updatePresetDropdown();
                     } else {
-                        // Load default proquint preset
-                        fetchPreset('proquint').then(content => {
-                            console.log("No saved config found, loading ProQuint preset");
-                            document.getElementById('configText').value = content;
-                            applyConfig(content);
+                        // Try to load saved config from localStorage
+                        const savedConfig = localStorage.getItem(STORAGE_KEY);
+                        if (savedConfig) {
+                            console.log(
+                                "Loading saved config from localStorage",
+                            );
+                            document.getElementById("configText").value =
+                                savedConfig;
+                            applyConfig(savedConfig);
+                            // Check if it matches a preset
                             updatePresetDropdown();
-                        }).catch(err => {
-                            console.error("Failed to load ProQuint preset:", err);
-                            console.log("Using default encoder");
-                            phonidLoadDefaultConfig();
-                        });
+                        } else {
+                            // Load default proquint preset
+                            fetchPreset("proquint")
+                                .then((content) => {
+                                    console.log(
+                                        "No saved config found, loading ProQuint preset",
+                                    );
+                                    document.getElementById(
+                                        "configText",
+                                    ).value = content;
+                                    applyConfig(content);
+                                    updatePresetDropdown();
+                                })
+                                .catch((err) => {
+                                    console.error(
+                                        "Failed to load ProQuint preset:",
+                                        err,
+                                    );
+                                    console.log("Using default encoder");
+                                    phonidLoadDefaultConfig();
+                                });
+                        }
+                    }
+
+                    // Load saved input values
+                    const savedInputNumber = localStorage.getItem(
+                        STORAGE_KEY_INPUT_NUMBER,
+                    );
+                    const savedInputString = localStorage.getItem(
+                        STORAGE_KEY_INPUT_STRING,
+                    );
+                    if (savedInputNumber) {
+                        document.getElementById("inputNumber").value =
+                            savedInputNumber;
+                    }
+                    if (savedInputString) {
+                        document.getElementById("inputString").value =
+                            savedInputString;
+                    }
+
+                    // Initialize button states
+                    updateButtonStates();
+                })
+                .catch((err) => {
+                    statusEl.textContent = "Error loading WASM: " + err.message;
+                    statusEl.className = "error";
+                    console.error("WASM load error:", err);
+                });
+
+            // Track config changes
+            document
+                .getElementById("configText")
+                .addEventListener("input", () => {
+                    const currentConfig =
+                        document.getElementById("configText").value;
+                    const statusEl = document.getElementById("configStatus");
+
+                    if (currentConfig !== lastAppliedConfig) {
+                        statusEl.textContent =
+                            "⚠️ Config modified - click Apply to update";
+                        statusEl.className = "config-status config-modified";
+                    } else {
+                        statusEl.textContent = "✓ Config applied";
+                        statusEl.className = "config-status config-applied";
+                    }
+
+                    // Update dropdown to reflect if config matches a preset
+                    updatePresetDropdown();
+                });
+
+            // Function to update button disabled states
+            function updateButtonStates() {
+                const inputNumber = document.getElementById("inputNumber");
+                const inputString = document.getElementById("inputString");
+                const encodeBtn = document.getElementById("encodeBtn");
+                const decodeBtn = document.getElementById("decodeBtn");
+
+                encodeBtn.disabled = !inputNumber.value.trim();
+                decodeBtn.disabled = !inputString.value.trim();
+            }
+
+            // Parse number input for encode operations.
+            // Supports:
+            //  - decimal integers (optionally with separators/spaces that get stripped)
+            //  - hexadecimal prefixed with 0x/0X
+            function parseNumberInputForEncode(inputVal) {
+                const trimmed = inputVal.trim();
+                if (!trimmed) {
+                    throw new Error("Invalid number");
+                }
+
+                if (/^0[xX][0-9a-fA-F]+$/.test(trimmed)) {
+                    // Normalize hex into decimal string so WASM encode path can parse it.
+                    return BigInt(trimmed).toString();
+                }
+
+                if (/^0[xX]$/.test(trimmed)) {
+                    throw new Error(
+                        "Hex value must contain digits after 0x prefix",
+                    );
+                }
+
+                // Keep existing permissive decimal behavior, but always pass strings to WASM
+                // to avoid JavaScript number precision loss for large integers.
+                const cleanVal = trimmed
+                    .replace(/[^0-9-]/g, "")
+                    .replace(/n$/, "");
+                if (!/^-?\d+$/.test(cleanVal)) {
+                    throw new Error("Invalid number");
+                }
+
+                return cleanVal;
+            }
+
+            // Save input values to localStorage on change
+            document
+                .getElementById("inputNumber")
+                .addEventListener("input", (e) => {
+                    localStorage.setItem(
+                        STORAGE_KEY_INPUT_NUMBER,
+                        e.target.value,
+                    );
+                    updateButtonStates();
+                });
+
+            document
+                .getElementById("inputString")
+                .addEventListener("input", (e) => {
+                    localStorage.setItem(
+                        STORAGE_KEY_INPUT_STRING,
+                        e.target.value,
+                    );
+                    updateButtonStates();
+                });
+            // Handle random button
+            document
+                .getElementById("randomBtn")
+                .addEventListener("click", () => {
+                    const resultEl = document.getElementById("result");
+
+                    if (!wasmReady) {
+                        resultEl.textContent = "WASM not ready";
+                        resultEl.className = "error";
+                        return;
+                    }
+
+                    const random = phonidGetRandom();
+
+                    if (random.error) {
+                        resultEl.textContent = random.error;
+                        resultEl.className = "error";
+                    } else {
+                        // Populate input field with the random number
+                        document.getElementById("inputNumber").value =
+                            random.numberStr;
+                        localStorage.setItem(
+                            STORAGE_KEY_INPUT_NUMBER,
+                            random.numberStr,
+                        );
+
+                        // Show the encoding result
+                        resultEl.textContent = random.encoding;
+                        resultEl.className = "";
+
+                        // Auto-fill decode field with the encoded result
+                        document.getElementById("inputString").value =
+                            random.encoding;
+                        localStorage.setItem(
+                            STORAGE_KEY_INPUT_STRING,
+                            random.encoding,
+                        );
+
+                        updateButtonStates();
+                    }
+                });
+
+            // Handle file upload
+            document
+                .getElementById("configFile")
+                .addEventListener("change", async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    try {
+                        const text = await file.text();
+                        // Populate the textarea
+                        document.getElementById("configText").value = text;
+
+                        // Apply the config
+                        applyConfig(text);
+                    } catch (err) {
+                        alert("Error reading file: " + err.message);
+                    }
+                });
+
+            // Handle preset selection
+            document
+                .getElementById("presetSelect")
+                .addEventListener("change", async (e) => {
+                    const presetName = e.target.value;
+                    if (!presetName) return;
+
+                    try {
+                        const presetConfig = await fetchPreset(presetName);
+                        document.getElementById("configText").value =
+                            presetConfig;
+                        applyConfig(presetConfig);
+                    } catch (err) {
+                        console.error(
+                            `Error loading preset ${presetName}:`,
+                            err,
+                        );
+                        alert(`Failed to load preset: ${err.message}`);
+                    }
+                });
+
+            // Handle apply config button
+            document
+                .getElementById("applyConfigBtn")
+                .addEventListener("click", () => {
+                    const configText = document
+                        .getElementById("configText")
+                        .value.trim();
+                    if (!configText) {
+                        alert("Please enter a config first");
+                        return;
+                    }
+                    applyConfig(configText);
+                });
+
+            // Handle generate preflight checks button
+            document
+                .getElementById("generatePreflightBtn")
+                .addEventListener("click", () => {
+                    if (!wasmReady) {
+                        alert("WASM not ready yet");
+                        return;
+                    }
+
+                    // apply config first
+                    document.getElementById("applyConfigBtn").click();
+
+                    // Generate suggestions based on current config
+                    const suggestions = phonidGenerateSuggestions();
+                    console.log("Generated suggestions:", suggestions);
+
+                    if (suggestions.error) {
+                        alert(
+                            "Error generating preflight checks: " +
+                                suggestions.error,
+                        );
+                        return;
+                    }
+
+                    if (suggestions.success) {
+                        // Show modal with generated config
+                        document.getElementById(
+                            "modalSuggestedConfig",
+                        ).textContent = suggestions.config;
+                        document
+                            .getElementById("suggestionModal")
+                            .classList.add("show");
+                    } else {
+                        alert("Failed to generate suggestions");
+                    }
+                });
+
+            // Handle share config button
+            document
+                .getElementById("shareConfigBtn")
+                .addEventListener("click", shareConfig);
+
+            // Handle clear saved config button
+            document
+                .getElementById("clearConfigBtn")
+                .addEventListener("click", () => {
+                    if (
+                        confirm(
+                            "Clear saved config from localStorage? This will reload with default config.",
+                        )
+                    ) {
+                        localStorage.removeItem(STORAGE_KEY);
+                        console.log("Saved config cleared from localStorage");
+                        document.getElementById("configText").value = "";
+                        document.getElementById("configStatus").textContent =
+                            "";
+
+                        // Load default config
+                        const defaultResult = phonidLoadDefaultConfig();
+                        if (defaultResult.success) {
+                            console.log(defaultResult.message);
+                            alert(
+                                "Saved config cleared. Default config loaded.",
+                            );
+                        }
+                    }
+                });
+
+            // Function to apply config and reset fields
+            function applyConfig(configText) {
+                const result = phonidLoadConfig(configText);
+
+                if (result.error) {
+                    alert("Error loading config: " + result.error);
+                    return;
+                }
+
+                // Save config to localStorage
+                localStorage.setItem(STORAGE_KEY, configText);
+                console.log("Config saved to localStorage");
+
+                // Update last applied config and status regardless of preflight result
+                lastAppliedConfig = configText;
+                const configStatusEl = document.getElementById("configStatus");
+                configStatusEl.textContent = "✓ Config applied";
+                configStatusEl.className = "config-status config-applied";
+
+                console.log("Config loaded, result:", result);
+
+                // Check if preflight validation passed
+                const preflightWarning =
+                    document.getElementById("preflightWarning");
+                if (result.preflightError) {
+                    console.log(
+                        "Preflight error detected:",
+                        result.preflightError,
+                    );
+                    // Show warning with suggestions
+                    document.getElementById("preflightMessage").textContent =
+                        result.preflightError;
+
+                    // Generate suggestions
+                    const suggestions = phonidGenerateSuggestions();
+                    console.log("Generated suggestions:", suggestions);
+                    if (suggestions.success) {
+                        document.getElementById("suggestedConfig").textContent =
+                            suggestions.config;
+                        preflightWarning.classList.add("show");
+                    } else {
+                        console.error(
+                            "Failed to generate suggestions:",
+                            suggestions.error,
+                        );
+                        // Show warning even without suggestions
+                        preflightWarning.classList.add("show");
+                    }
+                } else {
+                    console.log("No preflight error, hiding warning");
+                    // Hide warning if preflight passed
+                    preflightWarning.classList.remove("show");
+                }
+
+                // Reset result fields        // Reset result fields
+                document.getElementById("result").textContent = "-";
+                document.getElementById("result").className = "";
+                document.getElementById("decodeResult").textContent = "-";
+                document.getElementById("decodeResult").className = "";
+
+                // Optionally recalculate with current values
+                const currentNumber = document
+                    .getElementById("inputNumber")
+                    .value.trim();
+                if (currentNumber) {
+                    try {
+                        const num = parseNumberInputForEncode(currentNumber);
+                        const encodeResult = phonidEncode(num);
+                        if (encodeResult.result) {
+                            document.getElementById("result").textContent =
+                                encodeResult.result;
+                            // Auto-populate decode field with encoded result
+                            document.getElementById("inputString").value =
+                                encodeResult.result;
+                        }
+                    } catch (e) {
+                        // Ignore recalculation errors
                     }
                 }
 
-                // Load saved input values
-                const savedInputNumber = localStorage.getItem(STORAGE_KEY_INPUT_NUMBER);
-                const savedInputString = localStorage.getItem(STORAGE_KEY_INPUT_STRING);
-                if (savedInputNumber) {
-                    document.getElementById('inputNumber').value = savedInputNumber;
-                }
-                if (savedInputString) {
-                    document.getElementById('inputString').value = savedInputString;
-                }
-
-                // Initialize button states
-                updateButtonStates();
-            })
-            .catch((err) => {
-                statusEl.textContent = 'Error loading WASM: ' + err.message;
-                statusEl.className = 'error';
-                console.error("WASM load error:", err);
-            });
-
-        // Track config changes
-        document.getElementById('configText').addEventListener('input', () => {
-            const currentConfig = document.getElementById('configText').value;
-            const statusEl = document.getElementById('configStatus');
-
-            if (currentConfig !== lastAppliedConfig) {
-                statusEl.textContent = '⚠️ Config modified - click Apply to update';
-                statusEl.className = 'config-status config-modified';
-            } else {
-                statusEl.textContent = '✓ Config applied';
-                statusEl.className = 'config-status config-applied';
-            }
-
-            // Update dropdown to reflect if config matches a preset
-            updatePresetDropdown();
-        });
-
-        // Function to update button disabled states
-        function updateButtonStates() {
-            const inputNumber = document.getElementById('inputNumber');
-            const inputString = document.getElementById('inputString');
-            const encodeBtn = document.getElementById('encodeBtn');
-            const decodeBtn = document.getElementById('decodeBtn');
-
-            encodeBtn.disabled = !inputNumber.value.trim();
-            decodeBtn.disabled = !inputString.value.trim();
-        }
-
-        // Parse number input for encode operations.
-        // Supports:
-        //  - decimal integers (optionally with separators/spaces that get stripped)
-        //  - hexadecimal prefixed with 0x/0X
-        function parseNumberInputForEncode(inputVal) {
-            const trimmed = inputVal.trim();
-            if (!trimmed) {
-                throw new Error('Invalid number');
-            }
-
-            if (/^0[xX][0-9a-fA-F]+$/.test(trimmed)) {
-                // Normalize hex into decimal string so WASM encode path can parse it.
-                return BigInt(trimmed).toString();
-            }
-
-            if (/^0[xX]$/.test(trimmed)) {
-                throw new Error('Hex value must contain digits after 0x prefix');
-            }
-
-            // Keep existing permissive decimal behavior, but always pass strings to WASM
-            // to avoid JavaScript number precision loss for large integers.
-            const cleanVal = trimmed.replace(/[^0-9-]/g, '').replace(/n$/, '');
-            if (!/^-?\d+$/.test(cleanVal)) {
-                throw new Error('Invalid number');
-            }
-
-            return cleanVal;
-        }
-
-        // Save input values to localStorage on change
-        document.getElementById('inputNumber').addEventListener('input', (e) => {
-            localStorage.setItem(STORAGE_KEY_INPUT_NUMBER, e.target.value);
-            updateButtonStates();
-        });
-
-        document.getElementById('inputString').addEventListener('input', (e) => {
-            localStorage.setItem(STORAGE_KEY_INPUT_STRING, e.target.value);
-            updateButtonStates();
-        });
-        // Handle random button
-        document.getElementById('randomBtn').addEventListener('click', () => {
-            const resultEl = document.getElementById('result');
-
-            if (!wasmReady) {
-                resultEl.textContent = 'WASM not ready';
-                resultEl.className = 'error';
-                return;
-            }
-
-            const random = phonidGetRandom();
-
-            if (random.error) {
-                resultEl.textContent = random.error;
-                resultEl.className = 'error';
-            } else {
-                // Populate input field with the random number
-                document.getElementById('inputNumber').value = random.numberStr;
-                localStorage.setItem(STORAGE_KEY_INPUT_NUMBER, random.numberStr);
-
-                // Show the encoding result
-                resultEl.textContent = random.encoding;
-                resultEl.className = '';
-
-                // Auto-fill decode field with the encoded result
-                document.getElementById('inputString').value = random.encoding;
-                localStorage.setItem(STORAGE_KEY_INPUT_STRING, random.encoding);
-
-                updateButtonStates();
-            }
-        });
-
-        // Handle file upload
-        document.getElementById('configFile').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            try {
-                const text = await file.text();
-                // Populate the textarea
-                document.getElementById('configText').value = text;
-
-                // Apply the config
-                applyConfig(text);
-            } catch (err) {
-                alert("Error reading file: " + err.message);
-            }
-        });
-
-        // Handle preset selection
-        document.getElementById('presetSelect').addEventListener('change', async (e) => {
-            const presetName = e.target.value;
-            if (!presetName) return;
-
-            try {
-                const presetConfig = await fetchPreset(presetName);
-                document.getElementById('configText').value = presetConfig;
-                applyConfig(presetConfig);
-            } catch (err) {
-                console.error(`Error loading preset ${presetName}:`, err);
-                alert(`Failed to load preset: ${err.message}`);
-            }
-        });
-
-        // Handle apply config button
-        document.getElementById('applyConfigBtn').addEventListener('click', () => {
-            const configText = document.getElementById('configText').value.trim();
-            if (!configText) {
-                alert("Please enter a config first");
-                return;
-            }
-            applyConfig(configText);
-        });
-
-        // Handle generate preflight checks button
-        document.getElementById('generatePreflightBtn').addEventListener('click', () => {
-            if (!wasmReady) {
-                alert('WASM not ready yet');
-                return;
-            }
-
-            // apply config first
-            document.getElementById('applyConfigBtn').click()
-
-            // Generate suggestions based on current config
-            const suggestions = phonidGenerateSuggestions();
-            console.log('Generated suggestions:', suggestions);
-
-            if (suggestions.error) {
-                alert('Error generating preflight checks: ' + suggestions.error);
-                return;
-            }
-
-            if (suggestions.success) {
-                // Show modal with generated config
-                document.getElementById('modalSuggestedConfig').textContent = suggestions.config;
-                document.getElementById('suggestionModal').classList.add('show');
-            } else {
-                alert('Failed to generate suggestions');
-            }
-        });
-
-        // Handle share config button
-        document.getElementById('shareConfigBtn').addEventListener('click', shareConfig);
-
-        // Handle clear saved config button
-        document.getElementById('clearConfigBtn').addEventListener('click', () => {
-            if (confirm('Clear saved config from localStorage? This will reload with default config.')) {
-                localStorage.removeItem(STORAGE_KEY);
-                console.log('Saved config cleared from localStorage');
-                document.getElementById('configText').value = '';
-                document.getElementById('configStatus').textContent = '';
-
-                // Load default config
-                const defaultResult = phonidLoadDefaultConfig();
-                if (defaultResult.success) {
-                    console.log(defaultResult.message);
-                    alert('Saved config cleared. Default config loaded.');
-                }
-            }
-        });
-
-        // Function to apply config and reset fields
-        function applyConfig(configText) {
-            const result = phonidLoadConfig(configText);
-
-            if (result.error) {
-                alert("Error loading config: " + result.error);
-                return;
-            }
-
-            // Save config to localStorage
-            localStorage.setItem(STORAGE_KEY, configText);
-            console.log("Config saved to localStorage");
-
-            // Update last applied config and status regardless of preflight result
-            lastAppliedConfig = configText;
-            const configStatusEl = document.getElementById('configStatus');
-            configStatusEl.textContent = '✓ Config applied';
-            configStatusEl.className = 'config-status config-applied';
-
-            console.log("Config loaded, result:", result);
-
-            // Check if preflight validation passed
-            const preflightWarning = document.getElementById('preflightWarning');
-            if (result.preflightError) {
-                console.log("Preflight error detected:", result.preflightError);
-                // Show warning with suggestions
-                document.getElementById('preflightMessage').textContent = result.preflightError;
-
-                // Generate suggestions
-                const suggestions = phonidGenerateSuggestions();
-                console.log("Generated suggestions:", suggestions);
-                if (suggestions.success) {
-                    document.getElementById('suggestedConfig').textContent = suggestions.config;
-                    preflightWarning.classList.add('show');
-                } else {
-                    console.error('Failed to generate suggestions:', suggestions.error);
-                    // Show warning even without suggestions
-                    preflightWarning.classList.add('show');
-                }
-            } else {
-                console.log("No preflight error, hiding warning");
-                // Hide warning if preflight passed
-                preflightWarning.classList.remove('show');
-            }
-
-            // Reset result fields        // Reset result fields
-            document.getElementById('result').textContent = '-';
-            document.getElementById('result').className = '';
-            document.getElementById('decodeResult').textContent = '-';
-            document.getElementById('decodeResult').className = '';
-
-            // Optionally recalculate with current values
-            const currentNumber = document.getElementById('inputNumber').value.trim();
-            if (currentNumber) {
-                try {
-                    const num = parseNumberInputForEncode(currentNumber);
-                    const encodeResult = phonidEncode(num);
-                    if (encodeResult.result) {
-                        document.getElementById('result').textContent = encodeResult.result;
-                        // Auto-populate decode field with encoded result
-                        document.getElementById('inputString').value = encodeResult.result;
+                const currentString = document
+                    .getElementById("inputString")
+                    .value.trim();
+                if (currentString) {
+                    const decodeResult = phonidDecode(currentString);
+                    if (decodeResult.result !== undefined) {
+                        const display = decodeResult.fitsInInt64
+                            ? decodeResult.result
+                            : decodeResult.resultStr;
+                        document.getElementById("decodeResult").textContent =
+                            display;
                     }
-                } catch (e) {
-                    // Ignore recalculation errors
                 }
+
+                // Handle apply suggested config button (from preflight warning)
+                document
+                    .getElementById("applySuggestedBtn")
+                    .addEventListener("click", () => {
+                        const suggestedConfig =
+                            document.getElementById(
+                                "suggestedConfig",
+                            ).textContent;
+                        if (suggestedConfig) {
+                            document.getElementById("configText").value =
+                                suggestedConfig;
+                            applyConfig(suggestedConfig);
+                        }
+                    });
+
+                // Handle modal apply button
+                document
+                    .getElementById("applyModalConfigBtn")
+                    .addEventListener("click", () => {
+                        const suggestedConfig = document.getElementById(
+                            "modalSuggestedConfig",
+                        ).textContent;
+                        if (suggestedConfig) {
+                            document.getElementById("configText").value =
+                                suggestedConfig;
+                            document
+                                .getElementById("suggestionModal")
+                                .classList.remove("show");
+                            applyConfig(suggestedConfig);
+                        }
+                    });
+
+                // Handle modal cancel button
+                document
+                    .getElementById("cancelModalBtn")
+                    .addEventListener("click", () => {
+                        document
+                            .getElementById("suggestionModal")
+                            .classList.remove("show");
+                    });
+
+                // Close modal on background click
+                document
+                    .getElementById("suggestionModal")
+                    .addEventListener("click", (e) => {
+                        if (e.target.id === "suggestionModal") {
+                            document
+                                .getElementById("suggestionModal")
+                                .classList.remove("show");
+                        }
+                    });
+                // Handle encode button
+                document
+                    .getElementById("encodeBtn")
+                    .addEventListener("click", () => {
+                        if (!wasmReady) {
+                            alert("WASM not ready yet");
+                            return;
+                        }
+
+                        const inputVal = document
+                            .getElementById("inputNumber")
+                            .value.trim();
+                        if (!inputVal) {
+                            alert("Please enter a number");
+                            return;
+                        }
+
+                        // Parse decimal and 0x-prefixed hex values for WASM encode.
+                        let num;
+                        try {
+                            num = parseNumberInputForEncode(inputVal);
+                        } catch (e) {
+                            alert("Invalid number format: " + e.message);
+                            return;
+                        }
+
+                        const result = phonidEncode(num);
+
+                        if (result.error) {
+                            document.getElementById("result").textContent =
+                                "Error: " + result.error;
+                            document.getElementById("result").className =
+                                "error";
+                        } else {
+                            document.getElementById("result").textContent =
+                                result.result;
+                            document.getElementById("result").className = "";
+
+                            // Auto-populate the decode field with encoded result
+                            document.getElementById("inputString").value =
+                                result.result;
+                        }
+                        updateButtonStates();
+                    });
+
+                // Handle decode button
+                document
+                    .getElementById("decodeBtn")
+                    .addEventListener("click", () => {
+                        if (!wasmReady) {
+                            alert("WASM not ready yet");
+                            return;
+                        }
+
+                        const str = document
+                            .getElementById("inputString")
+                            .value.trim();
+                        if (!str) {
+                            alert("Please enter a string to decode");
+                            return;
+                        }
+
+                        const result = phonidDecode(str);
+
+                        if (result.error) {
+                            document.getElementById(
+                                "decodeResult",
+                            ).textContent = "Error: " + result.error;
+                            document.getElementById("decodeResult").className =
+                                "error";
+                        } else {
+                            // Always use resultStr to support BigInt
+                            const display = result.resultStr || result.result;
+                            document.getElementById(
+                                "decodeResult",
+                            ).textContent = display;
+                            document.getElementById("decodeResult").className =
+                                "";
+
+                            // Auto-populate the encode field with decoded number (supports BigInt)
+                            document.getElementById("inputNumber").value =
+                                display;
+                        }
+                        updateButtonStates();
+                    });
             }
-
-            const currentString = document.getElementById('inputString').value.trim();
-            if (currentString) {
-                const decodeResult = phonidDecode(currentString);
-                if (decodeResult.result !== undefined) {
-                    const display = decodeResult.fitsInInt64 ? decodeResult.result : decodeResult.resultStr;
-                    document.getElementById('decodeResult').textContent = display;
-                }
-            }
-
-            // Handle apply suggested config button (from preflight warning)
-            document.getElementById('applySuggestedBtn').addEventListener('click', () => {
-                const suggestedConfig = document.getElementById('suggestedConfig').textContent;
-                if (suggestedConfig) {
-                    document.getElementById('configText').value = suggestedConfig;
-                    applyConfig(suggestedConfig);
-                }
-            });
-
-            // Handle modal apply button
-            document.getElementById('applyModalConfigBtn').addEventListener('click', () => {
-                const suggestedConfig = document.getElementById('modalSuggestedConfig').textContent;
-                if (suggestedConfig) {
-                    document.getElementById('configText').value = suggestedConfig;
-                    document.getElementById('suggestionModal').classList.remove('show');
-                    applyConfig(suggestedConfig);
-                }
-            });
-
-            // Handle modal cancel button
-            document.getElementById('cancelModalBtn').addEventListener('click', () => {
-                document.getElementById('suggestionModal').classList.remove('show');
-            });
-
-            // Close modal on background click
-            document.getElementById('suggestionModal').addEventListener('click', (e) => {
-                if (e.target.id === 'suggestionModal') {
-                    document.getElementById('suggestionModal').classList.remove('show');
-                }
-            });
-            // Handle encode button
-            document.getElementById('encodeBtn').addEventListener('click', () => {
-                if (!wasmReady) {
-                    alert("WASM not ready yet");
-                    return;
-                }
-
-                const inputVal = document.getElementById('inputNumber').value.trim();
-                if (!inputVal) {
-                    alert("Please enter a number");
-                    return;
-                }
-
-                // Parse decimal and 0x-prefixed hex values for WASM encode.
-                let num;
-                try {
-                    num = parseNumberInputForEncode(inputVal);
-                } catch (e) {
-                    alert("Invalid number format: " + e.message);
-                    return;
-                }
-
-                const result = phonidEncode(num);
-
-                if (result.error) {
-                    document.getElementById('result').textContent = "Error: " + result.error;
-                    document.getElementById('result').className = 'error';
-                } else {
-                    document.getElementById('result').textContent = result.result;
-                    document.getElementById('result').className = '';
-
-                    // Auto-populate the decode field with encoded result
-                    document.getElementById('inputString').value = result.result;
-                }
-                updateButtonStates();
-            });
-
-            // Handle decode button
-            document.getElementById('decodeBtn').addEventListener('click', () => {
-                if (!wasmReady) {
-                    alert("WASM not ready yet");
-                    return;
-                }
-
-                const str = document.getElementById('inputString').value.trim();
-                if (!str) {
-                    alert("Please enter a string to decode");
-                    return;
-                }
-
-                const result = phonidDecode(str);
-
-                if (result.error) {
-                    document.getElementById('decodeResult').textContent = "Error: " + result.error;
-                    document.getElementById('decodeResult').className = 'error';
-                } else {
-                    // Always use resultStr to support BigInt
-                    const display = result.resultStr || result.result;
-                    document.getElementById('decodeResult').textContent = display;
-                    document.getElementById('decodeResult').className = '';
-
-                    // Auto-populate the encode field with decoded number (supports BigInt)
-                    document.getElementById('inputNumber').value = display;
-                }
-                updateButtonStates();
-            });
-
-        }
-    </script>
-</body>
-
+        </script>
+    </body>
 </html>

@@ -16,6 +16,14 @@ const (
 	Regulus         = "\U0001F732" // 🜲 ALCHEMICAL SYMBOL FOR REGULUS
 	HighVoltageSign = "\u26a1"     // ⚡ HIGH VOLTAGE SIGN
 	Sparkles        = "\u2728"     // ✨ SPARKLES
+
+	encPatternCVCVC = "CVCVC"
+	encPatternVCVCV = "VCVCV"
+	encCaseZero     = "encode zero"
+	encWordBabab    = "babab"
+	encWordBabaz    = "babaz"
+	encWordBabok    = "babok"
+	encWordKikik    = "kikik"
 )
 
 func TestNewPhoneticEncoder(t *testing.T) {
@@ -45,7 +53,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 			name: "bad config: too few composites",
 			args: args{
 				config: &PhonidConfig{
-					Patterns:     []string{"VCVCV"},
+					Patterns:     []string{encPatternVCVCV},
 					Placeholders: placeholderMapFewComposites,
 				},
 			},
@@ -56,7 +64,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 			name: "bad config: no Vowels",
 			args: args{
 				config: &PhonidConfig{
-					Patterns:     []string{"VCVCV"},
+					Patterns:     []string{encPatternVCVCV},
 					Placeholders: placeholderMapNoVowels,
 				},
 			},
@@ -66,7 +74,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 		{
 			name: "custom config ok",
 			args: args{
-				config: &PhonidConfig{Patterns: []string{"VCVCV"}, Placeholders: placeholderCustomOK},
+				config: &PhonidConfig{Patterns: []string{encPatternVCVCV}, Placeholders: placeholderCustomOK},
 			},
 			want:    &PhoneticEncoder{},
 			wantErr: false,
@@ -107,7 +115,7 @@ func TestNewPhoneticEncoder(t *testing.T) {
 func TestPhoneticEncoder_Encode(t *testing.T) {
 	// Create a simple config for testing
 	configA := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{encPatternCVCVC},
 		Placeholders: PlaceholderMap{
 			Vowel:     RuneSet{'a', 'o', 'i'},
 			Consonant: []rune("bzk"),
@@ -130,14 +138,14 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 	}{
 		{
 			config:  *configA,
-			name:    "encode zero",
+			name:    encCaseZero,
 			number:  NewPositiveInt(0),
-			want:    "babab",
+			want:    encWordBabab,
 			wantErr: false,
 		},
 		{
 			config:  *configB,
-			name:    "encode zero",
+			name:    encCaseZero,
 			number:  NewPositiveInt(0),
 			want:    "a" + Air + Air + Air + Air, // a🜁🜁🜁🜁
 			wantErr: false,
@@ -153,21 +161,21 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 			config:  *configA,
 			name:    "encode 1",
 			number:  NewPositiveInt(1),
-			want:    "babaz",
+			want:    encWordBabaz,
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode small number",
 			number:  NewPositiveInt(5),
-			want:    "babok",
+			want:    encWordBabok,
 			wantErr: false,
 		},
 		{
 			config:  *configA,
 			name:    "encode max value for pattern",
 			number:  NewPositiveInt(242), // Capacity 243 minus 1
-			want:    "kikik",
+			want:    encWordKikik,
 			wantErr: false,
 		},
 		{
@@ -203,7 +211,7 @@ func TestPhoneticEncoder_Encode(t *testing.T) {
 func TestPhoneticEncoder_Decode(t *testing.T) {
 	// Create a simple config for testing
 	simpleConfig := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{encPatternCVCVC},
 		Placeholders: PlaceholderMap{
 			Vowel:     RuneSet{'a', 'o', 'i'},
 			Consonant: RuneSet{'b', 'z', 'k'},
@@ -224,25 +232,25 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 	}{
 		{
 			name:    "decode zero",
-			word:    "babab",
+			word:    encWordBabab,
 			want:    0,
 			wantErr: false,
 		},
 		{
 			name:    "decode one",
-			word:    "babaz",
+			word:    encWordBabaz,
 			want:    1,
 			wantErr: false,
 		},
 		{
 			name:    "decode small number",
-			word:    "babok",
+			word:    encWordBabok,
 			want:    5,
 			wantErr: false,
 		},
 		{
 			name:    "decode max value for pattern",
-			word:    "kikik",
+			word:    encWordKikik,
 			want:    242, // 3^3 * 3^2 - 1
 			wantErr: false,
 		},
@@ -295,7 +303,7 @@ func TestPhoneticEncoder_Decode(t *testing.T) {
 // Round-trip test to verify Encode/Decode are inverses.
 func TestPhoneticEncoder_RoundTrip(t *testing.T) {
 	simpleConfig := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{encPatternCVCVC},
 		Placeholders: PlaceholderMap{
 			Vowel:     RuneSet{'a', 'o', 'i'},
 			Consonant: RuneSet{'b', 'z', 'k'},

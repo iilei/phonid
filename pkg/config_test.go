@@ -7,6 +7,8 @@ import (
 	. "github.com/iilei/phonid/pkg"
 )
 
+const cfgPatternCVCVC = "CVCVC"
+
 func TestNewConfig(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -66,7 +68,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "invalid PhonidConfig",
 			fields: fields{
 				Phonetic: &PhonidConfig{
-					Patterns: []string{"CVCVC"},
+					Patterns: []string{cfgPatternCVCVC},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
 						Vowel:     RuneSet("ae"), // Only 2 vowels, needs 3 for length 5
@@ -79,7 +81,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "valid PhonidConfig",
 			fields: fields{
 				Phonetic: &PhonidConfig{
-					Patterns: []string{"CVCVC"},
+					Patterns: []string{cfgPatternCVCVC},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
 						Vowel:     RuneSet("aei"),
@@ -116,7 +118,7 @@ func TestNewConfigWithOptions(t *testing.T) {
 			args: args{
 				opts: []ConfigOption{
 					WithPhonetic(&PhonidConfig{
-						Patterns: []string{"CVCVC"},
+						Patterns: []string{cfgPatternCVCVC},
 						Placeholders: PlaceholderMap{
 							Consonant: RuneSet("bcdx"),
 							Vowel:     RuneSet("aei"),
@@ -126,7 +128,7 @@ func TestNewConfigWithOptions(t *testing.T) {
 			},
 			want: &Config{
 				Phonetic: &PhonidConfig{
-					Patterns: []string{"CVCVC"},
+					Patterns: []string{cfgPatternCVCVC},
 					Placeholders: PlaceholderMap{
 						Consonant: RuneSet("bcdx"),
 						Vowel:     RuneSet("aei"),

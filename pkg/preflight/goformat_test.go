@@ -9,6 +9,13 @@ import (
 	"github.com/iilei/phonid/pkg/preflight"
 )
 
+const (
+	goFmtOutputBac = "bac"
+	goFmtOutputDae = "dae"
+	goFmtLower     = "Lower boundary"
+	goFmtMid       = "Mid-range"
+)
+
 func TestGoFormatter_Name(t *testing.T) {
 	formatter := preflight.NewGoFormatter()
 	if got := formatter.Name(); got != preflight.FormatGo {
@@ -20,13 +27,13 @@ func TestGoFormatter_Format(t *testing.T) {
 	assertions := &preflight.AssertionTable{
 		{
 			Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(0)},
-			Output:  "bac",
-			Comment: "Lower boundary",
+			Output:  goFmtOutputBac,
+			Comment: goFmtLower,
 		},
 		{
 			Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(10)},
-			Output:  "dae",
-			Comment: "Mid-range",
+			Output:  goFmtOutputDae,
+			Comment: goFmtMid,
 		},
 	}
 
@@ -48,10 +55,10 @@ func TestGoFormatter_Format(t *testing.T) {
 		"preflight.AssertionTable",
 		"pkg.NewPositiveInt(0)",
 		"pkg.NewPositiveInt(10)",
-		`Output: "bac"`,
-		`Output: "dae"`,
-		`Comment: "Lower boundary"`,
-		`Comment: "Mid-range"`,
+		`Output: "` + goFmtOutputBac + `"`,
+		`Output: "` + goFmtOutputDae + `"`,
+		`Comment: "` + goFmtLower + `"`,
+		`Comment: "` + goFmtMid + `"`,
 	}
 
 	for _, expected := range expectedStrings {

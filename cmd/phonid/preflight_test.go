@@ -11,7 +11,7 @@ func TestPreflightCommand_RejectsPreset(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"--preset", "proquint-tiny", "preflight", "--suggest"})
+	rootCmd.SetArgs([]string{testArgPreset, presetProQuintTiny, "preflight", "--suggest"})
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("rootCmd.Execute() error = nil, want error")

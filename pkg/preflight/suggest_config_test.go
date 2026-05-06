@@ -8,6 +8,11 @@ import (
 	"github.com/iilei/phonid/pkg/preflight"
 )
 
+const (
+	scfgPatternCVCVC = "CVCVC"
+	scfgPatternVCVCV = "VCVCV"
+)
+
 func TestSuggestConfig(t *testing.T) {
 	placeholderMap := p.PlaceholderMap{
 		p.Vowel:     p.RuneSet{'a', 'e', 'i'},
@@ -15,7 +20,7 @@ func TestSuggestConfig(t *testing.T) {
 	}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"CVCVC"},
+		Patterns:     []string{scfgPatternCVCVC},
 		Placeholders: placeholderMap,
 	}
 
@@ -91,7 +96,7 @@ func TestSuggestConfigInlineComments(t *testing.T) {
 	}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"VCVCV"},
+		Patterns:     []string{scfgPatternVCVCV},
 		Placeholders: placeholderMap,
 	}
 
@@ -165,7 +170,7 @@ func TestSuggestConfigInlineComments(t *testing.T) {
 
 func TestSuggestConfigErrorCases(t *testing.T) {
 	config := &p.PhonidConfig{
-		Patterns:     []string{"CVCVC"},
+		Patterns:     []string{scfgPatternCVCVC},
 		Placeholders: p.PlaceholderMap{p.Vowel: p.RuneSet{'a', 'e', 'i'}, p.Consonant: p.RuneSet{'b', 'c', 'd'}},
 	}
 

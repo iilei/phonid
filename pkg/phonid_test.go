@@ -6,6 +6,14 @@ import (
 	. "github.com/iilei/phonid/pkg"
 )
 
+const (
+	phPatternCVC   = "CVC"
+	phPatternCCVC  = "CCVC"
+	phPatternCVCVC = "CVCVC"
+	phPatternCLVCV = "CLVCV"
+	phPatternVCVCV = "VCVCV"
+)
+
 func TestPhoneticConfigValidate_Defaults(t *testing.T) {
 	pc := &PhonidConfig{}
 
@@ -33,9 +41,9 @@ func TestPhoneticConfigValidate_InvalidPatternLength(t *testing.T) {
 		wantErr bool
 	}{
 		// Valid lengths: 3 and above
-		{"length 3", "CVC", false},
-		{"length 4", "CCVC", false},
-		{"length 5", "CVCVC", false},
+		{"length 3", phPatternCVC, false},
+		{"length 4", phPatternCCVC, false},
+		{"length 5", phPatternCVCVC, false},
 		{"length 11", "CVCVCVCVCVC", false},
 		// Invalid: length 2 is too short
 		{"length 2", "CV", true},
@@ -78,7 +86,7 @@ func TestPhoneticConfigValidate_UndefinedPlaceholder(t *testing.T) {
 func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
 	// Length 5 requires 3 vowels
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("a"),  // Only 1 vowel, need at least 3 for length 5
 			Consonant: RuneSet("bd"), // 2 consonants is OK
@@ -92,7 +100,7 @@ func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
 
 	// Length 3 requires 2 vowels
 	pc2 := &PhonidConfig{
-		Patterns: []string{"CVC"},
+		Patterns: []string{phPatternCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("a"),  // Only 1 vowel, need at least 2 for length 3
 			Consonant: RuneSet("bd"), // 2 consonants is OK
@@ -107,7 +115,7 @@ func TestPhoneticConfigValidate_MinimumCharacters(t *testing.T) {
 
 func TestPhoneticConfigValidate_DuplicateCharacters(t *testing.T) {
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aea"), // Duplicate 'a'
 			Consonant: RuneSet("bdk"),
@@ -122,7 +130,7 @@ func TestPhoneticConfigValidate_DuplicateCharacters(t *testing.T) {
 
 func TestPhoneticConfigValidate_OverlappingPlaceholders(t *testing.T) {
 	pc := &PhonidConfig{
-		Patterns: []string{"CLVCV"},
+		Patterns: []string{phPatternCLVCV},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdkl"), // 'l' overlaps with L
@@ -153,7 +161,7 @@ func TestPhoneticConfigValidate_NoVowelPlaceholder(t *testing.T) {
 
 func TestPhoneticConfigValidate_InsufficientCombinations(t *testing.T) {
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("ae"),
 			Consonant: RuneSet("bd"),
@@ -170,7 +178,7 @@ func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
 	// With 3 consonants and 3 vowels in CVCVC pattern:
 	// 3^3 * 3^2 = 27 * 9 = 243 combinations (more than 36 needed)
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdk"),
@@ -186,7 +194,7 @@ func TestPhoneticConfigValidate_SufficientCombinations(t *testing.T) {
 func TestPhoneticConfigValidate_UnusedPlaceholders(t *testing.T) {
 	// Should not validate unused placeholders
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("bdk"),
@@ -203,7 +211,7 @@ func TestPhoneticConfigValidate_UnusedPlaceholders(t *testing.T) {
 func TestPhoneticConfigValidate_MisconfiguredComplement(t *testing.T) {
 	// Should not validate unused placeholders
 	pc := &PhonidConfig{
-		Patterns: []string{"VCVCV"},
+		Patterns: []string{phPatternVCVCV},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aei"),
 			Consonant: RuneSet("b"),
@@ -251,7 +259,7 @@ func TestValidate_DuplicateDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := &PhonidConfig{
-				Patterns: []string{"CVCVC"},
+				Patterns: []string{phPatternCVCVC},
 				Placeholders: map[PlaceholderType]RuneSet{
 					Vowel:     RuneSet("aei"),
 					Consonant: tt.placeholder,
@@ -282,7 +290,7 @@ func TestValidate_OverlapDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := &PhonidConfig{
-				Patterns: []string{"CLVCV"},
+				Patterns: []string{phPatternCLVCV},
 				Placeholders: map[PlaceholderType]RuneSet{
 					Vowel:     RuneSet("aei"),
 					Consonant: tt.consonant,
@@ -336,7 +344,7 @@ func TestValidate_VowelValidation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pc := &PhonidConfig{
-				Patterns: []string{"CVCVC"},
+				Patterns: []string{phPatternCVCVC},
 				Placeholders: map[PlaceholderType]RuneSet{
 					Vowel:     tt.vowels,
 					Consonant: RuneSet("bdk"),
@@ -353,7 +361,7 @@ func TestValidate_VowelValidation(t *testing.T) {
 
 func TestPhoneticConfigValidate_VowelsWithDiacritics(t *testing.T) {
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("äöü"), // German umlauts (a-umlaut, o-umlaut, u-umlaut)
 			Consonant: RuneSet("bdk"),
@@ -368,7 +376,7 @@ func TestPhoneticConfigValidate_VowelsWithDiacritics(t *testing.T) {
 
 func TestPhoneticConfigValidate_MixedVowels(t *testing.T) {
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aéö"), // Mix of plain and diacritics (a, e-acute, o-umlaut)
 			Consonant: RuneSet("bdk"),
@@ -383,7 +391,7 @@ func TestPhoneticConfigValidate_MixedVowels(t *testing.T) {
 
 func TestPhoneticConfigValidate_InvalidVowelWithDiacritic(t *testing.T) {
 	pc := &PhonidConfig{
-		Patterns: []string{"CVCVC"},
+		Patterns: []string{phPatternCVCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("aeñ"), // n-tilde is not a vowel
 			Consonant: RuneSet("bdk"),
@@ -399,7 +407,7 @@ func TestPhoneticConfigValidate_InvalidVowelWithDiacritic(t *testing.T) {
 func TestPhoneticConfigValidate_ShortPatternLength3(t *testing.T) {
 	// Length 3 (CVC) requires 2 vowels minimum
 	pc := &PhonidConfig{
-		Patterns: []string{"CVC"},
+		Patterns: []string{phPatternCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("ae"),
 			Consonant: RuneSet("bdk"),
@@ -415,7 +423,7 @@ func TestPhoneticConfigValidate_ShortPatternLength3(t *testing.T) {
 func TestPhoneticConfigValidate_ShortPatternLength4(t *testing.T) {
 	// Length 4 (CCVC) requires 2 vowels minimum
 	pc := &PhonidConfig{
-		Patterns: []string{"CCVC"},
+		Patterns: []string{phPatternCCVC},
 		Placeholders: map[PlaceholderType]RuneSet{
 			Vowel:     RuneSet("ai"),
 			Consonant: RuneSet("bdkt"),

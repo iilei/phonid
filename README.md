@@ -74,9 +74,6 @@ Configurations do not allow:
 
 Phonid follows Semantic Versioning (SemVer).
 
-> While the major version is `0.x.y`, **breaking changes may occur at any time**.
-> Stability guarantees apply only after `v1.0.0`.
-
 ## Local Dev
 
 Install GoReleaser:

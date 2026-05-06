@@ -16,7 +16,7 @@ func TestDecodeCommand_DefaultConfig(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"decode", "babab-bihun"})
+	rootCmd.SetArgs([]string{testArgDecode, testEncoded1337})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
 	}
@@ -36,7 +36,7 @@ func TestDecodeCommand_WithExplicitConfig(t *testing.T) {
 		t.Fatal("failed to determine test file path")
 	}
 	configPath := filepath.Join(filepath.Dir(thisFile), "..", "..", "public_presets", ".proquint.phonidrc.toml")
-	rootCmd.SetArgs([]string{"--config", configPath, "decode", "babab-bihun"})
+	rootCmd.SetArgs([]string{testArgConfig, configPath, testArgDecode, testEncoded1337})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
 	}
@@ -51,7 +51,7 @@ func TestDecodeCommand_InvalidWord(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"decode", "invalid"})
+	rootCmd.SetArgs([]string{testArgDecode, "invalid"})
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("rootCmd.Execute() error = nil, want error")

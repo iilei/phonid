@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+const (
+	testArgPreset = "--preset"
+	testArgConfig = "--config"
+	testArgDecode = "decode"
+
+	testEncoded1337 = "babab-bihun"
+)
+
 func TestEncodeCommand_DefaultDecimalInput(t *testing.T) {
 	stdout := &bytes.Buffer{}
 	resetCLIState(t)
@@ -62,8 +70,8 @@ func TestEncodeCommand_AcceptsLowercaseBinaryPrefix(t *testing.T) {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
 	}
 
-	if got := strings.TrimSpace(stdout.String()); got != "babab-bihun" {
-		t.Fatalf("encode output = %q, want %q", got, "babab-bihun")
+	if got := strings.TrimSpace(stdout.String()); got != testEncoded1337 {
+		t.Fatalf("encode output = %q, want %q", got, testEncoded1337)
 	}
 }
 
@@ -159,7 +167,7 @@ func TestEncodeCommand_PresetProquintMatchesStandard(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"--preset", "proquint", "100"})
+	rootCmd.SetArgs([]string{testArgPreset, presetProQuint, "100"})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
 	}
@@ -174,7 +182,7 @@ func TestEncodeCommand_PresetProquintTinyRejectsOverflow(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"--preset", "proquint-tiny", "70000"})
+	rootCmd.SetArgs([]string{testArgPreset, presetProQuintTiny, "70000"})
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("rootCmd.Execute() error = nil, want error")
@@ -192,7 +200,7 @@ func TestEncodeCommand_InvalidPreset(t *testing.T) {
 	resetCLIState(t)
 	rootCmd.SetOut(stdout)
 
-	rootCmd.SetArgs([]string{"--preset", "unknown-preset", "1337"})
+	rootCmd.SetArgs([]string{testArgPreset, "unknown-preset", "1337"})
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("rootCmd.Execute() error = nil, want error")
@@ -211,7 +219,7 @@ func TestEncodeCommand_PresetProquintSHA256RoundTripMaxValue(t *testing.T) {
 	rootCmd.SetOut(stdout)
 
 	maxHex := "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
-	rootCmd.SetArgs([]string{"--preset", "proquint-sha256", maxHex})
+	rootCmd.SetArgs([]string{testArgPreset, presetProQuintSHA, maxHex})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("rootCmd.Execute() error = %v", err)
 	}
@@ -227,7 +235,7 @@ func TestEncodeCommand_PresetProquintSHA256RoundTripMaxValue(t *testing.T) {
 	decodedOut := &bytes.Buffer{}
 	resetCLIState(t)
 	rootCmd.SetOut(decodedOut)
-	rootCmd.SetArgs([]string{"--preset", "proquint-sha256", "decode", encoded})
+	rootCmd.SetArgs([]string{testArgPreset, presetProQuintSHA, testArgDecode, encoded})
 	if err := rootCmd.Execute(); err != nil {
 		t.Fatalf("decode round-trip error = %v", err)
 	}
@@ -245,7 +253,7 @@ func TestEncodeCommand_PresetProquintSHA256RejectsOverflow(t *testing.T) {
 	rootCmd.SetOut(stdout)
 
 	overflow := new(big.Int).Lsh(big.NewInt(1), 256).String()
-	rootCmd.SetArgs([]string{"--preset", "proquint-sha256", overflow})
+	rootCmd.SetArgs([]string{testArgPreset, presetProQuintSHA, overflow})
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("rootCmd.Execute() error = nil, want error")
@@ -264,7 +272,7 @@ func TestEncodeCommand_ConfigAndPresetMutuallyExclusive(t *testing.T) {
 	rootCmd.SetOut(stdout)
 
 	configPath := "my-config"
-	rootCmd.SetArgs([]string{"--config", configPath, "--preset", "proquint", "1337"})
+	rootCmd.SetArgs([]string{testArgConfig, configPath, testArgPreset, presetProQuint, "1337"})
 	err := rootCmd.Execute()
 	if err == nil {
 		t.Fatal("rootCmd.Execute() error = nil, want error")

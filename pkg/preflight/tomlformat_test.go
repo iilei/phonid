@@ -9,6 +9,13 @@ import (
 	"github.com/iilei/phonid/pkg/preflight"
 )
 
+const (
+	tomlFmtOutputBac = "bac"
+	tomlFmtOutputDae = "dae"
+	tomlFmtLower     = "Lower boundary"
+	tomlFmtMid       = "Mid-range"
+)
+
 func TestTOMLFormatter_Name(t *testing.T) {
 	formatter := preflight.NewTOMLFormatter()
 	if got := formatter.Name(); got != preflight.FormatTOML {
@@ -18,8 +25,8 @@ func TestTOMLFormatter_Name(t *testing.T) {
 
 func TestTOMLFormatter_Format(t *testing.T) {
 	assertions := &preflight.AssertionTable{
-		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(0)}, Output: "bac", Comment: "Lower boundary"},
-		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(10)}, Output: "dae", Comment: "Mid-range"},
+		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(0)}, Output: tomlFmtOutputBac, Comment: tomlFmtLower},
+		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(10)}, Output: tomlFmtOutputDae, Comment: tomlFmtMid},
 	}
 
 	formatter := preflight.NewTOMLFormatter()
@@ -38,17 +45,19 @@ func TestTOMLFormatter_Format(t *testing.T) {
 		t.Errorf("missing first input value, got:\n%s", result)
 	}
 	// go-toml uses single quotes for strings, both 'bac' and "bac" are valid TOML
-	if !strings.Contains(result, "output = 'bac'") && !strings.Contains(result, "output = \"bac\"") {
+	if !strings.Contains(result, "output = '"+tomlFmtOutputBac+"'") &&
+		!strings.Contains(result, "output = \""+tomlFmtOutputBac+"\"") {
 		t.Errorf("missing first output value, got:\n%s", result)
 	}
 	if !strings.Contains(result, "input = '10'") && !strings.Contains(result, "input = \"10\"") {
 		t.Errorf("missing second input value, got:\n%s", result)
 	}
-	if !strings.Contains(result, "output = 'dae'") && !strings.Contains(result, "output = \"dae\"") {
+	if !strings.Contains(result, "output = '"+tomlFmtOutputDae+"'") &&
+		!strings.Contains(result, "output = \""+tomlFmtOutputDae+"\"") {
 		t.Errorf("missing second output value, got:\n%s", result)
 	}
 	// Comments should NOT be in Format output (only in SuggestConfig)
-	if strings.Contains(result, "# Lower boundary") {
+	if strings.Contains(result, "# "+tomlFmtLower) {
 		t.Error("Format() should not include inline comments")
 	}
 }

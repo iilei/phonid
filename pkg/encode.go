@@ -346,8 +346,8 @@ func (e *PatternEncoder) encodeInt64(number int64) string {
 	remaining := number
 
 	// Convert to mixed-radix representation (right-to-left)
-	for i := len(e.positions) - 1; i >= 0; i-- {
-		position := e.positions[i]
+	for _, v := range slices.Backward(e.positions) {
+		position := v
 		charIndex := remaining % int64(position.base)
 		remaining /= int64(position.base)
 
@@ -367,8 +367,8 @@ func (e *PatternEncoder) encodeBigInt(number *big.Int) string {
 	charIndex := new(big.Int)
 
 	// Convert to mixed-radix representation (right-to-left)
-	for i := len(e.positions) - 1; i >= 0; i-- {
-		position := e.positions[i]
+	for _, v := range slices.Backward(e.positions) {
+		position := v
 		base.SetInt64(int64(position.base))
 
 		charIndex.Mod(remaining, base)

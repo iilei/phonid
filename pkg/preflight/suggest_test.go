@@ -10,29 +10,40 @@ import (
 
 const (
 	patternCVCVCVC   = "CVCVCVC"
+	patternVCVCV     = "VCVCV"
 	placeholderOther = "other"
+
+	suggestOutputKokokok = "kokokok"
+	suggestOutputTititit = "tititit"
+	suggestOutputItiti   = "ititi"
+	suggestOutputAzaza   = "azaza"
+	suggestOutputOkoko   = "okoko"
+
+	suggestLowerVCVCV = "Lower boundary (VCVCV)"
+	suggestMidVCVCV   = "Mid-range (VCVCV)"
+	suggestUpperVCVCV = "Upper boundary (VCVCV)"
 )
 
 // makeTwoPatternBoundaries creates boundary assertions for two patterns.
 func makeTwoPatternBoundaries(pattern2 string) AssertionTable {
-	output1093 := "kokokok" // CVCVCVC starts at 243
-	output2186 := "tititit"
+	output1093 := suggestOutputKokokok // CVCVCVC starts at 243
+	output2186 := suggestOutputTititit
 	if pattern2 != patternCVCVCVC {
 		output1093 = placeholderOther
 		output2186 = placeholderOther
 	}
 
 	return AssertionTable{
-		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(0)}, Output: "azaza", Comment: "Lower boundary (VCVCV)"},
-		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(121)}, Output: "okoko", Comment: "Mid-range (VCVCV)"},
+		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(0)}, Output: suggestOutputAzaza, Comment: suggestLowerVCVCV},
+		{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(121)}, Output: suggestOutputOkoko, Comment: suggestMidVCVCV},
 		{
 			Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(242)},
-			Output:  "ititi",
-			Comment: "Upper boundary (VCVCV)",
+			Output:  suggestOutputItiti,
+			Comment: suggestUpperVCVCV,
 		},
 		{
 			Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(0)},
-			Output:  "azaza",
+			Output:  suggestOutputAzaza,
 			Comment: "Lower boundary (" + pattern2 + ")",
 		},
 		{
@@ -52,7 +63,7 @@ func TestGenerateSuggestions(t *testing.T) {
 	placeholderMap := p.PlaceholderMap{p.Vowel: p.RuneSet{'a', 'o', 'i'}, p.Consonant: p.RuneSet{'z', 'k', 't'}}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"VCVCV"},
+		Patterns:     []string{patternVCVCV},
 		Placeholders: placeholderMap,
 	}
 	encoder, err := p.NewPhoneticEncoderLenient(config)
@@ -61,7 +72,7 @@ func TestGenerateSuggestions(t *testing.T) {
 	}
 
 	multiPatternConfig := &p.PhonidConfig{
-		Patterns:     []string{"VCVCV", "CVCVCVC"},
+		Patterns:     []string{patternVCVCV, patternCVCVCVC},
 		Placeholders: placeholderMap,
 	}
 	multiPatternEncoder, err := p.NewPhoneticEncoderLenient(multiPatternConfig)
@@ -86,18 +97,18 @@ func TestGenerateSuggestions(t *testing.T) {
 			want: AssertionTable{
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(0)},
-					Output:  "azaza",
-					Comment: "Lower boundary (VCVCV)",
+					Output:  suggestOutputAzaza,
+					Comment: suggestLowerVCVCV,
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(121)},
-					Output:  "okoko",
-					Comment: "Mid-range (VCVCV)",
+					Output:  suggestOutputOkoko,
+					Comment: suggestMidVCVCV,
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(242)},
-					Output:  "ititi",
-					Comment: "Upper boundary (VCVCV)",
+					Output:  suggestOutputItiti,
+					Comment: suggestUpperVCVCV,
 				},
 			},
 			wantErr: false,
@@ -158,7 +169,7 @@ func TestGenerateSuggestionsWithCustom(t *testing.T) {
 	placeholderMap := p.PlaceholderMap{p.Vowel: p.RuneSet{'a', 'o', 'i'}, p.Consonant: p.RuneSet{'z', 'k', 't'}}
 
 	config := &p.PhonidConfig{
-		Patterns:     []string{"VCVCV", "CVCVCVC"},
+		Patterns:     []string{patternVCVCV, patternCVCVCVC},
 		Placeholders: placeholderMap,
 	}
 	encoder, err := p.NewPhoneticEncoderLenient(config)
@@ -219,18 +230,18 @@ func TestGenerateSuggestionsWithCustom(t *testing.T) {
 			want: AssertionTable{
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(0)},
-					Output:  "azaza",
-					Comment: "Lower boundary (VCVCV)",
+					Output:  suggestOutputAzaza,
+					Comment: suggestLowerVCVCV,
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(121)},
-					Output:  "okoko",
-					Comment: "Mid-range (VCVCV)",
+					Output:  suggestOutputOkoko,
+					Comment: suggestMidVCVCV,
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(242)},
-					Output:  "ititi",
-					Comment: "Upper boundary (VCVCV)",
+					Output:  suggestOutputItiti,
+					Comment: suggestUpperVCVCV,
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(0)},
@@ -239,12 +250,12 @@ func TestGenerateSuggestionsWithCustom(t *testing.T) {
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(1093)},
-					Output:  "kokokok",
+					Output:  suggestOutputKokokok,
 					Comment: "Mid-range (CVCVCVC)",
 				},
 				{
 					Input:   &p.TomlPositiveInt{Value: p.NewPositiveInt(2186)},
-					Output:  "tititit",
+					Output:  suggestOutputTititit,
 					Comment: "Upper boundary (CVCVCVC)",
 				},
 				{Input: &p.TomlPositiveInt{Value: p.NewPositiveInt(7)}, Output: "azato", Comment: "Custom check for 7"},

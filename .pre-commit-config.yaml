@@ -1,13 +1,13 @@
 repos:
   - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
-    rev: bebfac867564fbd992e5b45379b4b0568d5cb85b  # frozen: 3.6.1
+    rev: 3.6.1
     hooks:
       - id: editorconfig-checker
         alias: ec
         exclude: '\.go$|^(internal/provider/.*\.md)|docs/.*$'  # Go formatting is handled by gofmt and editorconfig-checker yields false positives
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # frozen: v6.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: '^(internal/provider/.*\.md)|docs/.*$'
@@ -19,9 +19,10 @@ repos:
         args: ['--fix=lf']
 
   - repo: https://github.com/golangci/golangci-lint
-    rev: 8f3b0c7ed018e57905fbd873c697e0b1ede605a5  # frozen: v2.11.4
+    rev: v2.12.1  # Use the latest version from https://github.com/golangci/golangci-lint/releases
     hooks:
       - id: golangci-lint-full
+      - id: golangci-lint-fmt
 
   - repo: local
     hooks:

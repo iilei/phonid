@@ -6,6 +6,11 @@ import (
 	. "github.com/iilei/phonid/pkg"
 )
 
+const (
+	pfPatternCVCVC = "CVCVC"
+	pfWordBabab    = "babab"
+)
+
 func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 	type fields struct {
 		config *PhonidConfig
@@ -25,7 +30,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 			name: "basic test",
 			fields: fields{
 				config: &PhonidConfig{
-					Patterns: []string{"CVCVC"},
+					Patterns: []string{pfPatternCVCVC},
 					Placeholders: map[PlaceholderType]RuneSet{
 						Vowel:     RuneSet("aei"),
 						Consonant: RuneSet("bdf"),
@@ -36,7 +41,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 				checks: []PreflightCheck{
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(0)},
-						Output: "babab",
+						Output: pfWordBabab,
 					},
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
@@ -50,7 +55,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 			name: "err test",
 			fields: fields{
 				config: &PhonidConfig{
-					Patterns: []string{"CVCVC"},
+					Patterns: []string{pfPatternCVCVC},
 					Placeholders: map[PlaceholderType]RuneSet{
 						Vowel:     RuneSet("aei"),
 						Consonant: RuneSet("bdf"),
@@ -61,7 +66,7 @@ func TestPhoneticEncoder_ValidatePreflight(t *testing.T) {
 				checks: []PreflightCheck{
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(0)},
-						Output: "babab",
+						Output: pfWordBabab,
 					},
 					{
 						Input:  &TomlPositiveInt{Value: NewPositiveInt(2)},
