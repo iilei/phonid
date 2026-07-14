@@ -56,7 +56,13 @@ func (f *TOMLFormatter) Name() OutputFormat {
 func (f *TOMLFormatter) Format(w io.Writer, assertions *AssertionTable) error {
 	enc := toml.NewEncoder(w)
 	enc.SetIndentTables(true)
-	return enc.Encode(assertions)
+	// go-toml/v2 requires the root value to be a document/table, not a bare slice.
+	root := struct {
+		Preflight *AssertionTable `toml:"preflight"`
+	}{
+		Preflight: assertions,
+	}
+	return enc.Encode(root)
 }
 
 // newTOMLFormatter is the internal constructor.
