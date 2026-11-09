@@ -1,5 +1,10 @@
 # Phonid
 
+> [!WARNING]
+> **phonid is unmaintained.** Its successor is [phonym](https://github.com/iilei/phonym):
+> pronounceable names with a family name that carries the spec release, so names
+> decode without configuration, and the vocabulary can evolve through new releases.
+
 > **Try it live:** Experiment with different configurations and encoding patterns in the [interactive playground](https://iilei.github.io/phonid/)
 
 Phonid is a Go library for encoding and decoding numeric identifiers into **pronounceable, human-friendly fantasy words** while preserving **strict mathematical reversibility**.
