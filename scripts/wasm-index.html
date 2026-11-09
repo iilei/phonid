@@ -15,21 +15,27 @@
                 overflow-x: hidden;
             }
 
-            .beta-ribbon {
+            body {
+                padding-top: 48px;
+            }
+
+            .sunset-band {
                 position: fixed;
-                top: 30px;
-                right: -104px;
+                top: 0;
+                left: 0;
+                right: 0;
                 background: #dc143c;
                 color: white;
-                font-weight: 900;
-                font-size: 21px;
-                letter-spacing: 2px;
-                padding: 10px 120px;
-                transform: rotate(45deg);
+                font-weight: 600;
+                padding: 12px 20px;
                 box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
                 z-index: 9999;
                 text-align: center;
-                text-transform: uppercase;
+            }
+
+            .sunset-band a {
+                color: white;
+                font-weight: 900;
             }
 
             .container {
@@ -195,7 +201,10 @@
     </head>
 
     <body>
-        <div class="beta-ribbon">V1</div>
+        <div class="sunset-band" role="alert">
+            phonid is unmaintained. Its successor is
+            <a href="https://github.com/iilei/phonym">phonym</a>.
+        </div>
 
         <h1>Phonid Encoder / Decoder</h1>
 
